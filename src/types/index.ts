@@ -32,6 +32,8 @@ export interface Project {
   description: string;
   organizerId: string;
   organizerName: string;
+  organizationId?: string;
+  organizationName?: string;
   partnershipTypes: PartnershipType[];
   timeline: {
     start: string;

@@ -1,19 +1,18 @@
 import { useEffect, useState } from "react";
-import { useParams, Link, useSearchParams } from "react-router-dom";
+import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Project, PartnershipType, ProjectPhase, ApplicationWithProfile } from "@/types";
+import { Project, PartnershipType, ProjectPhase } from "@/types";
 import { useProject } from "@/hooks/use-projects-query";
 import { useProjectApplications } from "@/hooks/use-applications-query";
 import { format } from "date-fns";
@@ -60,7 +59,6 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useProjectPhases } from "@/hooks/use-supabase-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useNavigate } from "react-router-dom";
 
 export default function ProjectDetailPage() {
   
@@ -607,6 +605,15 @@ const renderApplicationsTable = () => {
 
   // Determine if we should show the completed badge
   const showCompletedBadge = project.status === "completed";
+  
+  // Check if project has organization
+  const hasOrganization = !!project.organizationId && !!project.organizationName;
+
+  const navigateToOrganization = () => {
+    if (project?.organizationId) {
+      navigate(`/organizations/${project.organizationId}`);
+    }
+  };
 
   return (
     <Layout>
@@ -622,10 +629,23 @@ const renderApplicationsTable = () => {
               )}
             </div>
             <div className="flex items-center gap-3 mt-1 text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <UserIcon className="h-4 w-4" />
-                <span className="text-sm">{project.organizerName}</span>
-              </div>
+              {hasOrganization ? (
+                <div className="flex items-center gap-1">
+                  <Building2Icon className="h-4 w-4" />
+                  <Button 
+                    variant="link" 
+                    onClick={navigateToOrganization} 
+                    className="h-auto p-0 text-sm text-muted-foreground hover:text-primary"
+                  >
+                    {project.organizationName} (by {project.organizerName})
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <UserIcon className="h-4 w-4" />
+                  <span className="text-sm">{project.organizerName}</span>
+                </div>
+              )}
               {project.category && (
                 <div className="flex items-center gap-1">
                   <TagIcon className="h-4 w-4" />
@@ -644,6 +664,7 @@ const renderApplicationsTable = () => {
               </div>
             </div>
           </div>
+          
           <div className="flex gap-2 self-end md:self-auto">
             <Button
               variant="outline"
@@ -734,18 +755,55 @@ const renderApplicationsTable = () => {
                 <Card>
                   <CardContent className="p-6">
                     <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src="" alt={project.organizerName} />
-                          <AvatarFallback className="bg-primary text-primary-foreground">
-                            {project.organizerName.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="font-medium">{project.organizerName}</h3>
-                          <p className="text-sm text-muted-foreground">Project Organizer</p>
+                      {hasOrganization ? (
+                        <>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-10 w-10">
+                              {/* Organization avatar */}
+                              <AvatarFallback className="bg-blue-100 text-blue-800">
+                                {project.organizationName?.substring(0, 2).toUpperCase() || "OR"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <h3 className="font-medium">
+                                <Button 
+                                  variant="link" 
+                                  onClick={navigateToOrganization} 
+                                  className="h-auto p-0 text-foreground hover:text-primary"
+                                >
+                                  {project.organizationName}
+                                </Button>
+                              </h3>
+                              <p className="text-sm text-muted-foreground">Organization</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 pl-2">
+                            <Avatar className="h-8 w-8">
+                              {/* Organizer avatar */}
+                              <AvatarFallback className="bg-primary text-primary-foreground">
+                                {project.organizerName.substring(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <h3 className="text-sm font-medium">{project.organizerName}</h3>
+                              <p className="text-xs text-muted-foreground">Project Creator</p>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src="" alt={project.organizerName} />
+                            <AvatarFallback className="bg-primary text-primary-foreground">
+                              {project.organizerName.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h3 className="font-medium">{project.organizerName}</h3>
+                            <p className="text-sm text-muted-foreground">Project Organizer</p>
+                          </div>
                         </div>
-                      </div>
+                      )}
                       <Separator />
                       {renderPartnershipTypes()}
                       {renderRequiredSkills()}
@@ -859,42 +917,4 @@ const renderApplicationsTable = () => {
             </div>
           </div>
           
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setProgressDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="progress" onClick={handleAddProgressNote}>
-              Save Progress Update
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Complete Project Dialog */}
-      <Dialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Complete Project</DialogTitle>
-            <DialogDescription>
-              Mark this project as completed and review your partners
-            </DialogDescription>
-          </DialogHeader>
-          
-          <ProjectComplete 
-            projectId={id as string} 
-            projectTitle={project.title}
-            partners={
-              projectApplications
-                ?.filter(app => app.status === "approved")
-                .map(app => ({
-                  id: app.user_id,
-                  name: app.profiles?.name || "Unknown Partner"
-                })) || []
-            }
-            onComplete={onProjectCompleted}
-          />
-        </DialogContent>
-      </Dialog>
-    </Layout>
-  );
-}
+          <DialogFooter

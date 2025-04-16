@@ -3,8 +3,8 @@ import { Project } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Calendar, MapPin, Users, Check, Loader2, BarChart2 } from "lucide-react";
-import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Calendar, MapPin, Users, Check, Loader2, BarChart2, Building } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { useState, useEffect } from "react";
@@ -134,6 +134,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
     );
   };
 
+  // Determine if the project has an organization associated with it
+  const hasOrganization = !!project.organizationId && !!project.organizationName;
+
   return (
     <Card className="h-full flex flex-col overflow-hidden transition-all hover:shadow-md hover:border-primary/20">
       <div className="aspect-video w-full bg-muted overflow-hidden">
@@ -196,11 +199,31 @@ export function ProjectCard({ project }: ProjectCardProps) {
       <CardFooter className="flex justify-between border-t pt-4">
         <div className="flex items-center gap-2">
           <Avatar className="h-7 w-7">
-            <AvatarFallback className="text-xs bg-muted">
-              {project.organizerName ? project.organizerName.substring(0, 2).toUpperCase() : "??"}
-            </AvatarFallback>
+            {hasOrganization ? (
+              <AvatarFallback className="text-xs bg-blue-100 text-blue-800">
+                {project.organizationName?.substring(0, 2).toUpperCase() || "OR"}
+              </AvatarFallback>
+            ) : (
+              <AvatarFallback className="text-xs bg-muted">
+                {project.organizerName ? project.organizerName.substring(0, 2).toUpperCase() : "??"}
+              </AvatarFallback>
+            )}
           </Avatar>
-          <span className="text-sm">{project.organizerName || "Unknown"}</span>
+          <div className="flex flex-col">
+            <span className="text-sm">
+              {hasOrganization ? (
+                <Link to={`/organizations/${project.organizationId}`} className="flex items-center hover:text-primary">
+                  <Building className="inline-block h-3 w-3 mr-1" />
+                  {project.organizationName}
+                </Link>
+              ) : (
+                project.organizerName || "Unknown"
+              )}
+            </span>
+            {hasOrganization && (
+              <span className="text-xs text-muted-foreground">from {project.organizerName}</span>
+            )}
+          </div>
         </div>
         {renderApplyButton()}
       </CardFooter>

@@ -7,7 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload, Image as ImageIcon } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -35,9 +35,11 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PartnershipType, Organization } from "@/types";
+import { uploadImage } from "@/utils/upload-utils";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_FILE_TYPES = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
 
 const formSchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters" }),
@@ -60,6 +62,17 @@ const formSchema = z.object({
       (file) => !file || ACCEPTED_FILE_TYPES.includes(file.type),
       "Only PDF and Word documents are accepted"
     ),
+  projectImage: z
+    .instanceof(File)
+    .optional()
+    .refine(
+      (file) => !file || file.size <= MAX_FILE_SIZE,
+      "File size must be less than 10MB"
+    )
+    .refine(
+      (file) => !file || ACCEPTED_IMAGE_TYPES.includes(file.type),
+      "Only JPEG, PNG, or WebP images are accepted"
+    ),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -72,6 +85,8 @@ export function ProjectForm() {
   const [userOrganizations, setUserOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -153,6 +168,18 @@ export function ProjectForm() {
     }
   };
   
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedImage(file);
+      form.setValue("projectImage", file);
+      
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+    }
+  };
+  
   const onSubmit = async (values: FormValues) => {
     if (!user) {
       toast({
@@ -167,6 +194,7 @@ export function ProjectForm() {
     
     try {
       let proposal_file_path = null;
+      let project_image_url = null;
       
       // Upload proposal file if selected
       if (values.proposalFile) {
@@ -183,6 +211,25 @@ export function ProjectForm() {
         proposal_file_path = filePath;
       }
       
+      // Upload project image if selected
+      if (values.projectImage) {
+        project_image_url = await uploadImage(values.projectImage, 'projects', user.id);
+        if (!project_image_url) {
+          toast({
+            title: "Image upload failed",
+            description: "Failed to upload project image, but proceeding with project creation",
+            variant: "destructive",
+          });
+        }
+      }
+      
+      // Get organization name if available
+      let organization_name = null;
+      if (values.organizationId && values.organizationId !== "none") {
+        const selectedOrg = userOrganizations.find(org => org.id === values.organizationId);
+        organization_name = selectedOrg?.name || null;
+      }
+      
       const projectData = {
         title: values.title,
         description: values.description,
@@ -194,8 +241,10 @@ export function ProjectForm() {
         required_skills: values.requiredSkills,
         organizer_id: user.id,
         organization_id: values.organizationId === "none" ? null : values.organizationId || null,
+        organization_name: organization_name,
         status: "published" as "draft" | "published" | "in-progress" | "completed",
         proposal_file_path: proposal_file_path,
+        image: project_image_url,
       };
       
       const { data, error } = await supabase.from("projects").insert(projectData).select();
@@ -241,6 +290,59 @@ export function ProjectForm() {
                   <FormLabel>Project Title</FormLabel>
                   <FormControl>
                     <Input placeholder="Enter project title" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* Project Image Upload */}
+            <FormField
+              control={form.control}
+              name="projectImage"
+              render={({ field: { value, onChange, ...fieldProps } }) => (
+                <FormItem>
+                  <FormLabel>Project Image</FormLabel>
+                  <FormDescription>
+                    Upload a cover image for your project (optional, JPEG, PNG or WebP, max 10MB)
+                  </FormDescription>
+                  <FormControl>
+                    <div className="flex flex-col space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/jpg"
+                          onChange={handleImageChange}
+                          className="flex-1"
+                          {...fieldProps}
+                        />
+                      </div>
+                      
+                      {imagePreview && (
+                        <div className="relative">
+                          <div className="aspect-video w-full max-h-[200px] overflow-hidden rounded-md border border-border">
+                            <img
+                              src={imagePreview}
+                              alt="Project image preview"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => {
+                              setSelectedImage(null);
+                              setImagePreview(null);
+                              form.setValue("projectImage", undefined);
+                            }}
+                            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background/80 p-0"
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
