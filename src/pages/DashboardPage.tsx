@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Layout } from "@/components/layout";
@@ -257,7 +258,7 @@ const DashboardPage = () => {
                       <div className="text-sm text-muted-foreground space-y-1">
                         <div className="flex items-center">
                           <Clock className="mr-2 h-4 w-4" />
-                          Created on {new Date(project.created_at).toLocaleDateString()}
+                          Created on {new Date(project.createdAt).toLocaleDateString()}
                         </div>
                         {project.location && (
                           <div className="flex items-center">
