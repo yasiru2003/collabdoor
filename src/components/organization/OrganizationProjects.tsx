@@ -55,7 +55,7 @@ export function OrganizationProjects({ organizationId, organizationName, isOwner
           createdAt: project.created_at,
           updatedAt: project.updated_at,
           completedAt: project.completed_at,
-          applicationsEnabled: project.applications_enabled
+          applicationsEnabled: project.applications_enabled !== false
         })) as Project[];
         
         setProjects(mappedProjects);

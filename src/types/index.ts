@@ -76,6 +76,7 @@ export interface User {
   name?: string;
   profile_image?: string;
   role?: string;
+  bio?: string;
 }
 
 export interface ApplicationWithProfile {

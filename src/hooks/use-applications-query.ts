@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { handleSupabaseError } from "./use-supabase-utils";
-import { ApplicationWithProfile } from "@/types";
+import { ApplicationWithProfile, PartnershipType } from "@/types";
 
 /**
  * Hook to fetch all applications for a specific project
@@ -65,10 +65,11 @@ export function useProjectApplications(projectId: string | undefined) {
           }, {} as Record<string, any>);
           
           // Add profiles data to each application
-          const applicationsWithProfiles: ApplicationWithProfile[] = applications.map(application => ({
+          const applicationsWithProfiles = applications.map(application => ({
             ...application,
+            partnership_type: application.partnership_type as PartnershipType,
             profiles: profilesMap[application.user_id] || null
-          }));
+          })) as ApplicationWithProfile[];
           
           return applicationsWithProfiles;
         }
@@ -76,10 +77,11 @@ export function useProjectApplications(projectId: string | undefined) {
       
       // Ensure we always return objects that conform to the ApplicationWithProfile type
       // by adding the profiles property (as null) to each application
-      const typedApplications: ApplicationWithProfile[] = applications?.map(app => ({
+      const typedApplications = applications?.map(app => ({
         ...app,
+        partnership_type: app.partnership_type as PartnershipType,
         profiles: null
-      })) || [];
+      })) as ApplicationWithProfile[];
       
       console.log("Project applications fetched:", typedApplications);
       return typedApplications;

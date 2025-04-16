@@ -278,24 +278,28 @@ export function useProjectApplications() {
       case 'skilled':
         defaultPhases.push(
           {
+            project_id: projectId,
             title: 'Project Kickoff',
             description: 'Initial meeting and project alignment',
             status: 'not-started',
             order: 0,
           },
           {
+            project_id: projectId,
             title: 'Skills Assessment',
             description: 'Evaluate and match partner skills with project needs',
             status: 'not-started',
             order: 1,
           },
           {
+            project_id: projectId,
             title: 'Collaboration',
             description: 'Active collaboration and skill deployment',
             status: 'not-started',
             order: 2,
           },
           {
+            project_id: projectId,
             title: 'Project Completion',
             description: 'Final deliverables and project wrap-up',
             status: 'not-started',
@@ -306,24 +310,28 @@ export function useProjectApplications() {
       case 'knowledge':
         defaultPhases.push(
           {
+            project_id: projectId,
             title: 'Knowledge Transfer Initiation',
             description: 'Establish knowledge sharing framework',
             status: 'not-started',
             order: 0,
           },
           {
+            project_id: projectId,
             title: 'Expert Consultation',
             description: 'Collaborative knowledge exchange sessions',
             status: 'not-started',
             order: 1,
           },
           {
+            project_id: projectId,
             title: 'Implementation',
             description: 'Apply shared knowledge to project goals',
             status: 'not-started',
             order: 2,
           },
           {
+            project_id: projectId,
             title: 'Review and Insights',
             description: 'Evaluate knowledge impact and lessons learned',
             status: 'not-started',
@@ -335,18 +343,21 @@ export function useProjectApplications() {
       default:
         defaultPhases.push(
           {
+            project_id: projectId,
             title: 'Project Initiation',
             description: 'Initial project setup and planning',
             status: 'not-started',
             order: 0,
           },
           {
+            project_id: projectId,
             title: 'Project Execution',
             description: 'Active project work and collaboration',
             status: 'not-started',
             order: 1,
           },
           {
+            project_id: projectId,
             title: 'Project Closing',
             description: 'Final project review and closure',
             status: 'not-started',
@@ -359,13 +370,7 @@ export function useProjectApplications() {
     for (const phase of defaultPhases) {
       await supabase
         .from("project_phases")
-        .insert({
-          project_id: projectId,
-          title: phase.title,
-          description: phase.description,
-          status: phase.status,
-          order: phase.order,
-        });
+        .insert(phase);
     }
   };
 
