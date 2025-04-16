@@ -154,3 +154,49 @@ export async function notifyOrganizationJoinRequest(
     return false;
   }
 }
+
+/**
+ * Notifies project partners about project status changes or updates
+ */
+export async function notifyProjectPartners(
+  projectId: string,
+  title: string,
+  message: string,
+  link?: string | null
+) {
+  try {
+    // Get all partners for this project with approved status
+    const { data: partners, error: partnersError } = await supabase
+      .from("project_applications")
+      .select("user_id")
+      .eq("project_id", projectId)
+      .eq("status", "approved");
+
+    if (partnersError) throw partnersError;
+    
+    if (!partners || partners.length === 0) {
+      console.log("No partners to notify for project:", projectId);
+      return true;
+    }
+    
+    // Create notifications for all partners
+    const notifications = partners.map(partner => ({
+      user_id: partner.user_id,
+      title,
+      message,
+      link: link || null,
+      read: false
+    }));
+    
+    // Insert notifications
+    const { error } = await supabase
+      .from("notifications")
+      .insert(notifications);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Error notifying project partners:", error);
+    return false;
+  }
+}
