@@ -16,12 +16,7 @@ export default function LandingPage() {
   const { user } = useAuth();
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
   
-  // If user is logged in, redirect to dashboard
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
-  
-  // Fetch featured projects
+  // Fetch featured projects - move this before any potential return statements
   const { data: projects, isLoading } = useQuery({
     queryKey: ["featured-projects"],
     queryFn: async () => {
@@ -44,6 +39,12 @@ export default function LandingPage() {
       setFeaturedProjects(projects);
     }
   }, [projects]);
+  
+  // If user is logged in, redirect to dashboard
+  // This needs to be AFTER all hooks are called
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
