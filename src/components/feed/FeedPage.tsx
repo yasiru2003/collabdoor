@@ -1,20 +1,28 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, User, Building, Users } from "lucide-react";
+import { 
+  Heart, MessageSquare, Share, Send, Users, 
+  AtSign, User, Building, MapPin 
+} from "lucide-react";
 import { FeedPost } from "@/components/feed/FeedPost";
 import { CreatePostForm } from "@/components/feed/CreatePostForm";
+import { Separator } from "@/components/ui/separator";
 
 export default function FeedPage() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("all");
 
   // Query to fetch all posts
@@ -27,50 +35,40 @@ export default function FeedPage() {
     queryFn: async () => {
       if (!user) return [];
       
-      try {
-        let query = supabase
-          .from("feed_posts")
-          .select(`
-            *,
-            profiles(*),
-            organizations(name, logo),
-            feed_likes(id, user_id),
-            feed_comments(id, content, created_at, user_id, profiles(*))
-          `)
-          .order("created_at", { ascending: false });
+      let query = supabase
+        .from("feed_posts")
+        .select(`
+          *,
+          profiles!feed_posts_user_id_fkey(name, profile_image),
+          organizations!feed_posts_organization_id_fkey(name, logo),
+          feed_likes(id, user_id),
+          feed_comments(id, content, created_at, user_id, profiles(name, profile_image))
+        `)
+        .order("created_at", { ascending: false });
+      
+      if (activeTab === "following") {
+        // Get organizations the user is a member of
+        const { data: memberships } = await supabase
+          .from("organization_members")
+          .select("organization_id")
+          .eq("user_id", user.id);
         
-        if (activeTab === "following") {
-          // Get organizations the user is a member of
-          const { data: memberships } = await supabase
-            .from("organization_members")
-            .select("organization_id")
-            .eq("user_id", user.id);
-          
-          if (memberships && memberships.length > 0) {
-            const orgIds = memberships.map(m => m.organization_id);
-            query = query.in("organization_id", orgIds);
-          } else {
-            return []; // User doesn't follow any organizations
-          }
+        if (memberships && memberships.length > 0) {
+          const orgIds = memberships.map(m => m.organization_id);
+          query = query.in("organization_id", orgIds);
+        } else {
+          return []; // User doesn't follow any organizations
         }
-        
-        const { data, error } = await query;
-        
-        if (error) {
-          console.error("Error fetching posts:", error);
-          throw error;
-        }
-        
-        return data || [];
-      } catch (error) {
-        console.error("Error fetching posts:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load posts. Please try again later.",
-          variant: "destructive",
-        });
-        return [];
       }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error("Error fetching posts:", error);
+        throw error;
+      }
+      
+      return data || [];
     },
     enabled: !!user,
   });
@@ -84,43 +82,27 @@ export default function FeedPage() {
     queryFn: async () => {
       if (!user) return [];
       
-      try {
-        // Get organizations where user is a member
-        const { data: memberships, error: membershipError } = await supabase
-          .from("organization_members")
-          .select("organization_id")
-          .eq("user_id", user.id);
+      // Get organizations where user is a member
+      const { data: memberships, error: membershipError } = await supabase
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id);
+      
+      if (membershipError) throw membershipError;
+      
+      if (memberships && memberships.length > 0) {
+        const orgIds = memberships.map(m => m.organization_id);
         
-        if (membershipError) {
-          console.error("Error fetching memberships:", membershipError);
-          throw membershipError;
-        }
+        const { data: organizations, error: orgsError } = await supabase
+          .from("organizations")
+          .select("id, name, logo")
+          .in("id", orgIds);
         
-        if (memberships && memberships.length > 0) {
-          const orgIds = memberships.map(m => m.organization_id);
-          
-          const { data: organizations, error: orgsError } = await supabase
-            .from("organizations")
-            .select("id, name, logo")
-            .in("id", orgIds);
-          
-          if (orgsError) {
-            console.error("Error fetching organizations:", orgsError);
-            throw orgsError;
-          }
-          return organizations || [];
-        }
-        
-        return [];
-      } catch (error) {
-        console.error("Error fetching user organizations:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load your organizations. Please try again later.",
-          variant: "destructive",
-        });
-        return [];
+        if (orgsError) throw orgsError;
+        return organizations || [];
       }
+      
+      return [];
     },
     enabled: !!user,
   });

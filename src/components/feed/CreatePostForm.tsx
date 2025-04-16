@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { 
-  MapPin, Send, Building 
+  AtSign, MapPin, Send, Building 
 } from "lucide-react";
 import {
   Select,
@@ -42,29 +42,20 @@ export function CreatePostForm({ userOrganizations }: CreatePostFormProps) {
     mutationFn: async () => {
       if (!user || !content.trim()) return;
       
-      try {
-        const postData = {
-          user_id: user.id,
-          content: content.trim(),
-          location: location.trim() || null
-        };
+      const newPost = {
+        user_id: user.id,
+        content: content.trim(),
+        organization_id: selectedOrgId || null,
+        location: location.trim() || null
+      };
+      
+      const { data, error } = await supabase
+        .from("feed_posts")
+        .insert(newPost)
+        .select();
         
-        // Only add organization_id if one is selected
-        if (selectedOrgId) {
-          Object.assign(postData, { organization_id: selectedOrgId });
-        }
-        
-        const { data, error } = await supabase
-          .from("feed_posts")
-          .insert(postData)
-          .select();
-          
-        if (error) throw error;
-        return data;
-      } catch (error) {
-        console.error("Error creating post:", error);
-        throw error;
-      }
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       setContent("");
@@ -120,10 +111,7 @@ export function CreatePostForm({ userOrganizations }: CreatePostFormProps) {
               </div>
               
               {userOrganizations.length > 0 && (
-                <Select 
-                  value={selectedOrgId || ""} 
-                  onValueChange={(value) => setSelectedOrgId(value || null)}
-                >
+                <Select value={selectedOrgId || ""} onValueChange={setSelectedOrgId}>
                   <SelectTrigger className="w-full md:w-60 h-9">
                     <div className="flex items-center">
                       <Building className="h-4 w-4 mr-2 text-muted-foreground" />

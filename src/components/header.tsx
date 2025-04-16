@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -10,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Bell, Rss } from "lucide-react";
+import { Bell } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { 
   Popover, 
@@ -56,18 +55,6 @@ export function Header() {
         <div className="flex items-center gap-2 md:gap-4">
           {user ? (
             <>
-              {/* Add Feed button */}
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="relative h-8 w-8 md:h-10 md:w-10" 
-                asChild
-              >
-                <Link to="/feed">
-                  <Rss className="h-4 w-4 md:h-5 md:w-5" />
-                </Link>
-              </Button>
-
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative h-8 w-8 md:h-10 md:w-10">
