@@ -1,21 +1,6 @@
 
 import { Organization, Project } from "@/types";
 
-export function mapSupabaseOrgToOrganization(supabaseOrg: any): Organization {
-  return {
-    id: supabaseOrg.id,
-    name: supabaseOrg.name,
-    description: supabaseOrg.description,
-    logo: supabaseOrg.logo,
-    website: supabaseOrg.website,
-    industry: supabaseOrg.industry,
-    location: supabaseOrg.location,
-    size: supabaseOrg.size,
-    foundedYear: supabaseOrg.founded_year,
-    owner_id: supabaseOrg.owner_id,
-  };
-}
-
 export function mapSupabaseProjectToProject(supabaseProject: any): Project {
   return {
     id: supabaseProject.id,

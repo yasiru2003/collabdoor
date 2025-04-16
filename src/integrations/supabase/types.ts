@@ -315,6 +315,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          applications_enabled: boolean | null
           category: string | null
           completed_at: string | null
           created_at: string
@@ -335,6 +336,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          applications_enabled?: boolean | null
           category?: string | null
           completed_at?: string | null
           created_at?: string
@@ -355,6 +357,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          applications_enabled?: boolean | null
           category?: string | null
           completed_at?: string | null
           created_at?: string

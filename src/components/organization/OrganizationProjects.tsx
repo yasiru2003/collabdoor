@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +6,7 @@ import { Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Project } from "@/types";
+import { mapSupabaseProjectToProject } from "@/utils/data-mappers";
 
 interface OrganizationProjectsProps {
   organizationId: string;
@@ -33,30 +33,11 @@ export function OrganizationProjects({ organizationId, organizationName, isOwner
         if (error) throw error;
         
         // Map database results to Project type
-        const mappedProjects = (data || []).map(project => ({
-          id: project.id,
-          title: project.title,
-          description: project.description,
-          organizerId: project.organizer_id,
-          organizerName: project.profiles?.name || "Unknown",
-          organizationId: project.organization_id,
-          organizationName: project.organization_name,
-          partnershipTypes: project.partnership_types || [],
-          timeline: {
-            start: project.start_date,
-            end: project.end_date,
-          },
-          status: project.status as "draft" | "published" | "in-progress" | "completed",
-          category: project.category,
-          image: project.image,
-          requiredSkills: project.required_skills,
-          location: project.location,
-          partners: [],
-          createdAt: project.created_at,
-          updatedAt: project.updated_at,
-          completedAt: project.completed_at,
-          applicationsEnabled: project.applications_enabled !== false
-        })) as Project[];
+        const mappedProjects = (data || []).map(project => {
+          const mappedProject = mapSupabaseProjectToProject(project);
+          mappedProject.organizerName = project.profiles?.name || "Unknown";
+          return mappedProject;
+        });
         
         setProjects(mappedProjects);
       } catch (error) {
