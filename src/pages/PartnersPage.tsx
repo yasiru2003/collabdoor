@@ -69,9 +69,14 @@ export default function PartnersPage() {
         .from("partnerships")
         .select("*")
         .eq("id", partnershipId)
-        .single();
+        .maybeSingle(); // Changed from single() to maybeSingle() to avoid 406 error
 
       if (fetchError) throw fetchError;
+      
+      // If partnership data doesn't exist, throw an error
+      if (!partnershipData) {
+        throw new Error("Partnership not found");
+      }
 
       // Check if there's a corresponding application
       const { data: applicationData, error: appError } = await supabase
@@ -120,9 +125,14 @@ export default function PartnersPage() {
         .from("partnerships")
         .select("*")
         .eq("id", partnershipId)
-        .single();
+        .maybeSingle(); // Changed from single() to maybeSingle() to avoid 406 error
 
       if (fetchError) throw fetchError;
+      
+      // If partnership data doesn't exist, throw an error
+      if (!partnershipData) {
+        throw new Error("Partnership not found");
+      }
 
       // Check if there's a corresponding application
       const { data: applicationData, error: appError } = await supabase
