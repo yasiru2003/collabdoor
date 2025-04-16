@@ -31,24 +31,61 @@ export function useReviews() {
   const getUserReviews = async (userId: string) => {
     try {
       setLoading(true);
-      // Use any type to avoid TypeScript errors with the reviews table
-      const { data, error } = await supabase
+      
+      // First, fetch all reviews for the user
+      const { data: reviewsData, error: reviewsError } = await supabase
         .from('reviews')
-        .select(`
-          *,
-          reviewer:reviewer_id (
-            name,
-            profile_image
-          ),
-          project:project_id (
-            title
-          )
-        `)
+        .select('*')
         .eq('reviewee_id', userId)
-        .order('created_at', { ascending: false }) as any;
+        .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data || [];
+      if (reviewsError) throw reviewsError;
+      
+      // If there are no reviews, return an empty array
+      if (!reviewsData || reviewsData.length === 0) {
+        return [];
+      }
+      
+      // Get all reviewer IDs to fetch their profiles
+      const reviewerIds = [...new Set(reviewsData.map(review => review.reviewer_id))];
+      
+      // Fetch reviewer profiles
+      const { data: reviewersData, error: reviewersError } = await supabase
+        .from('profiles')
+        .select('id, name, profile_image')
+        .in('id', reviewerIds);
+        
+      if (reviewersError) throw reviewersError;
+      
+      // Get all project IDs to fetch project titles
+      const projectIds = [...new Set(reviewsData.map(review => review.project_id))];
+      
+      // Fetch project titles
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('projects')
+        .select('id, title')
+        .in('id', projectIds);
+        
+      if (projectsError) throw projectsError;
+      
+      // Map the reviewers and projects to their respective reviews
+      const enrichedReviews = reviewsData.map(review => {
+        const reviewer = reviewersData?.find(r => r.id === review.reviewer_id);
+        const project = projectsData?.find(p => p.id === review.project_id);
+        
+        return {
+          ...review,
+          reviewer: reviewer ? {
+            name: reviewer.name,
+            profile_image: reviewer.profile_image
+          } : undefined,
+          project: project ? {
+            title: project.title
+          } : undefined
+        };
+      });
+      
+      return enrichedReviews;
     } catch (error) {
       console.error('Error fetching user reviews:', error);
       return [];
@@ -61,21 +98,46 @@ export function useReviews() {
   const getProjectReviews = async (projectId: string) => {
     try {
       setLoading(true);
-      // Use any type to avoid TypeScript errors
-      const { data, error } = await supabase
+      
+      // First, fetch all reviews for the project
+      const { data: reviewsData, error: reviewsError } = await supabase
         .from('reviews')
-        .select(`
-          *,
-          reviewer:reviewer_id (
-            name,
-            profile_image
-          )
-        `)
+        .select('*')
         .eq('project_id', projectId)
-        .order('created_at', { ascending: false }) as any;
+        .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data || [];
+      if (reviewsError) throw reviewsError;
+      
+      // If there are no reviews, return an empty array
+      if (!reviewsData || reviewsData.length === 0) {
+        return [];
+      }
+      
+      // Get all reviewer IDs to fetch their profiles
+      const reviewerIds = [...new Set(reviewsData.map(review => review.reviewer_id))];
+      
+      // Fetch reviewer profiles
+      const { data: reviewersData, error: reviewersError } = await supabase
+        .from('profiles')
+        .select('id, name, profile_image')
+        .in('id', reviewerIds);
+        
+      if (reviewersError) throw reviewersError;
+      
+      // Map the reviewers to their respective reviews
+      const enrichedReviews = reviewsData.map(review => {
+        const reviewer = reviewersData?.find(r => r.id === review.reviewer_id);
+        
+        return {
+          ...review,
+          reviewer: reviewer ? {
+            name: reviewer.name,
+            profile_image: reviewer.profile_image
+          } : undefined
+        };
+      });
+      
+      return enrichedReviews;
     } catch (error) {
       console.error('Error fetching project reviews:', error);
       return [];
