@@ -3,9 +3,9 @@ import React, { useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { uploadImage, removeImage } from "@/utils/upload-utils";
 
 interface ProfilePictureProps {
   name: string;
@@ -32,39 +32,25 @@ export function ProfilePicture({ name, profileImage, loading, onRemove, onUpdate
     }
 
     const file = e.target.files[0];
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-    const filePath = `profile-images/${fileName}`;
-
     setUploading(true);
 
     try {
-      // Check if the storage bucket exists, if not create it
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const profileBucket = buckets?.find(bucket => bucket.name === 'profiles');
-      
-      if (!profileBucket) {
-        await supabase.storage.createBucket('profiles', {
-          public: true
-        });
+      // Remove old image if it exists
+      if (profileImage) {
+        await removeImage(profileImage, 'profiles');
       }
 
-      // Upload the file
-      const { error: uploadError } = await supabase.storage
-        .from('profiles')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      // Get the public URL
-      const { data } = supabase.storage.from('profiles').getPublicUrl(filePath);
+      // Upload new image
+      const imageUrl = await uploadImage(file, 'profiles', user.id);
       
-      if (data) {
-        onUpdate(data.publicUrl);
+      if (imageUrl) {
+        onUpdate(imageUrl);
         toast({
           title: "Profile image updated",
           description: "Your profile image has been updated successfully."
         });
+      } else {
+        throw new Error("Failed to upload image");
       }
     } catch (error: any) {
       toast({
@@ -76,6 +62,28 @@ export function ProfilePicture({ name, profileImage, loading, onRemove, onUpdate
       setUploading(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemove = async () => {
+    if (profileImage) {
+      setUploading(true);
+      try {
+        await removeImage(profileImage, 'profiles');
+        onRemove();
+        toast({
+          title: "Profile image removed",
+          description: "Your profile image has been removed successfully."
+        });
+      } catch (error: any) {
+        toast({
+          title: "Remove failed",
+          description: error.message,
+          variant: "destructive"
+        });
+      } finally {
+        setUploading(false);
       }
     }
   };
@@ -113,7 +121,7 @@ export function ProfilePicture({ name, profileImage, loading, onRemove, onUpdate
           <Button 
             variant="ghost" 
             className="w-full"
-            onClick={onRemove}
+            onClick={handleRemove}
             disabled={loading || uploading || !profileImage}
           >
             Remove

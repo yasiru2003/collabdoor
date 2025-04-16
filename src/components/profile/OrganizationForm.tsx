@@ -1,11 +1,13 @@
-
-import React from "react";
+import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "@/hooks/use-toast";
+import { uploadImage, removeImage } from "@/utils/upload-utils";
 
 interface OrganizationFormProps {
   organization: {
@@ -29,6 +31,78 @@ export function OrganizationForm({
   onOrganizationChange,
   onSubmit
 }: OrganizationFormProps) {
+  const { user } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleUploadClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !user) {
+      return;
+    }
+
+    const file = e.target.files[0];
+    setUploading(true);
+
+    try {
+      // Remove old logo if it exists
+      if (organization.logo) {
+        await removeImage(organization.logo, 'organizations');
+      }
+
+      // Upload new logo
+      const logoUrl = await uploadImage(file, 'organizations', user.id);
+      
+      if (logoUrl) {
+        onOrganizationChange('logo', logoUrl);
+        toast({
+          title: "Organization logo updated",
+          description: "Your organization logo has been updated successfully."
+        });
+      } else {
+        throw new Error("Failed to upload image");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Upload failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    if (organization.logo) {
+      setUploading(true);
+      try {
+        await removeImage(organization.logo, 'organizations');
+        onOrganizationChange('logo', '');
+        toast({
+          title: "Logo removed",
+          description: "Your organization logo has been removed successfully."
+        });
+      } catch (error: any) {
+        toast({
+          title: "Remove failed",
+          description: error.message,
+          variant: "destructive"
+        });
+      } finally {
+        setUploading(false);
+      }
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -141,24 +215,47 @@ export function OrganizationForm({
           <div className="space-y-2">
             <Label htmlFor="logo">Organization Logo</Label>
             <div className="flex items-center gap-4">
-              <div className="h-16 w-16 border rounded flex items-center justify-center bg-muted">
+              <div className="h-16 w-16 border rounded flex items-center justify-center bg-muted overflow-hidden">
                 {organization.logo ? (
                   <img src={organization.logo} alt="Logo" className="h-full w-full object-contain" />
                 ) : (
-                  "Logo"
+                  <span className="text-xs text-muted-foreground">No Logo</span>
                 )}
               </div>
-              <Button 
-                variant="outline"
-                disabled={loading}
-              >
-                Upload Logo
-              </Button>
+              <div className="space-y-2">
+                <input 
+                  type="file" 
+                  id="logo"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <Button 
+                  variant="outline"
+                  disabled={loading || uploading}
+                  onClick={handleUploadClick}
+                  type="button"
+                >
+                  {uploading ? "Uploading..." : "Upload Logo"}
+                </Button>
+                {organization.logo && (
+                  <Button 
+                    variant="ghost"
+                    disabled={loading || uploading}
+                    onClick={handleRemoveLogo}
+                    type="button"
+                    size="sm"
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
           <div className="pt-4">
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading || uploading}>
               {loading ? "Saving..." : "Save Organization"}
             </Button>
           </div>

@@ -2,7 +2,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,35 +18,18 @@ import {
   PopoverTrigger 
 } from "./ui/popover";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/use-notifications";
+import { useEffect } from "react";
 
 export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "New project application",
-      message: "Someone applied to your project",
-      time: "5 minutes ago",
-      read: false,
-    },
-    {
-      id: 2,
-      title: "Application approved",
-      message: "Your application has been approved",
-      time: "2 hours ago",
-      read: false,
-    },
-    {
-      id: 3,
-      title: "New message",
-      message: "You have a new message from a partner",
-      time: "Yesterday",
-      read: true,
-    }
-  ]);
-
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const { 
+    notifications, 
+    markAsRead, 
+    markAllAsRead, 
+    unreadCount 
+  } = useNotifications();
 
   const handleLogout = async () => {
     try {
@@ -55,24 +37,6 @@ export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) 
     } catch (error) {
       console.error("Error signing out:", error);
     }
-  };
-
-  const markAsRead = (id: number) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
-    toast({
-      title: "Notification marked as read",
-      description: "The notification has been marked as read.",
-    });
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
-    toast({
-      title: "All notifications marked as read",
-      description: "All notifications have been marked as read.",
-    });
   };
 
   return (
@@ -139,7 +103,9 @@ export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) 
                             )}
                           </div>
                           <p className="text-muted-foreground text-sm mb-1">{notification.message}</p>
-                          <span className="text-xs text-muted-foreground">{notification.time}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(notification.created_at).toLocaleString()}
+                          </span>
                         </div>
                       ))
                     ) : (
