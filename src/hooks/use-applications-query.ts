@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,12 +29,10 @@ export function useProjectApplicationsQuery(projectId: string | undefined) {
       
       console.log("Fetching project applications for:", projectId);
       
+      // First, get the applications
       const { data, error } = await supabase
         .from("project_applications")
-        .select(`
-          *,
-          profiles:user_id(*)
-        `)
+        .select("*")
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
 
@@ -47,10 +46,42 @@ export function useProjectApplicationsQuery(projectId: string | undefined) {
         return [];
       }
       
+      // If no applications, return empty array
+      if (!data || data.length === 0) {
+        return [];
+      }
+      
+      // Get all user IDs from applications
+      const userIds = data.map(app => app.user_id);
+      
+      // Fetch user profiles separately
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, name, email, profile_image, skills")
+        .in("id", userIds);
+        
+      if (profilesError) {
+        console.error("Error fetching profiles:", profilesError);
+        toast({
+          title: "Error fetching profiles",
+          description: profilesError.message,
+          variant: "destructive",
+        });
+      }
+      
+      // Create a map of profiles by user ID for easy lookup
+      const profilesMap = (profiles || []).reduce((map, profile) => {
+        map[profile.id] = profile;
+        return map;
+      }, {} as Record<string, any>);
+      
       // Transform data to match ApplicationWithProfile
       return data.map(app => ({
         ...app,
-        profile: app.profiles || null
+        profile: profilesMap[app.user_id] || {
+          name: "Unknown User",
+          email: "unknown@example.com"
+        }
       })) as ApplicationWithProfile[];
     },
     enabled: !!projectId

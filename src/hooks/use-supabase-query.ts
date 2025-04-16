@@ -64,6 +64,3 @@ export function useUserApplications(userId: string | undefined) {
     enabled: !!userId
   });
 }
-
-// Note: We're removing the duplicate export here to fix the error
-// Previously it had: export { useUserApplications }; which was causing the duplicate export
