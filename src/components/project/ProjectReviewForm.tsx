@@ -12,6 +12,7 @@ interface ProjectReviewFormProps {
   isOrganizerReview: boolean;
   onSubmitSuccess: () => void;
   onSkip: () => void;
+  projectTitle?: string; // Add this optional prop to fix the TypeScript error
 }
 
 export function ProjectReviewForm({

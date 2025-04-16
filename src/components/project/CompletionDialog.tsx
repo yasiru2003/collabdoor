@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProjectComplete } from "@/components/project/ProjectComplete";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,6 +22,35 @@ export function CompletionDialog({
   onComplete
 }: CompletionDialogProps) {
   const [activeTab, setActiveTab] = useState("complete");
+  const [currentPartnerIndex, setCurrentPartnerIndex] = useState(0);
+  const [reviewedPartners, setReviewedPartners] = useState<string[]>([]);
+
+  const handleReviewSubmitted = () => {
+    // Mark the current partner as reviewed
+    if (partners[currentPartnerIndex]) {
+      setReviewedPartners(prev => [...prev, partners[currentPartnerIndex].id]);
+    }
+    
+    // Move to the next partner or complete if all partners are reviewed
+    if (currentPartnerIndex < partners.length - 1) {
+      setCurrentPartnerIndex(prev => prev + 1);
+    } else {
+      onComplete();
+      onOpenChange(false);
+    }
+  };
+
+  const handleSkipReview = () => {
+    // Move to the next partner without adding to reviewed list
+    if (currentPartnerIndex < partners.length - 1) {
+      setCurrentPartnerIndex(prev => prev + 1);
+    } else {
+      onComplete();
+      onOpenChange(false);
+    }
+  };
+
+  const currentPartner = partners[currentPartnerIndex] || null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -55,12 +83,38 @@ export function CompletionDialog({
           </TabsContent>
           
           <TabsContent value="review" className="py-4">
-            <ProjectReviewForm 
-              projectId={projectId}
-              projectTitle={projectTitle}
-              partners={partners}
-              onComplete={() => onOpenChange(false)}
-            />
+            {currentPartner && (
+              <div>
+                <div className="mb-4 text-sm text-muted-foreground">
+                  Reviewing partner {currentPartnerIndex + 1} of {partners.length}: <span className="font-medium text-foreground">{currentPartner.name}</span>
+                </div>
+                <ProjectReviewForm 
+                  projectId={projectId}
+                  revieweeId={currentPartner.id}
+                  revieweeName={currentPartner.name}
+                  isOrganizerReview={true}
+                  onSubmitSuccess={handleReviewSubmitted}
+                  onSkip={handleSkipReview}
+                  // projectTitle is passed but not used in ProjectReviewForm
+                  // keeping it here since it's now in the interface
+                  projectTitle={projectTitle}
+                />
+                <div className="mt-4 text-xs text-muted-foreground text-right">
+                  {reviewedPartners.length} of {partners.length} partners reviewed
+                </div>
+              </div>
+            )}
+            {partners.length === 0 && (
+              <div className="text-center py-8">
+                <p>No partners to review.</p>
+                <Button 
+                  className="mt-4" 
+                  onClick={() => onOpenChange(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </DialogContent>
