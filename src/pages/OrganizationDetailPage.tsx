@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
@@ -103,17 +102,40 @@ export default function OrganizationDetailPage() {
     queryFn: async () => {
       if (!id) return [];
       
-      const { data, error } = await supabase
+      // First fetch the members
+      const { data: membersData, error: membersError } = await supabase
         .from("organization_members")
-        .select(`
-          *,
-          profiles:user_id(*)
-        `)
-        .eq("organization_id", id)
-        .limit(10);
+        .select("*")
+        .eq("organization_id", id);
         
-      if (error) throw error;
-      return data || [];
+      if (membersError) throw membersError;
+      
+      if (membersData && membersData.length > 0) {
+        // Get all user IDs
+        const userIds = membersData.map(member => member.user_id);
+        
+        // Fetch profiles separately
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, name, email, profile_image")
+          .in("id", userIds);
+          
+        if (profilesError) throw profilesError;
+        
+        // Merge the data
+        const membersWithProfiles = membersData.map(member => {
+          // Find the matching profile
+          const profile = profilesData?.find(profile => profile.id === member.user_id);
+          return {
+            ...member,
+            profiles: profile || null
+          };
+        });
+        
+        return membersWithProfiles;
+      }
+      
+      return membersData || [];
     },
     enabled: !!id && !!organization
   });

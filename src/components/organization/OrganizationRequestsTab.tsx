@@ -97,13 +97,18 @@ export function OrganizationRequestsTab({
         
       if (memberError) throw memberError;
       
-      // Send notification to user
-      await notifyOrganizationJoinRequest(
-        userId,
-        organizationName,
-        "approved",
-        organizationId
-      );
+      try {
+        // Send notification to user
+        await notifyOrganizationJoinRequest(
+          userId,
+          organizationName,
+          "approved",
+          organizationId
+        );
+      } catch (notificationError) {
+        console.error("Error creating notification:", notificationError);
+        // Continue execution even if notification fails
+      }
       
       // Refresh data
       queryClient.invalidateQueries({ queryKey: ["organization-join-requests"] });
@@ -137,12 +142,17 @@ export function OrganizationRequestsTab({
         
       if (error) throw error;
       
-      // Send notification to user
-      await notifyOrganizationJoinRequest(
-        userId,
-        organizationName,
-        "rejected"
-      );
+      try {
+        // Send notification to user
+        await notifyOrganizationJoinRequest(
+          userId,
+          organizationName,
+          "rejected"
+        );
+      } catch (notificationError) {
+        console.error("Error creating notification:", notificationError);
+        // Continue execution even if notification fails
+      }
       
       // Refresh data
       queryClient.invalidateQueries({ queryKey: ["organization-join-requests"] });
