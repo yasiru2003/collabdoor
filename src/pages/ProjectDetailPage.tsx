@@ -398,14 +398,28 @@ const renderApplicationsTable = () => {
               <TableRow key={application.id}>
                 <TableCell className="flex items-center gap-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={application.profiles?.profile_image || ""} />
+                    {application.profiles && 'profile_image' in application.profiles ? (
+                      <AvatarImage src={application.profiles.profile_image || ""} />
+                    ) : (
+                      <AvatarImage src="" />
+                    )}
                     <AvatarFallback>
-                      {application.profiles?.name ? application.profiles.name.substring(0, 2).toUpperCase() : "??"}
+                      {application.profiles && 'name' in application.profiles && application.profiles.name
+                        ? application.profiles.name.substring(0, 2).toUpperCase()
+                        : "??"}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="font-medium">{application.profiles?.name || "Unknown"}</div>
-                    <div className="text-xs text-muted-foreground">{application.profiles?.email}</div>
+                    <div className="font-medium">
+                      {application.profiles && 'name' in application.profiles
+                        ? application.profiles.name
+                        : "Unknown"}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {application.profiles && 'email' in application.profiles
+                        ? application.profiles.email
+                        : ""}
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -419,7 +433,7 @@ const renderApplicationsTable = () => {
                 <TableCell>
                   <Badge 
                     variant={
-                      application.status === "approved" ? "success" : 
+                      application.status === "approved" ? "default" : 
                       application.status === "rejected" ? "destructive" : 
                       "secondary"
                     }

@@ -339,12 +339,12 @@ export function useProjectApplications(projectId: string | undefined) {
     queryFn: async () => {
       if (!projectId) return [];
 
-      // Fix the query to correctly join with profiles
+      // Use explicit join to properly get profiles data
       const { data, error } = await supabase
         .from("project_applications")
         .select(`
           *,
-          profiles:profiles(name, email, profile_image)
+          profiles:profiles(id, name, email, profile_image)
         `)
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
@@ -392,19 +392,9 @@ export function useUserApplications(userId: string | undefined) {
         throw error;
       }
 
-      // Map the projects data in each application
-      return (data || []).map(application => {
-        if (application.projects) {
-          const projectData = {
-            ...application.projects,
-            profiles: application.projects.profiles
-          };
-          const mappedProject = mapSupabaseProjectToProject(projectData);
-          mappedProject.organizerName = application.projects.profiles?.name || "Unknown";
-          application.projects = mappedProject;
-        }
-        return application;
-      });
+      // Keep the original project data structure rather than trying to map it
+      // This maintains compatibility with the existing code
+      return data || [];
     },
     enabled: !!userId,
   });
