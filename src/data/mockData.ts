@@ -1,3 +1,4 @@
+
 import { Organization, Project, User } from "@/types";
 
 export const mockUsers: User[] = [
@@ -5,7 +6,7 @@ export const mockUsers: User[] = [
     id: "1",
     email: "john@example.com",
     name: "John Doe",
-    role: "partner",
+    role: "user",
     bio: "Experienced business development professional with a passion for innovation.",
     skills: ["Marketing", "Business Development", "Leadership"],
   },
@@ -13,7 +14,7 @@ export const mockUsers: User[] = [
     id: "2",
     email: "sarah@example.com",
     name: "Sarah Johnson",
-    role: "organizer",
+    role: "user",
     bio: "Project manager with 10+ years of experience in tech and nonprofit sectors.",
     skills: ["Project Management", "Fundraising", "Strategic Planning"],
   },

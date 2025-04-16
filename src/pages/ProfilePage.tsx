@@ -45,7 +45,7 @@ export default function ProfilePage() {
           id: user.id,
           email: user.email || "",
           name: "",
-          role: "partner"
+          role: "user"
         });
 
         // Fetch profile from database
@@ -69,11 +69,11 @@ export default function ProfilePage() {
             profileImage: profileData.profile_image || "",
           });
           
-          // Set user data with role from profile
+          // Set user data with name from profile
           setUser(prev => prev ? {
             ...prev,
             name: profileData.name || "",
-            role: profileData.role as "partner" | "organizer",
+            // We no longer need to set the role from profileData since it's always "user"
           } : null);
         }
 
@@ -280,7 +280,7 @@ export default function ProfilePage() {
         onNameChange={(value) => setProfile({...profile, name: value})}
         onBioChange={(value) => setProfile({...profile, bio: value})}
         onProfileImageRemove={handleRemoveProfileImage}
-        onProfileImageUpdate={handleProfileImageUpdate} // Add the missing prop
+        onProfileImageUpdate={handleProfileImageUpdate}
         onNewSkillChange={setNewSkill}
         onAddSkill={handleAddSkill}
         onRemoveSkill={handleRemoveSkill}
