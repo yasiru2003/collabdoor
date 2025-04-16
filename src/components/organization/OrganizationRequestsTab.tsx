@@ -30,18 +30,45 @@ export function OrganizationRequestsTab({
     queryFn: async () => {
       if (!organizationId || !isOwner) return [];
       
-      const { data, error } = await supabase
+      // First fetch the join requests
+      const { data: requestsData, error: requestsError } = await supabase
         .from("organization_join_requests")
         .select(`
           *,
-          profiles:user_id(*)
+          organizations(name)
         `)
         .eq("organization_id", organizationId)
         .eq("status", "pending")
         .order("created_at", { ascending: false });
         
-      if (error) throw error;
-      return data || [];
+      if (requestsError) throw requestsError;
+      
+      if (requestsData && requestsData.length > 0) {
+        // Get all user IDs from join requests
+        const userIds = requestsData.map(request => request.user_id);
+        
+        // Fetch profiles separately
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, name, email, profile_image")
+          .in("id", userIds);
+          
+        if (profilesError) throw profilesError;
+        
+        // Merge the data
+        const requestsWithProfiles = requestsData.map(request => {
+          // Find the matching profile
+          const profile = profilesData?.find(profile => profile.id === request.user_id);
+          return {
+            ...request,
+            profiles: profile || null
+          };
+        });
+        
+        return requestsWithProfiles;
+      }
+      
+      return requestsData || [];
     },
     enabled: !!organizationId && isOwner,
   });
