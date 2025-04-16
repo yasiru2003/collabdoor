@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +5,7 @@ import { PartnershipType, ApplicationWithProfile } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { notifyNewApplicant } from "@/services/notification-service";
 
-// Define ApplicationStatus type and export it
+// Define and export ApplicationStatus type
 export type ApplicationStatus = "pending" | "approved" | "rejected";
 
 /**
@@ -15,7 +14,7 @@ export type ApplicationStatus = "pending" | "approved" | "rejected";
 export function useProjectApplicationsQuery(projectId: string | undefined) {
   const { toast } = useToast();
   
-  return useQuery({
+  return useQuery<ApplicationWithProfile[]>({
     queryKey: ["projectApplications", projectId],
     queryFn: async () => {
       if (!projectId) return [];
@@ -48,10 +47,10 @@ export function useProjectApplicationsQuery(projectId: string | undefined) {
         return [];
       }
       
-      // Transform the data to match the ApplicationWithProfile type
+      // Transform data to match ApplicationWithProfile
       return data.map(app => ({
         ...app,
-        profile: app.profiles
+        profile: app.profiles || null
       })) as ApplicationWithProfile[];
     },
     enabled: !!projectId
