@@ -8,9 +8,11 @@ import {
   BookOpen, 
   Settings, 
   Building,
-  X
+  X,
+  Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 
 interface SidebarProps {
   open: boolean;
@@ -43,6 +45,9 @@ const SidebarLink = ({
 );
 
 export function Sidebar({ open, setOpen }: SidebarProps) {
+  const { user } = useAuth();
+  const isAdmin = user?.email === "yasirubandaraprivate@gmail.com";
+  
   return (
     <>
       {/* Mobile overlay */}
@@ -61,12 +66,6 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
         )}
       >
         <div className="flex items-center justify-between mb-8 mt-3">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="font-bold text-xl bg-primary text-primary-foreground px-2 py-1 rounded">
-              CD
-            </div>
-            <span className="font-bold text-xl">CollabDoor</span>
-          </Link>
           <Button
             variant="ghost"
             size="icon"
@@ -93,6 +92,11 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
           <SidebarLink to="/organizations" icon={Building}>
             Organizations
           </SidebarLink>
+          {isAdmin && (
+            <SidebarLink to="/admin" icon={Shield}>
+              Admin Panel
+            </SidebarLink>
+          )}
         </div>
 
         <div className="mt-auto px-3 pb-4">

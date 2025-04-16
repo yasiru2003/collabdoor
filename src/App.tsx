@@ -22,6 +22,7 @@ import OrganizationsPage from "./pages/OrganizationsPage";
 import CreateOrganizationPage from "./pages/CreateOrganizationPage";
 import OrganizationDetailPage from "./pages/OrganizationDetailPage";
 import EditOrganizationPage from "./pages/EditOrganizationPage";
+import AdminPage from "./pages/AdminPage";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/organizations/new" element={<CreateOrganizationPage />} />
             <Route path="/organizations/:id" element={<OrganizationDetailPage />} />
             <Route path="/organizations/:id/edit" element={<EditOrganizationPage />} />
+            <Route path="/admin" element={<AdminPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
