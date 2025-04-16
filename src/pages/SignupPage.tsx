@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserRole } from "@/types";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
@@ -15,7 +13,6 @@ export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UserRole>("partner");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const { signUp, signInWithGoogle } = useAuth();
@@ -36,7 +33,7 @@ export default function SignupPage() {
     
     try {
       setLoading(true);
-      await signUp(email, password, { name, role });
+      await signUp(email, password, { name });
       toast({
         title: "Account created",
         description: "Please check your email to confirm your account",
@@ -88,7 +85,7 @@ export default function SignupPage() {
           <CardHeader>
             <CardTitle>Sign Up</CardTitle>
             <CardDescription>
-              Choose your role to get started
+              Create your CollabDoor account
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -148,26 +145,6 @@ export default function SignupPage() {
                   onChange={(e) => setPassword(e.target.value)} 
                   required 
                 />
-              </div>
-
-              <div className="grid gap-2">
-                <Label>I want to join as a</Label>
-                <Tabs defaultValue="partner" onValueChange={(v) => setRole(v as UserRole)}>
-                  <TabsList className="grid grid-cols-2">
-                    <TabsTrigger value="partner">Partner</TabsTrigger>
-                    <TabsTrigger value="organizer">Organizer</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="partner" className="mt-2">
-                    <p className="text-sm text-muted-foreground">
-                      As a Partner, you can offer resources and expertise to projects.
-                    </p>
-                  </TabsContent>
-                  <TabsContent value="organizer" className="mt-2">
-                    <p className="text-sm text-muted-foreground">
-                      As an Organizer, you can create projects and find partners.
-                    </p>
-                  </TabsContent>
-                </Tabs>
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>

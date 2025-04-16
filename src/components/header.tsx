@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useEffect, useState } from "react";
-import { User, UserRole } from "@/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,23 +11,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Switch } from "./ui/switch";
 import { Bell, Menu } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) {
   const { user, signOut } = useAuth();
-  const [role, setRole] = useState<UserRole>("partner");
-
-  useEffect(() => {
-    if (user?.user_metadata?.role) {
-      setRole(user.user_metadata.role as UserRole);
-    }
-  }, [user]);
-
-  const toggleRole = () => {
-    setRole(role === "partner" ? "organizer" : "partner");
-  };
 
   const handleLogout = async () => {
     try {
@@ -97,11 +84,6 @@ export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) 
                   <DropdownMenuItem asChild>
                     <Link to="/settings" className="cursor-pointer w-full">Settings</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <div className="px-2 py-1.5 flex justify-between items-center">
-                    <span className="text-sm">Switch to {role === "partner" ? "Organizer" : "Partner"}</span>
-                    <Switch checked={role === "organizer"} onCheckedChange={toggleRole} />
-                  </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
                 </DropdownMenuContent>

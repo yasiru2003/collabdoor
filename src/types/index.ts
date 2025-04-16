@@ -1,5 +1,4 @@
-
-export type UserRole = 'partner' | 'organizer';
+export type UserRole = 'user';
 
 export interface User {
   id: string;

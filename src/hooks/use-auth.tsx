@@ -82,11 +82,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, userData?: any) => {
     try {
+      // Always set role to 'user' instead of partner/organizer
+      const userMetadata = {
+        ...userData,
+        role: 'user'
+      };
+      
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: userData,
+          data: userMetadata,
         },
       });
 
