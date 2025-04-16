@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -546,36 +547,36 @@ const renderApplicationsTable = () => {
                           onClick={() => handleUpdateApplicationStatus(application.id, "rejected")}
                         >
                           <X className="h-4 w-4 mr-1" /> Reject
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            className="h-8"
-                            onClick={() => handleMessageApplicant(applicantId, profileName)}
-                          >
-                            <Mail className="h-4 w-4 mr-1" /> Contact
-                          </Button>
-                        </div>
-                      )}
-                      {application.status !== "pending" && (
+                        </Button>
                         <Button 
                           size="sm" 
                           variant="outline"
+                          className="h-8"
                           onClick={() => handleMessageApplicant(applicantId, profileName)}
                         >
                           <Mail className="h-4 w-4 mr-1" /> Contact
                         </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    );
-  };
+                      </div>
+                    )}
+                    {application.status !== "pending" && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleMessageApplicant(applicantId, profileName)}
+                      >
+                        <Mail className="h-4 w-4 mr-1" /> Contact
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+};
 
   if (isLoading) {
     return (
@@ -918,4 +919,72 @@ const renderApplicationsTable = () => {
                   >
                     <Trophy className="h-6 w-6 mr-2" /> Complete Project
                   </Button>
-                </Card
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="applications">
+            {renderApplicationsTable()}
+          </TabsContent>
+        </Tabs>
+      </div>
+      
+      {/* Progress Update Dialog */}
+      <Dialog open={progressDialogOpen} onOpenChange={setProgressDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Add Progress Update</DialogTitle>
+            <DialogDescription>
+              Add a progress note for this phase of the project.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="progress-note">Progress Note</Label>
+              <Textarea
+                id="progress-note"
+                value={progressNote}
+                onChange={(e) => setProgressNote(e.target.value)}
+                placeholder="Describe the progress made or any updates on this phase..."
+                rows={5}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProgressDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddProgressNote}>
+              Save Progress Update
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Project Completion Dialog */}
+      <Dialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Complete Project</DialogTitle>
+            <DialogDescription>
+              Review your project and mark it as completed.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <ProjectComplete 
+              projectId={id as string}
+              projectTitle={project.title}
+              partners={getProjectPartners()}
+              onComplete={onProjectCompleted}
+              onCancel={() => setCompleteDialogOpen(false)}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+    </Layout>
+  );
+}
