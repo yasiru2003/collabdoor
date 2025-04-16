@@ -28,9 +28,9 @@ import { Separator } from "@/components/ui/separator";
 
 const ProjectsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [locationFilter, setLocationFilter] = useState("");
-  const [skillFilter, setSkillFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [locationFilter, setLocationFilter] = useState("all");
+  const [skillFilter, setSkillFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
   const { data: projects, isLoading } = useProjects();
   const { user } = useAuth();
@@ -67,13 +67,13 @@ const ProjectsPage = () => {
         project.location?.toLowerCase().includes(searchQuery.toLowerCase());
       
       // Category filter
-      const matchesCategory = !categoryFilter || project.category === categoryFilter;
+      const matchesCategory = categoryFilter === "all" || project.category === categoryFilter;
       
       // Location filter
-      const matchesLocation = !locationFilter || project.location === locationFilter;
+      const matchesLocation = locationFilter === "all" || project.location === locationFilter;
       
       // Skills filter
-      const matchesSkill = !skillFilter || 
+      const matchesSkill = skillFilter === "all" || 
         (project.requiredSkills && project.requiredSkills.includes(skillFilter));
       
       return matchesSearch && matchesCategory && matchesLocation && matchesSkill;
@@ -85,13 +85,17 @@ const ProjectsPage = () => {
   const filteredMyProjects = applyFilters(myProjects);
 
   const resetFilters = () => {
-    setCategoryFilter("");
-    setLocationFilter("");
-    setSkillFilter("");
+    setCategoryFilter("all");
+    setLocationFilter("all");
+    setSkillFilter("all");
     setSearchQuery("");
   };
 
-  const activeFiltersCount = [categoryFilter, locationFilter, skillFilter].filter(Boolean).length;
+  const activeFiltersCount = [
+    categoryFilter !== "all" ? 1 : 0, 
+    locationFilter !== "all" ? 1 : 0, 
+    skillFilter !== "all" ? 1 : 0
+  ].reduce((a, b) => a + b, 0);
 
   return (
     <Layout>
@@ -143,7 +147,7 @@ const ProjectsPage = () => {
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Categories</SelectItem>
+                    <SelectItem value="all">All Categories</SelectItem>
                     {categories.map(category => (
                       <SelectItem key={category} value={category}>{category}</SelectItem>
                     ))}
@@ -158,7 +162,7 @@ const ProjectsPage = () => {
                     <SelectValue placeholder="Select location" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Locations</SelectItem>
+                    <SelectItem value="all">All Locations</SelectItem>
                     {locations.map(location => (
                       <SelectItem key={location} value={location}>{location}</SelectItem>
                     ))}
@@ -173,7 +177,7 @@ const ProjectsPage = () => {
                     <SelectValue placeholder="Select skill" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Skills</SelectItem>
+                    <SelectItem value="all">All Skills</SelectItem>
                     {skills.map(skill => (
                       <SelectItem key={skill} value={skill}>{skill}</SelectItem>
                     ))}

@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -133,7 +132,7 @@ export function OrganizationForm({
             <div className="space-y-2">
               <Label htmlFor="industry">Industry</Label>
               <Select 
-                value={organization.industry || ""}
+                value={organization.industry || "other"}
                 onValueChange={(value) => onOrganizationChange("industry", value)}
                 disabled={loading}
               >
@@ -179,7 +178,7 @@ export function OrganizationForm({
             <div className="space-y-2">
               <Label htmlFor="size">Organization Size</Label>
               <Select 
-                value={organization.size || ""} 
+                value={organization.size || "1-10"} 
                 onValueChange={(value) => onOrganizationChange("size", value)}
                 disabled={loading}
               >

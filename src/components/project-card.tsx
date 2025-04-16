@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "./ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ProjectCardProps {

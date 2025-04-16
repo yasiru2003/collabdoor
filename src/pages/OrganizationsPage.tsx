@@ -62,8 +62,8 @@ export default function OrganizationsPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [industryFilter, setIndustryFilter] = useState("");
-  const [locationFilter, setLocationFilter] = useState("");
+  const [industryFilter, setIndustryFilter] = useState("all");
+  const [locationFilter, setLocationFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
   
   // Fetch all organizations
@@ -122,10 +122,10 @@ export default function OrganizationsPage() {
         (org.location && org.location.toLowerCase().includes(searchTerm.toLowerCase()));
       
       // Industry filter
-      const matchesIndustry = !industryFilter || org.industry === industryFilter;
+      const matchesIndustry = industryFilter === "all" || org.industry === industryFilter;
       
       // Location filter
-      const matchesLocation = !locationFilter || org.location === locationFilter;
+      const matchesLocation = locationFilter === "all" || org.location === locationFilter;
       
       return matchesSearch && matchesIndustry && matchesLocation;
     });
@@ -134,11 +134,14 @@ export default function OrganizationsPage() {
   // Reset all filters
   const resetFilters = () => {
     setSearchTerm("");
-    setIndustryFilter("");
-    setLocationFilter("");
+    setIndustryFilter("all");
+    setLocationFilter("all");
   };
   
-  const activeFiltersCount = [industryFilter, locationFilter].filter(Boolean).length;
+  const activeFiltersCount = [
+    industryFilter !== "all" ? 1 : 0, 
+    locationFilter !== "all" ? 1 : 0
+  ].reduce((a, b) => a + b, 0);
   
   // Redirect if not authenticated
   React.useEffect(() => {
@@ -210,7 +213,7 @@ export default function OrganizationsPage() {
                       <SelectValue placeholder="Select industry" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Industries</SelectItem>
+                      <SelectItem value="all">All Industries</SelectItem>
                       {industries.map(industry => (
                         <SelectItem key={industry} value={industry}>{industry}</SelectItem>
                       ))}
@@ -225,7 +228,7 @@ export default function OrganizationsPage() {
                       <SelectValue placeholder="Select location" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Locations</SelectItem>
+                      <SelectItem value="all">All Locations</SelectItem>
                       {locations.map(location => (
                         <SelectItem key={location} value={location}>{location}</SelectItem>
                       ))}
@@ -270,7 +273,7 @@ export default function OrganizationsPage() {
                 icon={Building}
                 title="No Organizations Found"
                 description={
-                  searchTerm || industryFilter || locationFilter
+                  searchTerm || industryFilter !== "all" || locationFilter !== "all"
                     ? "Try adjusting your search or filters"
                     : "There are no organizations in the system yet"
                 }
