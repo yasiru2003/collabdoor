@@ -61,8 +61,8 @@ export function OrganizationJoinRequest({
       const notification: TablesInsert<'notifications'> = {
         user_id: ownerId,
         title: "New Join Request",
-        message: `${user.name || user.email} has requested to join ${organizationName}`,
-        link: `/admin?tab=organizations`,
+        message: `${user.email || "Someone"} has requested to join ${organizationName}`,
+        link: `/organizations/${organizationId}?tab=requests`,
         read: false
       };
 

@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -16,12 +16,17 @@ import { Organization } from "@/types";
 import { OrganizationReviews } from "@/components/organization/OrganizationReviews";
 import { OrganizationProjects } from "@/components/organization/OrganizationProjects";
 import { OrganizationJoinRequest } from "@/components/organization/OrganizationJoinRequest";
+import { OrganizationRequestsTab } from "@/components/organization/OrganizationRequestsTab";
 
 export default function OrganizationDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Get the tab from URL or default to "projects"
+  const defaultTab = searchParams.get("tab") || "projects";
   
   // Track join request status
   const [joinRequestStatus, setJoinRequestStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none');
@@ -63,7 +68,7 @@ export default function OrganizationDetailPage() {
       if (error) throw error;
       
       if (data) {
-        setJoinRequestStatus(data.status);
+        setJoinRequestStatus(data.status as 'pending' | 'approved' | 'rejected');
       }
       
       return data;
@@ -102,7 +107,7 @@ export default function OrganizationDetailPage() {
         .from("organization_members")
         .select(`
           *,
-          profiles!organization_members_user_id_fkey(*)
+          profiles:user_id(*)
         `)
         .eq("organization_id", id)
         .limit(10);
@@ -195,7 +200,7 @@ export default function OrganizationDetailPage() {
                   organizationName={organization.name}
                   ownerId={organization.owner_id}
                   status={joinRequestStatus}
-                  onStatusChange={setJoinRequestStatus}
+                  onStatusChange={status => setJoinRequestStatus(status)}
                 />
               )
             )}
@@ -252,11 +257,14 @@ export default function OrganizationDetailPage() {
               </CardContent>
             </Card>
             
-            <Tabs defaultValue="projects" className="mt-6">
+            <Tabs defaultValue={defaultTab} className="mt-6">
               <TabsList>
                 <TabsTrigger value="projects">Projects</TabsTrigger>
                 <TabsTrigger value="members">Members</TabsTrigger>
                 <TabsTrigger value="reviews">Reviews</TabsTrigger>
+                {isOwner && (
+                  <TabsTrigger value="requests">Join Requests</TabsTrigger>
+                )}
               </TabsList>
               
               <TabsContent value="projects" className="mt-4">
@@ -285,11 +293,11 @@ export default function OrganizationDetailPage() {
                             <Avatar>
                               <AvatarImage src={member.profiles?.profile_image || ""} />
                               <AvatarFallback>
-                                {member.profiles?.name?.substring(0, 2).toUpperCase() || "U"}
+                                {(member.profiles?.name || member.profiles?.email || "U").substring(0, 2).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-medium">{member.profiles?.name || "Unknown User"}</p>
+                              <p className="font-medium">{member.profiles?.name || member.profiles?.email || "Unknown User"}</p>
                               <p className="text-sm text-muted-foreground">{member.profiles?.email}</p>
                             </div>
                           </div>
@@ -317,6 +325,16 @@ export default function OrganizationDetailPage() {
                   ownerId={organization.owner_id}
                 />
               </TabsContent>
+              
+              {isOwner && (
+                <TabsContent value="requests" className="mt-4">
+                  <OrganizationRequestsTab
+                    organizationId={id || ''}
+                    organizationName={organization.name}
+                    isOwner={isOwner}
+                  />
+                </TabsContent>
+              )}
             </Tabs>
           </div>
           
