@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -917,4 +918,57 @@ const renderApplicationsTable = () => {
       
       {/* Progress Update Dialog */}
       <Dialog open={progressDialogOpen} onOpenChange={setProgressDialogOpen}>
-        <DialogContent className="sm:max-w-[5
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Add Progress Update</DialogTitle>
+            <DialogDescription>
+              Add a note about progress on this phase.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="progress-note">Progress Note</Label>
+              <Textarea
+                id="progress-note"
+                value={progressNote}
+                onChange={(e) => setProgressNote(e.target.value)}
+                placeholder="Describe the progress made in this phase..."
+                rows={4}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProgressDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddProgressNote}>
+              Add Update
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Project Completion Dialog */}
+      <Dialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Complete Project</DialogTitle>
+            <DialogDescription>
+              Mark this project as completed and wrap up collaboration.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <ProjectComplete 
+              projectId={id as string} 
+              onComplete={onProjectCompleted} 
+              onCancel={() => setCompleteDialogOpen(false)}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+    </Layout>
+  );
+}
