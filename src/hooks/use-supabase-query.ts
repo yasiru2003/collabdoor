@@ -339,7 +339,6 @@ export function useProjectApplications(projectId: string | undefined) {
     queryFn: async () => {
       if (!projectId) return [];
 
-      // Modified query to get both user_id and profiles data separately
       const { data, error } = await supabase
         .from("project_applications")
         .select(`

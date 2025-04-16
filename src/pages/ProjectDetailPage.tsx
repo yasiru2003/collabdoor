@@ -395,13 +395,17 @@ const renderApplicationsTable = () => {
           </TableHeader>
           <TableBody>
             {projectApplications.map((application) => {
-              // Safely extract profile data with proper null checks
-              const profiles = application.profiles || {};
+              // Type assertion to make TypeScript happy
+              const profileData = application.profiles as { 
+                profile_image?: string; 
+                name?: string; 
+                email?: string; 
+              } | null;
               
               // Extract profile data with proper null checks
-              const profileImage = profiles.profile_image || "";
-              const profileName = profiles.name || "Unknown";
-              const profileEmail = profiles.email || "";
+              const profileImage = profileData?.profile_image || "";
+              const profileName = profileData?.name || "Unknown";
+              const profileEmail = profileData?.email || "";
               
               // Only calculate initials if we have a valid name
               const initials = profileName !== "Unknown" 
