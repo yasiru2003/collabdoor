@@ -59,6 +59,7 @@ export default function PartnersPage() {
   // Accept a partnership request
   const handleAcceptPartnership = async (partnershipId) => {
     try {
+      // Fixed: Update the partnership status in the partnerships table
       const { error } = await supabase
         .from("partnerships")
         .update({ status: "active" })
@@ -73,6 +74,7 @@ export default function PartnersPage() {
       
       refetch();
     } catch (error) {
+      console.error("Error accepting partnership:", error);
       toast({
         title: "Error accepting partnership",
         description: error.message,
@@ -99,6 +101,7 @@ export default function PartnersPage() {
       
       refetch();
     } catch (error) {
+      console.error("Error rejecting partnership:", error);
       toast({
         title: "Error rejecting partnership",
         description: error.message,

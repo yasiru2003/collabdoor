@@ -1,11 +1,11 @@
 
-import React from "react";
+import React, { ReactNode } from "react";
 import { LucideIcon } from "lucide-react";
 
 interface EmptyStateProps {
   icon: LucideIcon;
   title: string;
-  description: string;
+  description: string | ReactNode;
 }
 
 export function EmptyState({ icon: Icon, title, description }: EmptyStateProps) {
@@ -15,7 +15,9 @@ export function EmptyState({ icon: Icon, title, description }: EmptyStateProps) 
         <Icon className="h-6 w-6 text-muted-foreground" />
       </div>
       <h3 className="text-lg font-medium mb-1">{title}</h3>
-      <p className="text-muted-foreground max-w-md">{description}</p>
+      <div className="text-muted-foreground max-w-md">
+        {description}
+      </div>
     </div>
   );
 }

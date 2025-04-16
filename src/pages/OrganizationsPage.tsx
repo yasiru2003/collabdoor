@@ -1,17 +1,31 @@
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavigate } from "react-router-dom";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Building, Filter, Plus, Search, UsersRound } from "lucide-react";
+import { Building, Filter, Plus, Search, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Organization } from "@/types";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/empty-state";
 
 function OrganizationCard({ organization }: { organization: Organization }) {
   const navigate = useNavigate();
@@ -46,7 +60,11 @@ function OrganizationCard({ organization }: { organization: Organization }) {
 export default function OrganizationsPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [industryFilter, setIndustryFilter] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
   
   // Fetch all organizations
   const { data: allOrganizations, isLoading: loadingAll } = useQuery({
@@ -80,18 +98,47 @@ export default function OrganizationsPage() {
     enabled: !!user
   });
   
-  // Filter organizations based on search term
-  const filteredOrganizations = React.useMemo(() => {
-    if (!searchTerm.trim() || !allOrganizations) return allOrganizations;
+  // Extract unique industries and locations for filters
+  const industries = useMemo(() => {
+    if (!allOrganizations) return [];
+    return [...new Set(allOrganizations.map(org => org.industry).filter(Boolean))];
+  }, [allOrganizations]);
+  
+  const locations = useMemo(() => {
+    if (!allOrganizations) return [];
+    return [...new Set(allOrganizations.map(org => org.location).filter(Boolean))];
+  }, [allOrganizations]);
+  
+  // Apply filters to organizations
+  const filteredOrganizations = useMemo(() => {
+    if (!allOrganizations) return [];
     
-    const term = searchTerm.toLowerCase();
-    return allOrganizations.filter(org => 
-      org.name.toLowerCase().includes(term) || 
-      (org.description && org.description.toLowerCase().includes(term)) ||
-      (org.industry && org.industry.toLowerCase().includes(term)) ||
-      (org.location && org.location.toLowerCase().includes(term))
-    );
-  }, [allOrganizations, searchTerm]);
+    return allOrganizations.filter(org => {
+      // Search term filter
+      const matchesSearch = !searchTerm || 
+        org.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        (org.description && org.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (org.industry && org.industry.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (org.location && org.location.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      // Industry filter
+      const matchesIndustry = !industryFilter || org.industry === industryFilter;
+      
+      // Location filter
+      const matchesLocation = !locationFilter || org.location === locationFilter;
+      
+      return matchesSearch && matchesIndustry && matchesLocation;
+    });
+  }, [allOrganizations, searchTerm, industryFilter, locationFilter]);
+  
+  // Reset all filters
+  const resetFilters = () => {
+    setSearchTerm("");
+    setIndustryFilter("");
+    setLocationFilter("");
+  };
+  
+  const activeFiltersCount = [industryFilter, locationFilter].filter(Boolean).length;
   
   // Redirect if not authenticated
   React.useEffect(() => {
@@ -103,7 +150,7 @@ export default function OrganizationsPage() {
       });
       navigate("/login", { state: { from: "/organizations" } });
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, toast]);
   
   if (loading) {
     return (
@@ -121,23 +168,82 @@ export default function OrganizationsPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <h1 className="text-3xl font-bold">Organizations</h1>
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search organizations..."
-                className="pl-8 w-full md:w-[300px]"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Button variant="outline" size="icon">
-              <Filter className="h-4 w-4" />
-            </Button>
             <Button onClick={() => navigate("/organizations/new")}>
               <Plus className="h-4 w-4 mr-2" />
               New Organization
             </Button>
           </div>
+        </div>
+        
+        <div className="flex gap-2 mb-6">
+          <div className="relative flex-grow">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search organizations..."
+              className="pl-9"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
+          <Popover open={showFilters} onOpenChange={setShowFilters}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="relative">
+                <Filter className="h-4 w-4 mr-2" />
+                Filters
+                {activeFiltersCount > 0 && (
+                  <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center rounded-full">
+                    {activeFiltersCount}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="space-y-4">
+                <h4 className="font-medium">Filter Organizations</h4>
+                <Separator />
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Industry</label>
+                  <Select value={industryFilter} onValueChange={setIndustryFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select industry" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Industries</SelectItem>
+                      {industries.map(industry => (
+                        <SelectItem key={industry} value={industry}>{industry}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Location</label>
+                  <Select value={locationFilter} onValueChange={setLocationFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Locations</SelectItem>
+                      {locations.map(location => (
+                        <SelectItem key={location} value={location}>{location}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex justify-between pt-2">
+                  <Button variant="outline" size="sm" onClick={resetFilters}>
+                    Reset Filters
+                  </Button>
+                  <Button size="sm" onClick={() => setShowFilters(false)}>
+                    Apply Filters
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
         
         <Tabs defaultValue="discover" className="space-y-6">
@@ -148,7 +254,11 @@ export default function OrganizationsPage() {
           
           <TabsContent value="discover">
             {loadingAll ? (
-              <div className="text-center py-12">Loading organizations...</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="h-[200px] bg-muted animate-pulse rounded-md"></div>
+                ))}
+              </div>
             ) : filteredOrganizations && filteredOrganizations.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredOrganizations.map((org) => (
@@ -156,25 +266,25 @@ export default function OrganizationsPage() {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Building className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="text-xl font-medium mb-2">No Organizations Found</h3>
-                <p className="text-muted-foreground mb-6 max-w-md">
-                  {searchTerm 
-                    ? "No organizations match your search criteria" 
-                    : "There are no organizations in the system yet"}
-                </p>
-                <Button onClick={() => navigate("/organizations/new")}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Organization
-                </Button>
-              </div>
+              <EmptyState
+                icon={Building}
+                title="No Organizations Found"
+                description={
+                  searchTerm || industryFilter || locationFilter
+                    ? "Try adjusting your search or filters"
+                    : "There are no organizations in the system yet"
+                }
+              />
             )}
           </TabsContent>
           
           <TabsContent value="my-organizations">
             {loadingMine ? (
-              <div className="text-center py-12">Loading your organizations...</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-[200px] bg-muted animate-pulse rounded-md"></div>
+                ))}
+              </div>
             ) : myOrganizations && myOrganizations.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {myOrganizations.map((org) => (
@@ -182,17 +292,19 @@ export default function OrganizationsPage() {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Building className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="text-xl font-medium mb-2">No Organizations Created Yet</h3>
-                <p className="text-muted-foreground mb-6 max-w-md">
-                  Create your first organization to start collaborating with others on projects
-                </p>
-                <Button onClick={() => navigate("/organizations/new")}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Organization
-                </Button>
-              </div>
+              <EmptyState
+                icon={Building}
+                title="No Organizations Created Yet"
+                description={
+                  <div className="space-y-4">
+                    <p>Create your first organization to start collaborating with others on projects</p>
+                    <Button onClick={() => navigate("/organizations/new")}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Organization
+                    </Button>
+                  </div>
+                }
+              />
             )}
           </TabsContent>
         </Tabs>
