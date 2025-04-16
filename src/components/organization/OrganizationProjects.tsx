@@ -6,6 +6,7 @@ import { ProjectCard } from "@/components/project-card";
 import { Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { Project } from "@/types";
 
 interface OrganizationProjectsProps {
   organizationId: string;
@@ -14,7 +15,7 @@ interface OrganizationProjectsProps {
 }
 
 export function OrganizationProjects({ organizationId, organizationName, isOwner }: OrganizationProjectsProps) {
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   
@@ -30,7 +31,34 @@ export function OrganizationProjects({ organizationId, organizationName, isOwner
           .order('created_at', { ascending: false });
           
         if (error) throw error;
-        setProjects(data || []);
+        
+        // Map database results to Project type
+        const mappedProjects = (data || []).map(project => ({
+          id: project.id,
+          title: project.title,
+          description: project.description,
+          organizerId: project.organizer_id,
+          organizerName: project.profiles?.name || "Unknown",
+          organizationId: project.organization_id,
+          organizationName: project.organization_name,
+          partnershipTypes: project.partnership_types || [],
+          timeline: {
+            start: project.start_date,
+            end: project.end_date,
+          },
+          status: project.status,
+          category: project.category,
+          image: project.image,
+          requiredSkills: project.required_skills,
+          location: project.location,
+          proposalFilePath: project.proposal_file_path,
+          partners: [],
+          createdAt: project.created_at,
+          updatedAt: project.updated_at,
+          completedAt: project.completed_at,
+        }));
+        
+        setProjects(mappedProjects);
       } catch (error) {
         console.error('Error fetching organization projects:', error);
       } finally {
@@ -59,15 +87,7 @@ export function OrganizationProjects({ organizationId, organizationName, isOwner
             {projects.map(project => (
               <ProjectCard 
                 key={project.id}
-                id={project.id}
-                title={project.title}
-                description={project.description}
-                image={project.image}
-                status={project.status}
-                organizerName={project.profiles?.name || "Unknown"}
-                partnershipTypes={project.partnership_types}
-                createdAt={project.created_at}
-                skills={project.required_skills}
+                project={project}
               />
             ))}
           </div>
