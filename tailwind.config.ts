@@ -52,6 +52,13 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				collabdoor: {
+					primary: '#5E60CE',
+					secondary: '#56CFE1',
+					accent: '#7400B8',
+					light: '#F6F6F7',
+					dark: '#1A1F2C',
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
