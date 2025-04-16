@@ -6,9 +6,9 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -58,6 +58,27 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+// Define interface for profile data
+interface ProfileData {
+  id?: string;
+  name?: string;
+  email?: string;
+  profile_image?: string;
+}
+
+// Define interface for application data with profile field
+interface ApplicationWithProfile {
+  id: string;
+  project_id: string;
+  user_id: string;
+  status: "pending" | "approved" | "rejected";
+  partnership_type: string;
+  message?: string;
+  created_at: string;
+  updated_at: string;
+  profiles?: ProfileData | null;
+}
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();

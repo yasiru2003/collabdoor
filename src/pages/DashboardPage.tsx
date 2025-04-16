@@ -36,13 +36,10 @@ const DashboardPage = () => {
         
         console.log("Fetching applications for projects:", projectIds);
         
+        // Modified approach: Fetch applications first
         const { data: applications, error } = await supabase
           .from("project_applications")
-          .select(`
-            *,
-            projects(*),
-            profiles(*)
-          `)
+          .select("*")
           .in("project_id", projectIds)
           .order("created_at", { ascending: false });
           
@@ -53,9 +50,61 @@ const DashboardPage = () => {
             description: error.message,
             variant: "destructive",
           });
+          setIsLoading(false);
+          return;
+        }
+        
+        if (applications && applications.length > 0) {
+          // Get all user IDs from applications
+          const userIds = applications.map(app => app.user_id);
+          
+          // Fetch profiles for these users
+          const { data: profiles, error: profilesError } = await supabase
+            .from("profiles")
+            .select("id, name, email, profile_image")
+            .in("id", userIds);
+            
+          if (profilesError) {
+            console.error("Error fetching applicant profiles:", profilesError);
+            toast({
+              title: "Error fetching applicant profiles",
+              description: profilesError.message,
+              variant: "destructive",
+            });
+          }
+          
+          // Fetch project details for these applications
+          const { data: projectDetails, error: projectsError } = await supabase
+            .from("projects")
+            .select("*")
+            .in("id", projectIds);
+            
+          if (projectsError) {
+            console.error("Error fetching project details:", projectsError);
+          }
+          
+          // Create lookup maps
+          const profilesMap = profiles ? profiles.reduce((map, profile) => {
+            map[profile.id] = profile;
+            return map;
+          }, {} as Record<string, any>) : {};
+          
+          const projectsMap = projectDetails ? projectDetails.reduce((map, project) => {
+            map[project.id] = project;
+            return map;
+          }, {} as Record<string, any>) : {};
+          
+          // Combine the data
+          const combinedApplications = applications.map(application => ({
+            ...application,
+            profiles: profilesMap[application.user_id] || null,
+            projects: projectsMap[application.project_id] || null
+          }));
+          
+          console.log("Combined applications:", combinedApplications);
+          setReceivedApplications(combinedApplications);
         } else {
-          console.log("Received applications:", applications);
-          setReceivedApplications(applications || []);
+          setReceivedApplications([]);
         }
       } catch (err) {
         console.error("Error in fetchReceivedApplications:", err);
@@ -305,8 +354,8 @@ const DashboardPage = () => {
                   const profiles = application.profiles || {};
                   
                   // Extract profile data with proper null checks
-                  const profileName = profiles && profiles.name ? profiles.name : "Unknown";
-                  const profileEmail = profiles && profiles.email ? profiles.email : "";
+                  const profileName = profiles.name || "Unknown";
+                  const profileEmail = profiles.email || "";
                   
                   return (
                     <Card key={application.id} className="overflow-hidden">
