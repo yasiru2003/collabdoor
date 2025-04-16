@@ -15,6 +15,8 @@ import {
   Mail,
   Check,
   CheckCircle,
+  Pause,
+  Play,
 } from "lucide-react";
 import { Project, PartnershipType } from "@/types";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProjectHeaderProps {
   project: Project;
@@ -62,6 +65,10 @@ export function ProjectHeader({
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isUpdatingApplications, setIsUpdatingApplications] = useState(false);
+  
+  // Determine if applications are currently enabled
+  const applicationsEnabled = project.applicationsEnabled !== false;
   
   // Determine if we should show the completed badge
   const showCompletedBadge = project.status === "completed";
@@ -87,12 +94,84 @@ export function ProjectHeader({
         : "This project has been removed from your saved list.",
     });
   };
+  
+  // Toggle applications enabled/disabled
+  const toggleApplications = async () => {
+    if (!isOwner || !project.id) return;
+    
+    setIsUpdatingApplications(true);
+    try {
+      // Update the project in Supabase
+      const { error } = await supabase
+        .from('projects')
+        .update({ applications_enabled: !applicationsEnabled })
+        .eq('id', project.id);
+        
+      if (error) throw error;
+      
+      // Show success toast
+      toast({
+        title: applicationsEnabled ? "Applications paused" : "Applications enabled",
+        description: applicationsEnabled 
+          ? "New applications for this project have been paused." 
+          : "Applications for this project have been re-enabled.",
+      });
+      
+      // Refresh the page to reflect the changes
+      window.location.reload();
+    } catch (error) {
+      console.error('Error toggling applications:', error);
+      toast({
+        title: "Update failed",
+        description: "There was an error updating the application status.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingApplications(false);
+    }
+  };
 
   const renderApplyButton = () => {
     if (isOwner) {
       return (
-        <Button size="sm" className="flex items-center gap-1">
-          <Mail className="h-4 w-4" /> Contact
+        <div className="flex gap-2">
+          <Button 
+            size="sm" 
+            variant={applicationsEnabled ? "outline" : "default"}
+            onClick={toggleApplications}
+            disabled={isUpdatingApplications}
+            className={applicationsEnabled ? "" : "bg-yellow-600 hover:bg-yellow-700"}
+          >
+            {isUpdatingApplications ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : applicationsEnabled ? (
+              <Pause className="h-4 w-4 mr-1" />
+            ) : (
+              <Play className="h-4 w-4 mr-1" />
+            )}
+            {applicationsEnabled ? "Pause Applications" : "Enable Applications"}
+          </Button>
+          <Button size="sm" className="flex items-center gap-1">
+            <Mail className="h-4 w-4" /> Contact
+          </Button>
+        </div>
+      );
+    }
+    
+    // Don't show apply button for completed projects
+    if (showCompletedBadge) {
+      return (
+        <Button variant="outline" size="sm" disabled className="bg-green-50 text-green-700 flex items-center gap-1">
+          <CheckCircle className="h-4 w-4" /> Completed
+        </Button>
+      );
+    }
+    
+    // Show "Applications Paused" for projects where applications are disabled
+    if (!applicationsEnabled && !applicationStatus) {
+      return (
+        <Button variant="outline" size="sm" disabled className="bg-yellow-50 text-yellow-700 flex items-center gap-1">
+          <Pause className="h-4 w-4" /> Applications Paused
         </Button>
       );
     }

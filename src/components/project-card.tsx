@@ -3,7 +3,7 @@ import { Project } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Calendar, MapPin, Users, Check, Loader2, BarChart2, Building, Mail } from "lucide-react";
+import { Calendar, MapPin, Users, Check, Loader2, BarChart2, Building, Mail, Pause } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
@@ -36,6 +36,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
   
   // Check if current user is the project owner
   const isOwner = user && user.id === project.organizerId;
+  
+  // Check if the project is completed
+  const isCompleted = project.status === 'completed';
+  
+  // Check if applications are paused for this project
+  const isApplicationPaused = project.applicationsEnabled === false;
   
   // Select default partnership type to apply with (first one in the list)
   const defaultPartnershipType = project.partnershipTypes && project.partnershipTypes.length > 0 
@@ -114,6 +120,31 @@ export function ProjectCard({ project }: ProjectCardProps) {
         <Button size="sm" variant="outline" onClick={handleProgressClick}>
           <BarChart2 className="h-4 w-4 mr-1" /> Progress
         </Button>
+      );
+    }
+    
+    if (isCompleted) {
+      return (
+        <Button size="sm" variant="outline" disabled className="bg-green-50 text-green-700">
+          <Check className="h-4 w-4 mr-1" /> Completed
+        </Button>
+      );
+    }
+    
+    if (isApplicationPaused && !applicationStatus) {
+      return (
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" disabled className="bg-yellow-50 text-yellow-700">
+            <Pause className="h-4 w-4 mr-1" /> Applications Paused
+          </Button>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleContact}
+          >
+            <Mail className="h-4 w-4" />
+          </Button>
+        </div>
       );
     }
     
