@@ -396,12 +396,12 @@ const renderApplicationsTable = () => {
           <TableBody>
             {projectApplications.map((application) => {
               // Safely extract profile data with proper null checks
-              const profile = application.profiles || {};
+              const profiles = application.profiles || {};
               
               // Extract profile data with proper null checks
-              const profileImage = profile.profile_image || "";
-              const profileName = profile.name || "Unknown";
-              const profileEmail = profile.email || "";
+              const profileImage = profiles.profile_image || "";
+              const profileName = profiles.name || "Unknown";
+              const profileEmail = profiles.email || "";
               
               // Only calculate initials if we have a valid name
               const initials = profileName !== "Unknown" 
