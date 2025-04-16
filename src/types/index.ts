@@ -1,3 +1,4 @@
+
 export type UserRole = 'partner' | 'organizer';
 
 export interface User {
