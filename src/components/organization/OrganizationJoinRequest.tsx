@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -15,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import type { TablesInsert } from "@/integrations/supabase/types";
+import { QueryClient } from "@tanstack/react-query";
 
 interface OrganizationJoinRequestProps {
   organizationId: string;
@@ -77,6 +77,11 @@ export function OrganizationJoinRequest({
         title: "Request sent",
         description: `You have requested to join ${organizationName}. The owner will review your request.`,
       });
+      
+      // Invalidate queries to update UI
+      const queryClient = new QueryClient();
+      queryClient.invalidateQueries({ queryKey: ["organization-join-request"] });
+      queryClient.invalidateQueries({ queryKey: ["organization-membership"] });
       
     } catch (error: any) {
       toast({

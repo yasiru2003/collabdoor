@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ export default function OrganizationDetailPage() {
   
   // Get the tab from URL or default to "projects"
   const defaultTab = searchParams.get("tab") || "projects";
+  const queryClient = useQueryClient();
   
   // Track join request status
   const [joinRequestStatus, setJoinRequestStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none');
@@ -76,7 +78,7 @@ export default function OrganizationDetailPage() {
   });
   
   // Check if user is already a member
-  const { data: isMember } = useQuery({
+  const { data: isMember, refetch: refetchMembership } = useQuery({
     queryKey: ["organization-membership", id, user?.id],
     queryFn: async () => {
       if (!id || !user) return false;
@@ -94,9 +96,17 @@ export default function OrganizationDetailPage() {
     enabled: !!id && !!user
   });
   
+  // Effect to refetch membership when join request status changes to approved
+  useEffect(() => {
+    if (joinRequestStatus === 'approved') {
+      refetchMembership();
+    }
+  }, [joinRequestStatus, refetchMembership]);
+  
   const {
     data: members,
-    isLoading: isLoadingMembers
+    isLoading: isLoadingMembers,
+    refetch: refetchMembers
   } = useQuery({
     queryKey: ["organization-members", id],
     queryFn: async () => {
@@ -139,6 +149,13 @@ export default function OrganizationDetailPage() {
     },
     enabled: !!id && !!organization
   });
+  
+  // Effect to refetch members when membership status changes
+  useEffect(() => {
+    if (isMember !== undefined) {
+      refetchMembers();
+    }
+  }, [isMember, refetchMembers]);
   
   const isOwner = user && organization && user.id === organization.owner_id;
   

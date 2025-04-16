@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,6 +23,8 @@ import OrganizationDetailPage from "./pages/OrganizationDetailPage";
 import EditOrganizationPage from "./pages/EditOrganizationPage";
 import AdminPage from "./pages/AdminPage";
 
+import FeedPage from "./pages/FeedPage";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/partners" element={<PartnersPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/messages" element={<MessagesPage />} />
+            <Route path="/feed" element={<FeedPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/organizations" element={<OrganizationsPage />} />
             <Route path="/organizations/new" element={<CreateOrganizationPage />} />
