@@ -17,7 +17,7 @@ export function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen flex flex-col">
       <Header mobileMenuToggle={toggleSidebar} />
-      <div className="flex flex-1">
+      <div className="flex flex-1 pt-16"> {/* Added pt-16 to prevent content from being hidden under header */}
         <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
         <main className="flex-1 p-4 md:p-8 bg-muted/30">
           {children}
