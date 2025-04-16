@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -232,9 +233,13 @@ export function useProjectApplications() {
         .from("project_applications")
         .select("*, projects(title, organizer_id)")
         .eq("id", applicationId)
-        .single();
+        .maybeSingle();
 
       if (fetchError) throw fetchError;
+      
+      if (!application) {
+        throw new Error("Application not found");
+      }
 
       // Update application status
       const { error } = await supabase
@@ -244,55 +249,80 @@ export function useProjectApplications() {
 
       if (error) throw error;
 
+      // If application is approved, try to create partnership record
+      let partnershipCreated = false;
       if (status === "approved") {
-        // Create partnership record - Use service role (or authenticated user with correct permissions)
-        // We need to make sure this user has correct permissions to insert into partnerships table
-        const { data: currentUser } = await supabase.auth.getUser();
-        
-        const { error: partnershipError } = await supabase
-          .from("partnerships")
-          .insert({
-            project_id: application.project_id,
-            partner_id: application.user_id,
-            partnership_type: application.partnership_type as PartnershipType,
-            organization_id: application.organization_id,
-            status: "active"
-          });
-
-        if (partnershipError) {
-          console.error("Error creating partnership:", partnershipError);
+        try {
+          // Get current user to verify permissions
+          const { data: currentUser } = await supabase.auth.getUser();
           
-          // If row level security blocks the partnership creation, we'll update the application status but show a warning
+          // Verify user is authorized to create partnership (check if user is project organizer)
+          if (currentUser?.user?.id !== application.projects?.organizer_id) {
+            console.warn("User is not the project organizer. Partnership creation may fail due to RLS.");
+          }
+          
+          // Attempt to create partnership record
+          const { data: partnership, error: partnershipError } = await supabase
+            .from("partnerships")
+            .insert({
+              project_id: application.project_id,
+              partner_id: application.user_id,
+              partnership_type: application.partnership_type as PartnershipType,
+              organization_id: application.organization_id,
+              status: "active"
+            })
+            .select();
+
+          if (partnershipError) {
+            console.error("Error creating partnership:", partnershipError);
+            partnershipCreated = false;
+          } else {
+            partnershipCreated = true;
+          }
+        } catch (partnershipError) {
+          console.error("Exception creating partnership:", partnershipError);
+          partnershipCreated = false;
+        }
+        
+        // Show appropriate message based on partnership creation result
+        if (!partnershipCreated) {
           toast({
             title: "Application approved with warning",
             description: "The application status was updated but there was an issue creating the partnership record. Please check your database permissions.",
             variant: "default"
           });
-          
-          // Still proceed with notification
         }
       }
 
-      // Send notification to applicant
-      const notificationTitle = status === "approved" 
-        ? "Application Approved" 
-        : "Application Rejected";
-        
-      const notificationMessage = status === "approved"
-        ? `Your application to join the project "${application.projects.title}" has been approved.`
-        : `Your application to join the project "${application.projects.title}" has been rejected.`;
+      // Try to send notification to applicant
+      try {
+        const notificationTitle = status === "approved" 
+          ? "Application Approved" 
+          : "Application Rejected";
+          
+        const notificationMessage = status === "approved"
+          ? `Your application to join the project "${application.projects?.title}" has been approved.`
+          : `Your application to join the project "${application.projects?.title}" has been rejected.`;
 
-      const { error: notificationError } = await supabase
-        .from("notifications")
-        .insert({
-          user_id: application.user_id,
-          title: notificationTitle,
-          message: notificationMessage,
-          link: status === "approved" ? `/projects/${application.project_id}` : null,
-          read: false
-        });
+        // Create notification
+        const { error: notificationError } = await supabase
+          .from("notifications")
+          .insert({
+            user_id: application.user_id,
+            title: notificationTitle,
+            message: notificationMessage,
+            link: status === "approved" ? `/projects/${application.project_id}` : null,
+            read: false
+          });
 
-      if (notificationError) throw notificationError;
+        if (notificationError) {
+          console.error("Error creating notification:", notificationError);
+          // Continue execution even if notification fails
+        }
+      } catch (notificationError) {
+        console.error("Exception creating notification:", notificationError);
+        // Continue execution even if notification fails
+      }
 
       toast({
         title: "Application updated",
@@ -301,6 +331,7 @@ export function useProjectApplications() {
 
       return true;
     } catch (error: any) {
+      console.error("Error updating application:", error);
       toast({
         title: "Error updating application",
         description: error.message,
