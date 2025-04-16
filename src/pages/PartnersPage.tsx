@@ -17,47 +17,16 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { usePartnerships } from "@/hooks/use-organizations-query";
 
 export default function PartnersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const { user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
   
-  // Fetch partnerships data with organizations and projects details
-  const { data: partnerships, isLoading: isLoadingPartnerships } = useQuery({
-    queryKey: ["partnerships", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-
-      const { data, error } = await supabase
-        .from("partnerships")
-        .select(`
-          *,
-          projects:project_id(id, title, status, organization_name, completed_at),
-          organizations:organization_id(id, name, logo, industry, location)
-        `)
-        .eq("partner_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching partnerships:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load partnerships data",
-          variant: "destructive",
-        });
-        throw error;
-      }
-
-      return data || [];
-    },
-    enabled: !!user,
-  });
+  // Use the usePartnerships hook instead of direct query
+  const { data: partnerships, isLoading: isLoadingPartnerships } = usePartnerships(user?.id);
 
   // Filter partnerships based on search query
   const filteredPartnerships = partnerships?.filter(partnership => {
@@ -101,7 +70,7 @@ export default function PartnersPage() {
           partnershipsList.map((partnership) => (
             <TableRow key={partnership.id}>
               <TableCell className="font-medium">
-                {partnership.organizations?.name || partnership.projects?.organization_name || "Unknown Organization"}
+                {partnership.organizations?.name || "Unknown Organization"}
               </TableCell>
               <TableCell>{partnership.projects?.title || "Unknown Project"}</TableCell>
               <TableCell>
