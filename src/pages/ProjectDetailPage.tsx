@@ -394,85 +394,87 @@ const renderApplicationsTable = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {projectApplications.map((application) => (
-              <TableRow key={application.id}>
-                <TableCell className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    {application.profiles && 'profile_image' in application.profiles ? (
-                      <AvatarImage src={application.profiles.profile_image || ""} />
-                    ) : (
-                      <AvatarImage src="" />
-                    )}
-                    <AvatarFallback>
-                      {application.profiles && 'name' in application.profiles && application.profiles.name
-                        ? application.profiles.name.substring(0, 2).toUpperCase()
-                        : "??"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="font-medium">
-                      {application.profiles && 'name' in application.profiles
-                        ? application.profiles.name
-                        : "Unknown"}
+            {projectApplications.map((application) => {
+              // Extract profile data safely with type checking
+              const profileImage = application.profiles && typeof application.profiles === 'object' && 
+                'profile_image' in application.profiles ? 
+                String(application.profiles.profile_image || "") : "";
+              
+              const profileName = application.profiles && typeof application.profiles === 'object' && 
+                'name' in application.profiles ? 
+                String(application.profiles.name || "Unknown") : "Unknown";
+              
+              const profileEmail = application.profiles && typeof application.profiles === 'object' && 
+                'email' in application.profiles ? 
+                String(application.profiles.email || "") : "";
+              
+              const initials = profileName !== "Unknown" ? 
+                profileName.substring(0, 2).toUpperCase() : "??";
+
+              return (
+                <TableRow key={application.id}>
+                  <TableCell className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={profileImage} />
+                      <AvatarFallback>{initials}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">{profileName}</div>
+                      <div className="text-xs text-muted-foreground">{profileEmail}</div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {application.profiles && 'email' in application.profiles
-                        ? application.profiles.email
-                        : ""}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline">
-                    {application.partnership_type.charAt(0).toUpperCase() + application.partnership_type.slice(1)}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {format(new Date(application.created_at), "MMM d, yyyy")}
-                </TableCell>
-                <TableCell>
-                  <Badge 
-                    variant={
-                      application.status === "approved" ? "default" : 
-                      application.status === "rejected" ? "destructive" : 
-                      "secondary"
-                    }
-                  >
-                    {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {application.status === "pending" && (
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="h-8 text-green-700 hover:bg-green-100"
-                        onClick={() => handleUpdateApplicationStatus(application.id, "approved")}
-                      >
-                        <Check className="h-4 w-4 mr-1" /> Approve
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="h-8 text-red-700 hover:bg-red-100"
-                        onClick={() => handleUpdateApplicationStatus(application.id, "rejected")}
-                      >
-                        <X className="h-4 w-4 mr-1" /> Reject
-                      </Button>
-                    </div>
-                  )}
-                  {application.status !== "pending" && (
-                    <Button 
-                      size="sm" 
-                      variant="outline"
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {application.partnership_type.charAt(0).toUpperCase() + application.partnership_type.slice(1)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {format(new Date(application.created_at), "MMM d, yyyy")}
+                  </TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant={
+                        application.status === "approved" ? "default" : 
+                        application.status === "rejected" ? "destructive" : 
+                        "secondary"
+                      }
                     >
-                      <Mail className="h-4 w-4 mr-1" /> Contact
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
+                      {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {application.status === "pending" && (
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="h-8 text-green-700 hover:bg-green-100"
+                          onClick={() => handleUpdateApplicationStatus(application.id, "approved")}
+                        >
+                          <Check className="h-4 w-4 mr-1" /> Approve
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="h-8 text-red-700 hover:bg-red-100"
+                          onClick={() => handleUpdateApplicationStatus(application.id, "rejected")}
+                        >
+                          <X className="h-4 w-4 mr-1" /> Reject
+                        </Button>
+                      </div>
+                    )}
+                    {application.status !== "pending" && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                      >
+                        <Mail className="h-4 w-4 mr-1" /> Contact
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent>
