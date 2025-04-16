@@ -86,15 +86,20 @@ export function useMessages(userId: string | undefined) {
 
           // Enhanced with organization info if available
           let organizationName = null;
-          if (profile?.organization_id) {
-            const { data: organization, error: orgError } = await supabase
-              .from("organizations")
-              .select("name")
-              .eq("id", profile.organization_id)
-              .single();
-              
-            if (!orgError && organization) {
-              organizationName = organization.name;
+          // Check if the profile data has an organization_id field defined in the database schema
+          // but might not be included in the TypeScript interface yet
+          if (profile && 'organization_id' in profile) {
+            const organizationId = (profile as any).organization_id;
+            if (organizationId) {
+              const { data: organization, error: orgError } = await supabase
+                .from("organizations")
+                .select("name")
+                .eq("id", organizationId)
+                .single();
+                
+              if (!orgError && organization) {
+                organizationName = organization.name;
+              }
             }
           }
 
