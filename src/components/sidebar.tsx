@@ -65,7 +65,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
               {user?.email?.substring(0, 2).toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
-          <span className="font-bold">{user?.user_metadata?.name || user?.email}</span>
+          <span className="text-sm">{user?.user_metadata?.name || user?.email}</span>
         </Link>
       </div>
 
@@ -77,7 +77,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
             <Button
               key={item.name}
               variant="ghost"
-              className={`justify-start px-4 ${
+              className={`justify-start px-4 text-sm font-normal ${
                 pathname === item.href ? "bg-accent text-accent-foreground" : ""
               }`}
               asChild
@@ -97,7 +97,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
             <Button
               key={item.name}
               variant="ghost"
-              className={`justify-start px-4 ${
+              className={`justify-start px-4 text-sm font-normal ${
                 pathname === item.href ? "bg-accent text-accent-foreground" : ""
               }`}
               asChild
@@ -116,7 +116,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
       <div className="flex items-center px-6 py-4">
         <Button
           variant="outline"
-          className="w-full"
+          className="w-full text-sm font-normal"
           onClick={async () => {
             await signOut();
             navigate("/login");

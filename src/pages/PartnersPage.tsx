@@ -29,6 +29,7 @@ export default function PartnersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [industryFilter, setIndustryFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
+  const [sizeFilter, setSizeFilter] = useState("all");
   const { user } = useAuth();
 
   const { data: partners, isLoading } = usePartners();
@@ -44,7 +45,8 @@ export default function PartnersPage() {
     const matchesSearch = 
       !searchQuery || 
       org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (org.description && org.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      (org.description && org.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (org.industry && org.industry.toLowerCase().includes(searchQuery.toLowerCase()));
     
     // Industry filter
     const matchesIndustry = 
@@ -56,7 +58,12 @@ export default function PartnersPage() {
       locationFilter === "all" || 
       org.location === locationFilter;
     
-    return matchesSearch && matchesIndustry && matchesLocation;
+    // Size filter
+    const matchesSize =
+      sizeFilter === "all" ||
+      org.size === sizeFilter;
+    
+    return matchesSearch && matchesIndustry && matchesLocation && matchesSize;
   }) || [];
 
   // Get skills based on organization industry
@@ -80,10 +87,10 @@ export default function PartnersPage() {
 
       <Tabs defaultValue="explore" className="mb-6">
         <TabsList>
-          <TabsTrigger value="explore">Explore</TabsTrigger>
-          <TabsTrigger value="interested">Interested</TabsTrigger>
-          <TabsTrigger value="connected">Connected</TabsTrigger>
-          <TabsTrigger value="saved">Saved</TabsTrigger>
+          <TabsTrigger value="explore">Partner Directory</TabsTrigger>
+          <TabsTrigger value="requested">Requested Partners</TabsTrigger>
+          <TabsTrigger value="connected">Active Partners</TabsTrigger>
+          <TabsTrigger value="past">Past Partners</TabsTrigger>
         </TabsList>
 
         <div className="flex flex-col md:flex-row gap-4 my-6">
@@ -96,9 +103,9 @@ export default function PartnersPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col md:flex-row gap-2">
             <Select value={industryFilter} onValueChange={setIndustryFilter}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="w-full md:w-[160px]">
                 <SelectValue placeholder="Industry" />
               </SelectTrigger>
               <SelectContent>
@@ -111,7 +118,7 @@ export default function PartnersPage() {
               </SelectContent>
             </Select>
             <Select value={locationFilter} onValueChange={setLocationFilter}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="w-full md:w-[160px]">
                 <SelectValue placeholder="Location" />
               </SelectTrigger>
               <SelectContent>
@@ -120,6 +127,18 @@ export default function PartnersPage() {
                 <SelectItem value="United States">United States</SelectItem>
                 <SelectItem value="Europe">Europe</SelectItem>
                 <SelectItem value="Asia">Asia</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sizeFilter} onValueChange={setSizeFilter}>
+              <SelectTrigger className="w-full md:w-[160px]">
+                <SelectValue placeholder="Organization Size" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sizes</SelectItem>
+                <SelectItem value="1-10">1-10 employees</SelectItem>
+                <SelectItem value="11-50">11-50 employees</SelectItem>
+                <SelectItem value="51-200">51-200 employees</SelectItem>
+                <SelectItem value="201+">201+ employees</SelectItem>
               </SelectContent>
             </Select>
             <div className="flex border rounded-md overflow-hidden">
@@ -178,9 +197,9 @@ export default function PartnersPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="interested" className="mt-0">
+        <TabsContent value="requested" className="mt-0">
           <div className="text-center py-12">
-            <p className="text-muted-foreground">No organizations have shown interest yet.</p>
+            <p className="text-muted-foreground">No partner requests have been sent yet.</p>
           </div>
         </TabsContent>
 
@@ -190,9 +209,9 @@ export default function PartnersPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="saved" className="mt-0">
+        <TabsContent value="past" className="mt-0">
           <div className="text-center py-12">
-            <p className="text-muted-foreground">You haven't saved any organizations yet.</p>
+            <p className="text-muted-foreground">You don't have any past partnerships.</p>
           </div>
         </TabsContent>
       </Tabs>

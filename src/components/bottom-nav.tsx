@@ -1,9 +1,10 @@
+
 import {
   Layout,
   FolderKanban,
-  MessageSquare,
   Users,
   User,
+  Building,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -14,7 +15,7 @@ export function BottomNav() {
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Layout },
     { name: "Projects", href: "/projects", icon: FolderKanban },
-    { name: "Feed", href: "/feed", icon: MessageSquare },
+    { name: "Organizations", href: "/organizations", icon: Building },
     { name: "Partners", href: "/partners", icon: Users },
     { name: "Profile", href: "/profile", icon: User },
   ];
