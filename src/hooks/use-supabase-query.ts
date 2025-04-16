@@ -1,6 +1,7 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { mapSupabaseProjectToProject, mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
 
 export function useProjects() {
@@ -13,7 +14,7 @@ export function useProjects() {
         .order("created_at", { ascending: false });
 
       if (error) {
-        toast({
+        useToast().toast({
           title: "Error fetching projects",
           description: error.message,
           variant: "destructive",
@@ -280,6 +281,8 @@ export function useConversation(userId: string | undefined, participantId: strin
 }
 
 export function useProjectApplications(projectId: string | undefined) {
+  const { toast } = useToast();
+  
   return useQuery({
     queryKey: ["projectApplications", projectId],
     queryFn: async () => {
@@ -289,12 +292,13 @@ export function useProjectApplications(projectId: string | undefined) {
         .from("project_applications")
         .select(`
           *,
-          profiles:user_id(name, email, profile_image)
+          profiles:profiles!user_id(name, email, profile_image)
         `)
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
 
       if (error) {
+        console.error("Error fetching project applications:", error);
         toast({
           title: "Error fetching project applications",
           description: error.message,
@@ -310,6 +314,8 @@ export function useProjectApplications(projectId: string | undefined) {
 }
 
 export function useUserApplications(userId: string | undefined) {
+  const { toast } = useToast();
+  
   return useQuery({
     queryKey: ["userApplications", userId],
     queryFn: async () => {
@@ -319,12 +325,13 @@ export function useUserApplications(userId: string | undefined) {
         .from("project_applications")
         .select(`
           *,
-          projects:project_id(*)
+          projects:projects!project_id(*)
         `)
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
       if (error) {
+        console.error("Error fetching user applications:", error);
         toast({
           title: "Error fetching user applications",
           description: error.message,

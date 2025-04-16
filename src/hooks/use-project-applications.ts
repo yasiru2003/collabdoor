@@ -16,6 +16,11 @@ export interface ProjectApplication {
   message?: string;
   created_at: string;
   updated_at: string;
+  profiles?: {
+    name: string;
+    email: string;
+    profile_image?: string;
+  };
 }
 
 export function useProjectApplications() {
@@ -109,6 +114,7 @@ export function useProjectApplications() {
         .single();
 
       if (error) {
+        console.error("Error applying to project:", error);
         throw error;
       }
 
@@ -142,16 +148,18 @@ export function useProjectApplications() {
     if (!projectId) return [];
     
     try {
+      // Use a simpler query structure that doesn't rely on explicit foreign key relationships
       const { data, error } = await supabase
         .from("project_applications")
         .select(`
           *,
-          profiles:user_id(name, email, profile_image)
+          profiles:profiles!user_id(name, email, profile_image)
         `)
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
 
       if (error) {
+        console.error("Error fetching project applications:", error);
         throw error;
       }
 
@@ -175,12 +183,13 @@ export function useProjectApplications() {
         .from("project_applications")
         .select(`
           *,
-          projects:project_id(*)
+          projects:projects!project_id(*)
         `)
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
       if (error) {
+        console.error("Error fetching user applications:", error);
         throw error;
       }
 
@@ -212,6 +221,7 @@ export function useProjectApplications() {
         .single();
 
       if (error) {
+        console.error("Error updating application status:", error);
         throw error;
       }
 
