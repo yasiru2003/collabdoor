@@ -70,6 +70,13 @@ export function useProject(projectId: string | undefined) {
     queryFn: async () => {
       if (!projectId) throw new Error("Project ID is required");
       
+      // Validate UUID format
+      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId);
+      if (!isValidUuid) {
+        console.error("Error fetching project: Invalid UUID format", projectId);
+        throw new Error("Invalid project ID format");
+      }
+      
       const { data, error } = await supabase
         .from("projects")
         .select(`

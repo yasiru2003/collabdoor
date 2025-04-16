@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -24,7 +23,20 @@ export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
-  const { data: project, isLoading, error } = useProject(id);
+  const navigate = useNavigate();
+  
+  // Redirect to create project page if the ID is "create"
+  useEffect(() => {
+    if (id === "create") {
+      navigate("/projects/new");
+      return;
+    }
+  }, [id, navigate]);
+  
+  // If id is "create", don't try to fetch project data
+  const isValidUuid = id && id !== "create";
+  
+  const { data: project, isLoading, error } = useProject(isValidUuid ? id : undefined);
   const [saved, setSaved] = useState(false);
   const { user } = useAuth();
   const { 
@@ -34,7 +46,7 @@ export default function ProjectDetailPage() {
     updateApplicationStatus,
     userOrganizations
   } = useProjectApps();
-  const { data: projectApplications } = useProjectApplications(id);
+  const { data: projectApplications } = useProjectApplications(isValidUuid ? id : undefined);
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
   const [applicationOpen, setApplicationOpen] = useState(false);
   const [partnershipType, setPartnershipType] = useState<PartnershipType>("skilled");
@@ -42,8 +54,7 @@ export default function ProjectDetailPage() {
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
   const [progressNote, setProgressNote] = useState("");
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
-  const { data: phases } = useProjectPhases(id);
-  const navigate = useNavigate();
+  const { data: phases } = useProjectPhases(isValidUuid ? id : undefined);
   
   // New state for organization selection
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
@@ -84,6 +95,9 @@ export default function ProjectDetailPage() {
   };
 
   useEffect(() => {
+    // Skip all fetching logic if id is "create"
+    if (!isValidUuid) return;
+    
     // Simulate checking if project is saved
     setTimeout(() => {
       setSaved(localStorage.getItem(`saved_${id}`) === "true");
@@ -91,10 +105,14 @@ export default function ProjectDetailPage() {
 
     // Check if the user has already applied
     const checkApplication = async () => {
-      if (user && id) {
-        const application = await checkApplicationStatus(id, user.id);
-        if (application) {
-          setApplicationStatus(application.status);
+      if (user && id && isValidUuid) {
+        try {
+          const application = await checkApplicationStatus(id, user.id);
+          if (application) {
+            setApplicationStatus(application.status);
+          }
+        } catch (error) {
+          console.error("Error checking application status:", error);
         }
       }
     };
@@ -102,7 +120,12 @@ export default function ProjectDetailPage() {
     if (user) {
       checkApplication();
     }
-  }, [id, user, checkApplicationStatus]);
+  }, [id, user, checkApplicationStatus, isValidUuid]);
+
+  // If we're handling the "create" route, don't render the rest of the component
+  if (id === "create") {
+    return null; // The useEffect above will handle the redirect
+  }
 
   const handleCompleteProject = () => {
     setCompleteDialogOpen(true);
@@ -243,7 +266,7 @@ export default function ProjectDetailPage() {
           applicationStatus={applicationStatus}
           saved={saved}
           setSaved={setSaved}
-          handleApply={handleApply}
+          handleApply={openApplicationDialog}
           handleContact={handleContact}
           applicationLoading={applicationLoading}
           partnershipType={partnershipType}
@@ -285,6 +308,7 @@ export default function ProjectDetailPage() {
             />
           </TabsContent>
           
+          
           <TabsContent value="applications">
             <ApplicationsTable 
               applications={projectApplications}
@@ -292,6 +316,7 @@ export default function ProjectDetailPage() {
               handleMessageApplicant={handleMessageApplicant}
             />
           </TabsContent>
+        
         </Tabs>
       </div>
       

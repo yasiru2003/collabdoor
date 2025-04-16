@@ -43,6 +43,13 @@ export function useProjectApplications() {
   // Check if user has already applied to a project
   const checkApplicationStatus = async (projectId: string, userId: string) => {
     try {
+      // Validate UUID format
+      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId);
+      if (!isValidUuid) {
+        console.error("Error checking application status: Invalid UUID format", projectId);
+        return null;
+      }
+      
       const { data, error } = await supabase
         .from("project_applications")
         .select("id, status")
@@ -69,6 +76,17 @@ export function useProjectApplications() {
     setIsLoading(true);
     
     try {
+      // Validate UUID format
+      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId);
+      if (!isValidUuid) {
+        toast({
+          title: "Application failed",
+          description: "Invalid project ID format",
+          variant: "destructive",
+        });
+        return null;
+      }
+      
       let organizationName = null;
       
       // If applying with an organization, get its name

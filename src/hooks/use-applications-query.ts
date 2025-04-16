@@ -1,12 +1,15 @@
-
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { handleSupabaseError } from "./use-supabase-utils";
-import { ApplicationWithProfile, PartnershipType } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
+import { PartnershipType } from "@/types";
+import { useQuery } from "@tanstack/react-query";
+import { notifyNewApplicant } from "@/services/notification-service";
+
+// Define ApplicationStatus type and export it
+export type ApplicationStatus = "pending" | "approved" | "rejected";
 
 /**
- * Hook to fetch all applications for a specific project
+ * Hook to fetch all project applications for a specific project
  */
 export function useProjectApplications(projectId: string | undefined) {
   const { toast } = useToast();
@@ -15,119 +18,252 @@ export function useProjectApplications(projectId: string | undefined) {
     queryKey: ["projectApplications", projectId],
     queryFn: async () => {
       if (!projectId) return [];
-
+      
+      // Validate UUID format
+      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId);
+      if (!isValidUuid) {
+        console.error("Error fetching project applications: Invalid UUID format", projectId);
+        return [];
+      }
+      
       console.log("Fetching project applications for:", projectId);
       
-      // Modified query to avoid using the direct join to profiles
-      // Instead, get the user_id from project_applications and then fetch profiles separately
-      const { data: applications, error } = await supabase
+      const { data, error } = await supabase
         .from("project_applications")
-        .select("*")
+        .select(`
+          *,
+          profiles:user_id(*)
+        `)
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Error fetching project applications:", error);
         toast({
-          title: "Error fetching project applications",
+          title: "Error fetching applications",
           description: error.message,
           variant: "destructive",
         });
-        throw error;
+        return [];
       }
       
-      // If we have applications, fetch the profile details for each applicant
-      if (applications && applications.length > 0) {
-        // Get all user IDs
-        const userIds = applications.map(app => app.user_id);
-        
-        // Fetch profile details for all applicants in one query
-        const { data: profilesData, error: profilesError } = await supabase
-          .from("profiles")
-          .select("id, name, email, profile_image")
-          .in("id", userIds);
-          
-        if (profilesError) {
-          console.error("Error fetching applicant profiles:", profilesError);
-          toast({
-            title: "Error fetching applicant profiles",
-            description: profilesError.message,
-            variant: "destructive",
-          });
-        }
-        
-        // Map profiles to applications
-        if (profilesData) {
-          // Create a map for quick lookup of profiles by ID
-          const profilesMap = profilesData.reduce((map, profile) => {
-            map[profile.id] = profile;
-            return map;
-          }, {} as Record<string, any>);
-          
-          // Add profiles data to each application
-          const applicationsWithProfiles = applications.map(application => ({
-            ...application,
-            partnership_type: application.partnership_type as PartnershipType,
-            profiles: profilesMap[application.user_id] || null
-          })) as ApplicationWithProfile[];
-          
-          return applicationsWithProfiles;
-        }
-      }
-      
-      // Ensure we always return objects that conform to the ApplicationWithProfile type
-      // by adding the profiles property (as null) to each application
-      const typedApplications = applications?.map(app => ({
-        ...app,
-        partnership_type: app.partnership_type as PartnershipType,
-        profiles: null
-      })) as ApplicationWithProfile[];
-      
-      console.log("Project applications fetched:", typedApplications);
-      return typedApplications;
+      return data;
     },
-    enabled: !!projectId,
+    enabled: !!projectId
   });
 }
 
-/**
- * Hook to fetch all applications made by a specific user
- */
-export function useUserApplications(userId: string | undefined) {
+export function useProjectApplications() {
   const { toast } = useToast();
-  
-  return useQuery({
-    queryKey: ["userApplications", userId],
-    queryFn: async () => {
-      if (!userId) return [];
+  const [isLoading, setIsLoading] = useState(false);
 
-      console.log("Fetching user applications for:", userId);
+  // Get user's organization memberships
+  const { data: userOrganizations } = useQuery({
+    queryKey: ["user-organizations"],
+    queryFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return [];
+      
+      const { data, error } = await supabase
+        .from("organization_members")
+        .select(`
+          *,
+          organizations (
+            id,
+            name
+          )
+        `)
+        .eq("user_id", userData.user.id);
+        
+      if (error) {
+        console.error("Error fetching user organizations:", error);
+        return [];
+      }
+      
+      return data || [];
+    }
+  });
+
+  // Check if user has already applied to a project
+  const checkApplicationStatus = async (projectId: string, userId: string) => {
+    try {
+      // Validate UUID format
+      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId);
+      if (!isValidUuid) {
+        console.error("Error checking application status: Invalid UUID format", projectId);
+        return null;
+      }
       
       const { data, error } = await supabase
         .from("project_applications")
-        .select(`
-          *,
-          projects(*, profiles(name))
-        `)
+        .select("id, status")
+        .eq("project_id", projectId)
         .eq("user_id", userId)
-        .order("created_at", { ascending: false });
+        .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching user applications:", error);
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error("Error checking application status:", error);
+      return null;
+    }
+  };
+
+  // Apply to project 
+  const applyToProject = async (
+    projectId: string, 
+    userId: string, 
+    partnershipType: PartnershipType, 
+    message: string,
+    organizationId?: string | null
+  ) => {
+    setIsLoading(true);
+    
+    try {
+      // Validate UUID format
+      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId);
+      if (!isValidUuid) {
         toast({
-          title: "Error fetching user applications",
-          description: error.message,
+          title: "Application failed",
+          description: "Invalid project ID format",
           variant: "destructive",
         });
-        throw error;
+        return null;
       }
       
-      console.log("User applications fetched:", data);
+      let organizationName = null;
       
-      // Keep the original project data structure rather than trying to map it
-      // This maintains compatibility with the existing code
-      return data || [];
-    },
-    enabled: !!userId,
-  });
+      // If applying with an organization, get its name
+      if (organizationId) {
+        const organizationMembership = userOrganizations?.find(
+          (org) => org.organizations?.id === organizationId
+        );
+        organizationName = organizationMembership?.organizations?.name || null;
+      }
+      
+      // Create application
+      const { data, error } = await supabase
+        .from("project_applications")
+        .insert({
+          project_id: projectId,
+          user_id: userId,
+          partnership_type: partnershipType,
+          message,
+          organization_id: organizationId || null,
+          organization_name: organizationName
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Get project organizer to send notification
+      const { data: project, error: projectError } = await supabase
+        .from("projects")
+        .select("organizer_id, title")
+        .eq("id", projectId)
+        .single();
+
+      if (projectError) throw projectError;
+
+      // Send notification to project organizer
+      await notifyNewApplicant(project.organizer_id, userId, project.title, organizationName);
+
+      toast({
+        title: "Application submitted",
+        description: "Your application has been submitted successfully.",
+      });
+
+      return data;
+    } catch (error: any) {
+      toast({
+        title: "Application failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Update application status
+  const updateApplicationStatus = async (applicationId: string, status: ApplicationStatus) => {
+    try {
+      // Get application details before updating
+      const { data: application, error: fetchError } = await supabase
+        .from("project_applications")
+        .select("*, projects(title, organizer_id)")
+        .eq("id", applicationId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Update application status
+      const { error } = await supabase
+        .from("project_applications")
+        .update({ status })
+        .eq("id", applicationId);
+
+      if (error) throw error;
+
+      if (status === "approved") {
+        // Create partnership record
+        const { error: partnershipError } = await supabase
+          .from("partnerships")
+          .insert({
+            project_id: application.project_id,
+            partner_id: application.user_id,
+            partnership_type: application.partnership_type as PartnershipType,
+            organization_id: application.organization_id,
+            status: "active"
+          });
+
+        if (partnershipError) throw partnershipError;
+      }
+
+      // Send notification to applicant
+      const notificationTitle = status === "approved" 
+        ? "Application Approved" 
+        : "Application Rejected";
+        
+      const notificationMessage = status === "approved"
+        ? `Your application to join the project "${application.projects.title}" has been approved.`
+        : `Your application to join the project "${application.projects.title}" has been rejected.`;
+
+      const { error: notificationError } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: application.user_id,
+          title: notificationTitle,
+          message: notificationMessage,
+          link: status === "approved" ? `/projects/${application.project_id}` : null,
+          read: false
+        });
+
+      if (notificationError) throw notificationError;
+
+      toast({
+        title: "Application updated",
+        description: `The application has been ${status}.`,
+      });
+
+      return true;
+    } catch (error: any) {
+      toast({
+        title: "Error updating application",
+        description: error.message,
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  return {
+    checkApplicationStatus,
+    applyToProject,
+    updateApplicationStatus,
+    isLoading,
+    userOrganizations
+  };
 }
