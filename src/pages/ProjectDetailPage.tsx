@@ -155,7 +155,6 @@ export default function ProjectDetailPage() {
     });
   };
 
-  // Add a function to handle project completion process
   const handleCompleteProject = () => {
     setCompleteDialogOpen(true);
   };
@@ -636,6 +635,21 @@ const renderApplicationsTable = () => {
     }
   };
 
+  // Get project partners for completion dialog
+  const getProjectPartners = () => {
+    if (!projectApplications) return [];
+    
+    return projectApplications
+      .filter(app => app.status === "approved")
+      .map(app => {
+        const name = app.profiles?.name || "Unknown";
+        return {
+          id: app.user_id,
+          name: name
+        };
+      });
+  };
+
   return (
     <Layout>
       <div>
@@ -904,17 +918,4 @@ const renderApplicationsTable = () => {
                   >
                     <Trophy className="h-6 w-6 mr-2" /> Complete Project
                   </Button>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="applications">
-            {renderApplicationsTable()}
-          </TabsContent>
-        </Tabs>
-      </div>
-      
-      {/* Progress Update Dialog */}
-      <Dialog open={progressDialogOpen} onOpenChange={setProgressDialogOpen}>
-        <DialogContent className="sm:max-w-[5
+                </Card
