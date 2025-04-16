@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -64,5 +65,5 @@ export function useUserApplications(userId: string | undefined) {
   });
 }
 
-// Add useUserApplications to the exports
-export { useUserApplications };
+// Note: We're removing the duplicate export here to fix the error
+// Previously it had: export { useUserApplications }; which was causing the duplicate export
