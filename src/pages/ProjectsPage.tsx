@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/layout";
 import { ProjectCard } from "@/components/project-card";
@@ -47,6 +46,20 @@ export default function ProjectsPage() {
 
   const filteredProjects = filterProjects(allProjects);
   const filteredUserProjects = filterProjects(userProjects);
+
+  // Add a function to handle tab navigation
+  const navigateToTab = (tabValue: string) => {
+    const tabElement = document.querySelector(`[data-value="${tabValue}"]`);
+    if (tabElement) {
+      // Use dispatch event instead of click()
+      const clickEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      });
+      tabElement.dispatchEvent(clickEvent);
+    }
+  };
 
   return (
     <Layout>
@@ -194,7 +207,7 @@ export default function ProjectsPage() {
         <TabsContent value="applied" className="mt-0">
           <div className="text-center py-12">
             <p className="text-muted-foreground">You haven't applied to any projects yet.</p>
-            <Button className="mt-4" variant="outline" onClick={() => document.querySelector('[data-value="explore"]')?.click()}>
+            <Button className="mt-4" variant="outline" onClick={() => navigateToTab("explore")}>
               Browse Projects
             </Button>
           </div>
@@ -203,7 +216,7 @@ export default function ProjectsPage() {
         <TabsContent value="saved" className="mt-0">
           <div className="text-center py-12">
             <p className="text-muted-foreground">You haven't saved any projects yet.</p>
-            <Button className="mt-4" variant="outline" onClick={() => document.querySelector('[data-value="explore"]')?.click()}>
+            <Button className="mt-4" variant="outline" onClick={() => navigateToTab("explore")}>
               Browse Projects
             </Button>
           </div>

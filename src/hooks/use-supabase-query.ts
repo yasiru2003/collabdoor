@@ -1,7 +1,7 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { mapSupabaseProjectToProject, mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
 
 export function useProjects() {
   return useQuery({
@@ -9,7 +9,7 @@ export function useProjects() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("*")
+        .select("*, profiles(name)")
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -21,7 +21,11 @@ export function useProjects() {
         throw error;
       }
 
-      return data || [];
+      return (data || []).map(project => {
+        const mappedProject = mapSupabaseProjectToProject(project);
+        mappedProject.organizerName = project.profiles?.name || "Unknown";
+        return mappedProject;
+      });
     },
   });
 }
@@ -34,7 +38,7 @@ export function useProject(id: string | undefined) {
 
       const { data, error } = await supabase
         .from("projects")
-        .select("*")
+        .select("*, profiles(name)")
         .eq("id", id)
         .single();
 
@@ -49,7 +53,9 @@ export function useProject(id: string | undefined) {
         throw error;
       }
 
-      return data;
+      const mappedProject = mapSupabaseProjectToProject(data);
+      mappedProject.organizerName = data.profiles?.name || "Unknown";
+      return mappedProject;
     },
     enabled: !!id,
   });
@@ -73,7 +79,7 @@ export function usePartners() {
         throw error;
       }
 
-      return data || [];
+      return (data || []).map(org => mapSupabaseOrgToOrganization(org));
     },
   });
 }
@@ -86,7 +92,7 @@ export function useUserProjects(userId: string | undefined) {
 
       const { data, error } = await supabase
         .from("projects")
-        .select("*")
+        .select("*, profiles(name)")
         .eq("organizer_id", userId)
         .order("created_at", { ascending: false });
 
@@ -99,7 +105,11 @@ export function useUserProjects(userId: string | undefined) {
         throw error;
       }
 
-      return data || [];
+      return (data || []).map(project => {
+        const mappedProject = mapSupabaseProjectToProject(project);
+        mappedProject.organizerName = project.profiles?.name || "Unknown";
+        return mappedProject;
+      });
     },
     enabled: !!userId,
   });

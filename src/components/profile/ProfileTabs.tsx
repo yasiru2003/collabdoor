@@ -27,6 +27,7 @@ interface ProfileTabsProps {
   onNameChange: (value: string) => void;
   onBioChange: (value: string) => void;
   onProfileImageRemove: () => void;
+  onProfileImageUpdate: (url: string) => void; // Added this prop
   onNewSkillChange: (value: string) => void;
   onAddSkill: () => void;
   onRemoveSkill: (skill: string) => void;
@@ -47,6 +48,7 @@ export function ProfileTabs({
   onNameChange,
   onBioChange,
   onProfileImageRemove,
+  onProfileImageUpdate, // Add this prop
   onNewSkillChange,
   onAddSkill,
   onRemoveSkill,
@@ -86,6 +88,7 @@ export function ProfileTabs({
               profileImage={profileImage}
               loading={loading}
               onRemove={onProfileImageRemove}
+              onUpdate={onProfileImageUpdate} // Add the onUpdate prop
             />
           </div>
         </div>

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/layout";
 import { PartnerCard } from "@/components/partner-card";
@@ -10,6 +9,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { usePartners } from "@/hooks/use-supabase-query";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// Define industry skill mappings
+const industrySkills: Record<string, string[]> = {
+  "Technology": ["Software Development", "Cloud Computing", "AI", "Data Science"],
+  "Healthcare": ["Medical Research", "Healthcare Management", "Telehealth", "Biotechnology"],
+  "Nonprofit": ["Fundraising", "Community Outreach", "Volunteer Management", "Grant Writing"],
+  "Education": ["Teaching", "EdTech", "Curriculum Development", "E-Learning"],
+  "Financial Services": ["Financial Analysis", "Investment Banking", "Risk Management", "FinTech"]
+};
+
+// Default skills for organizations without a specific industry
+const defaultSkills = ["Communication", "Project Management", "Leadership"];
 
 export default function PartnersPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -39,6 +50,12 @@ export default function PartnersPage() {
     
     return matchesSearch && matchesIndustry && matchesLocation;
   }) || [];
+
+  // Get skills based on organization industry
+  const getSkillsForOrganization = (organization: any) => {
+    if (!organization.industry) return defaultSkills;
+    return industrySkills[organization.industry] || defaultSkills;
+  };
 
   return (
     <Layout>
@@ -142,7 +159,7 @@ export default function PartnersPage() {
                 <PartnerCard 
                   key={org.id} 
                   organization={org} 
-                  skills={org.skills || ["Technology", "Innovation", "Business Development"]} 
+                  skills={getSkillsForOrganization(org)} 
                 />
               ))}
             </div>
