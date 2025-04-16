@@ -316,6 +316,7 @@ export type Database = {
       projects: {
         Row: {
           category: string | null
+          completed_at: string | null
           created_at: string
           description: string
           end_date: string | null
@@ -334,6 +335,7 @@ export type Database = {
         }
         Insert: {
           category?: string | null
+          completed_at?: string | null
           created_at?: string
           description: string
           end_date?: string | null
@@ -352,6 +354,7 @@ export type Database = {
         }
         Update: {
           category?: string | null
+          completed_at?: string | null
           created_at?: string
           description?: string
           end_date?: string | null

@@ -1,6 +1,7 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useProjects } from "@/hooks/use-projects-query";  // Changed from useProjectsQuery
+import { useProjects } from "@/hooks/use-projects-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -13,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export function AdminProjects() {
-  const { data: projects, isLoading, refetch } = useProjects();  // Changed from useProjectsQuery
+  const { data: projects, isLoading, refetch } = useProjects();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -33,6 +34,8 @@ export function AdminProjects() {
           title: selectedProject.title,
           status: selectedProject.status,
           category: selectedProject.category,
+          // If changing status to completed, set completed_at
+          ...(selectedProject.status === 'completed' && { completed_at: new Date().toISOString() })
         })
         .eq('id', selectedProject.id);
 

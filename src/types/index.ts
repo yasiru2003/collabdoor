@@ -50,6 +50,7 @@ export interface Project {
   }[];
   createdAt: string;
   updatedAt: string;
+  completedAt?: string;
   phases?: ProjectPhase[];
 }
 

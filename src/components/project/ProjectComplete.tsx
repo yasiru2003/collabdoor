@@ -31,6 +31,7 @@ export function ProjectComplete({ projectId, projectTitle, partners, onComplete 
     try {
       setLoading(true);
       
+      // Update project status to completed and set completed_at timestamp
       const { error } = await supabase
         .from('projects')
         .update({
@@ -39,7 +40,10 @@ export function ProjectComplete({ projectId, projectTitle, partners, onComplete 
         })
         .eq('id', projectId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error completing project:", error);
+        throw error;
+      }
 
       // Notify all partners about project completion
       await notifyProjectPartners(
