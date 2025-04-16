@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout";
 import { ProjectCard } from "@/components/project-card";
 import { Button } from "@/components/ui/button";
@@ -8,21 +8,44 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Grid3X3, List, Plus, Search } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { useProjects, useUserProjects } from "@/hooks/use-supabase-query";
+import { useProjects, useUserProjects, useUserApplications } from "@/hooks/use-supabase-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link, useNavigate } from "react-router-dom";
+import { mapSupabaseProjectToProject } from "@/utils/data-mappers";
 
 export default function ProjectsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [partnershipFilter, setPartnershipFilter] = useState("all");
+  const [savedProjects, setSavedProjects] = useState<string[]>([]);
   
   const { user } = useAuth();
   const { data: allProjects, isLoading: isLoadingProjects } = useProjects();
   const { data: userProjects, isLoading: isLoadingUserProjects } = useUserProjects(user?.id);
+  const { data: userApplications, isLoading: isLoadingUserApplications } = useUserApplications(user?.id);
   const navigate = useNavigate();
+
+  // Load saved projects from localStorage
+  useEffect(() => {
+    const loadSavedProjects = () => {
+      const savedIds: string[] = [];
+      
+      if (window && window.localStorage) {
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('saved_') && localStorage.getItem(key) === 'true') {
+            const projectId = key.replace('saved_', '');
+            savedIds.push(projectId);
+          }
+        });
+      }
+      
+      setSavedProjects(savedIds);
+    };
+    
+    loadSavedProjects();
+  }, []);
 
   // Filter and search projects
   const filterProjects = (projects = []) => {
@@ -41,7 +64,7 @@ export default function ProjectsPage() {
       // Partnership type filter
       const matchesPartnershipType = 
         partnershipFilter === "all" || 
-        (project.partnership_types && project.partnership_types.includes(partnershipFilter));
+        (project.partnershipTypes && project.partnershipTypes.includes(partnershipFilter));
       
       return matchesSearch && matchesCategory && matchesPartnershipType;
     });
@@ -49,6 +72,23 @@ export default function ProjectsPage() {
 
   const filteredProjects = filterProjects(allProjects);
   const filteredUserProjects = filterProjects(userProjects);
+
+  // Get the projects user has applied to
+  const getAppliedProjects = () => {
+    if (!userApplications || !allProjects) return [];
+    
+    const appliedProjectIds = userApplications.map((app: any) => app.project_id);
+    return allProjects.filter(project => appliedProjectIds.includes(project.id));
+  };
+
+  // Get saved projects
+  const getSavedProjects = () => {
+    if (!allProjects) return [];
+    return allProjects.filter(project => savedProjects.includes(project.id));
+  };
+
+  const filteredAppliedProjects = filterProjects(getAppliedProjects());
+  const filteredSavedProjects = filterProjects(getSavedProjects());
 
   // Add a function to handle tab navigation
   const navigateToTab = (tabValue: string) => {
@@ -208,21 +248,71 @@ export default function ProjectsPage() {
         </TabsContent>
 
         <TabsContent value="applied" className="mt-0">
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">You haven't applied to any projects yet.</p>
-            <Button className="mt-4" variant="outline" onClick={() => navigateToTab("explore")}>
-              Browse Projects
-            </Button>
-          </div>
+          {isLoadingUserApplications ? (
+            <div className={cn(
+              "grid gap-6",
+              viewMode === "grid" ? "sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
+            )}>
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="border rounded-lg p-4">
+                  <Skeleton className="h-48 w-full mb-4" />
+                  <Skeleton className="h-6 w-3/4 mb-2" />
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              ))}
+            </div>
+          ) : filteredAppliedProjects.length > 0 ? (
+            <div className={cn(
+              "grid gap-6",
+              viewMode === "grid" ? "sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
+            )}>
+              {filteredAppliedProjects.map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">You haven't applied to any projects yet.</p>
+              <Button className="mt-4" variant="outline" onClick={() => navigateToTab("explore")}>
+                Browse Projects
+              </Button>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="saved" className="mt-0">
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">You haven't saved any projects yet.</p>
-            <Button className="mt-4" variant="outline" onClick={() => navigateToTab("explore")}>
-              Browse Projects
-            </Button>
-          </div>
+          {isLoadingProjects ? (
+            <div className={cn(
+              "grid gap-6",
+              viewMode === "grid" ? "sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
+            )}>
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="border rounded-lg p-4">
+                  <Skeleton className="h-48 w-full mb-4" />
+                  <Skeleton className="h-6 w-3/4 mb-2" />
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              ))}
+            </div>
+          ) : filteredSavedProjects.length > 0 ? (
+            <div className={cn(
+              "grid gap-6",
+              viewMode === "grid" ? "sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
+            )}>
+              {filteredSavedProjects.map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">You haven't saved any projects yet.</p>
+              <Button className="mt-4" variant="outline" onClick={() => navigateToTab("explore")}>
+                Browse Projects
+              </Button>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </Layout>

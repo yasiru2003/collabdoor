@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -32,20 +31,69 @@ import {
   InfoIcon,
   StickyNoteIcon,
   Mail,
+  Check,
+  Loader2,
 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { useProjectApplications } from "@/hooks/use-project-applications";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
   const { data: project, isLoading, error } = useProject(id);
   const [saved, setSaved] = useState(false);
+  const { user } = useAuth();
+  const { 
+    checkApplicationStatus, 
+    applyToProject, 
+    isLoading: applicationLoading 
+  } = useProjectApplications();
+  const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
+  const [applicationOpen, setApplicationOpen] = useState(false);
+  const [partnershipType, setPartnershipType] = useState<PartnershipType>("skilled");
+  const [message, setMessage] = useState("");
+
+  // Check if current user is the project owner
+  const isOwner = user && project && user.id === project.organizerId;
 
   useEffect(() => {
     // Simulate checking if project is saved
     setTimeout(() => {
       setSaved(localStorage.getItem(`saved_${id}`) === "true");
     }, 500);
-  }, [id]);
+
+    // Check if the user has already applied
+    const checkApplication = async () => {
+      if (user && id) {
+        const application = await checkApplicationStatus(id, user.id);
+        if (application) {
+          setApplicationStatus(application.status);
+        }
+      }
+    };
+    
+    if (user) {
+      checkApplication();
+    }
+  }, [id, user]);
 
   const handleSaveProject = () => {
     const newSaved = !saved;
@@ -58,6 +106,121 @@ export default function ProjectDetailPage() {
         ? "This project has been added to your saved list."
         : "This project has been removed from your saved list.",
     });
+  };
+
+  const handleApply = async () => {
+    if (!user || !id) return;
+    
+    const result = await applyToProject(id, user.id, partnershipType, message);
+    if (result) {
+      setApplicationStatus("pending");
+      setApplicationOpen(false);
+      setMessage("");
+    }
+  };
+
+  const renderApplyButton = () => {
+    if (isOwner) {
+      return (
+        <Button size="sm" className="flex items-center gap-1">
+          <Mail className="h-4 w-4" /> Contact
+        </Button>
+      );
+    }
+    
+    if (applicationStatus === "pending") {
+      return (
+        <Button variant="outline" size="sm" disabled className="flex items-center gap-1">
+          <Check className="h-4 w-4" /> Applied
+        </Button>
+      );
+    }
+    
+    if (applicationStatus === "approved") {
+      return (
+        <Button 
+          variant="outline" 
+          size="sm" 
+          disabled 
+          className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 flex items-center gap-1"
+        >
+          <Check className="h-4 w-4" /> Approved
+        </Button>
+      );
+    }
+    
+    if (applicationStatus === "rejected") {
+      return (
+        <Button 
+          variant="outline" 
+          size="sm" 
+          disabled 
+          className="bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800 flex items-center gap-1"
+        >
+          Application Rejected
+        </Button>
+      );
+    }
+    
+    return (
+      <Dialog open={applicationOpen} onOpenChange={setApplicationOpen}>
+        <DialogTrigger asChild>
+          <Button size="sm" className="flex items-center gap-1">
+            <Mail className="h-4 w-4" /> Apply
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Apply for Partnership</DialogTitle>
+            <DialogDescription>
+              Submit your application to partner on this project. The organizer will review your request.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="partnership-type">Partnership Type</Label>
+              <Select 
+                value={partnershipType} 
+                onValueChange={(value) => setPartnershipType(value as PartnershipType)}
+              >
+                <SelectTrigger id="partnership-type">
+                  <SelectValue placeholder="Select type of partnership" />
+                </SelectTrigger>
+                <SelectContent>
+                  {project?.partnershipTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="message">Message (Optional)</Label>
+              <Textarea
+                id="message"
+                placeholder="Describe how you'd like to contribute to this project..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApplicationOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleApply} disabled={applicationLoading}>
+              {applicationLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+              Submit Application
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
   };
 
   const renderPartnershipTypes = () => {
@@ -290,9 +453,7 @@ export default function ProjectDetailPage() {
                 </>
               )}
             </Button>
-            <Button size="sm" className="flex items-center gap-1">
-              <Mail className="h-4 w-4" /> Contact
-            </Button>
+            {renderApplyButton()}
           </div>
         </div>
 

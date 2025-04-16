@@ -3,9 +3,12 @@ import { Project } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Calendar, MapPin, Users } from "lucide-react";
+import { Calendar, MapPin, Users, Check, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/use-auth";
+import { useState, useEffect } from "react";
+import { useProjectApplications } from "@/hooks/use-project-applications";
 
 interface ProjectCardProps {
   project: Project;
@@ -26,6 +29,77 @@ const partnershipTypeLabels = {
 };
 
 export function ProjectCard({ project }: ProjectCardProps) {
+  const { user } = useAuth();
+  const { checkApplicationStatus, applyToProject, isLoading } = useProjectApplications();
+  const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
+  
+  // Check if current user is the project owner
+  const isOwner = user && user.id === project.organizerId;
+  
+  // Select default partnership type to apply with (first one in the list)
+  const defaultPartnershipType = project.partnershipTypes[0] || "skilled";
+
+  // Check if the user has already applied
+  useEffect(() => {
+    const checkApplication = async () => {
+      if (user && project.id) {
+        const application = await checkApplicationStatus(project.id, user.id);
+        if (application) {
+          setApplicationStatus(application.status);
+        }
+      }
+    };
+    
+    if (user) {
+      checkApplication();
+    }
+  }, [user, project.id]);
+
+  // Handle apply button click
+  const handleApply = async () => {
+    if (!user) return;
+    await applyToProject(project.id, user.id, defaultPartnershipType);
+    setApplicationStatus("pending");
+  };
+
+  // Render apply button based on conditions
+  const renderApplyButton = () => {
+    if (isOwner) {
+      return null; // Don't show apply button for the project owner
+    }
+    
+    if (applicationStatus === "pending") {
+      return (
+        <Button size="sm" variant="outline" disabled>
+          <Check className="h-4 w-4 mr-1" /> Applied
+        </Button>
+      );
+    }
+    
+    if (applicationStatus === "approved") {
+      return (
+        <Button size="sm" variant="outline" className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800" disabled>
+          <Check className="h-4 w-4 mr-1" /> Approved
+        </Button>
+      );
+    }
+    
+    if (applicationStatus === "rejected") {
+      return (
+        <Button size="sm" variant="outline" className="bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800" disabled>
+          Application Rejected
+        </Button>
+      );
+    }
+    
+    return (
+      <Button size="sm" onClick={handleApply} disabled={isLoading}>
+        {isLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+        Apply
+      </Button>
+    );
+  };
+
   return (
     <Card className="h-full flex flex-col overflow-hidden transition-all hover:shadow-md hover:border-primary/20">
       <div className="aspect-video w-full bg-muted overflow-hidden">
@@ -93,7 +167,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </Avatar>
           <span className="text-sm">{project.organizerName}</span>
         </div>
-        <Button size="sm">Apply</Button>
+        {renderApplyButton()}
       </CardFooter>
     </Card>
   );

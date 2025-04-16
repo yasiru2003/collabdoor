@@ -85,10 +85,7 @@ export function usePartners() {
 }
 
 export function useUserProjects(userId: string | undefined) {
-  return useQuery({
-    queryKey: ["userProjects", userId],
-    queryFn: async () => {
-      if (!userId) return [];
+  if (!userId) return [];
 
       const { data, error } = await supabase
         .from("projects")
@@ -276,5 +273,65 @@ export function useConversation(userId: string | undefined, participantId: strin
       return data || [];
     },
     enabled: !!userId && !!participantId,
+  });
+}
+
+export function useProjectApplications(projectId: string | undefined) {
+  return useQuery({
+    queryKey: ["projectApplications", projectId],
+    queryFn: async () => {
+      if (!projectId) return [];
+
+      const { data, error } = await supabase
+        .from("project_applications")
+        .select(`
+          *,
+          profiles:user_id(name, email, profile_image)
+        `)
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        toast({
+          title: "Error fetching project applications",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+
+      return data || [];
+    },
+    enabled: !!projectId,
+  });
+}
+
+export function useUserApplications(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["userApplications", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+
+      const { data, error } = await supabase
+        .from("project_applications")
+        .select(`
+          *,
+          projects:project_id(*)
+        `)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        toast({
+          title: "Error fetching user applications",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+
+      return data || [];
+    },
+    enabled: !!userId,
   });
 }

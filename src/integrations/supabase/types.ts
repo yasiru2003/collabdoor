@@ -195,6 +195,47 @@ export type Database = {
         }
         Relationships: []
       }
+      project_applications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          partnership_type: string
+          project_id: string
+          status: Database["public"]["Enums"]["application_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          partnership_type: string
+          project_id: string
+          status?: Database["public"]["Enums"]["application_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          partnership_type?: string
+          project_id?: string
+          status?: Database["public"]["Enums"]["application_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_applications_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           category: string | null
@@ -308,6 +349,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      application_status: "pending" | "approved" | "rejected"
       partnership_type: "monetary" | "knowledge" | "skilled" | "volunteering"
       project_status: "draft" | "published" | "in-progress" | "completed"
       user_role: "partner" | "organizer"
@@ -426,6 +468,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      application_status: ["pending", "approved", "rejected"],
       partnership_type: ["monetary", "knowledge", "skilled", "volunteering"],
       project_status: ["draft", "published", "in-progress", "completed"],
       user_role: ["partner", "organizer"],
