@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { Layout } from "@/components/layout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -90,169 +91,171 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-      </div>
+    <Layout>
+      <div className="container mx-auto py-6 space-y-8">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        </div>
 
-      <div className="grid gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">
-              Welcome back, {user?.email ? user.email.split('@')[0] : 'User'}!
-            </CardTitle>
-            <CardDescription>
-              Manage your projects and applications from here.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
+        <div className="grid gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">
+                Welcome back, {user?.email ? user.email.split('@')[0] : 'User'}!
+              </CardTitle>
+              <CardDescription>
+                Manage your projects and applications from here.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
 
-      <Tabs defaultValue="applications" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="applications">
-            <Mail className="h-4 w-4 mr-2" />
-            My Applications
-          </TabsTrigger>
-          <TabsTrigger value="projects">
-            <Folder className="h-4 w-4 mr-2" />
-            My Projects
-          </TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="applications" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="applications">
+              <Mail className="h-4 w-4 mr-2" />
+              My Applications
+            </TabsTrigger>
+            <TabsTrigger value="projects">
+              <Folder className="h-4 w-4 mr-2" />
+              My Projects
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="applications" className="space-y-4">
-          <h2 className="text-xl font-semibold">Applications</h2>
-          
-          {isLoading ? (
-            <div className="flex items-center justify-center py-10">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
-            </div>
-          ) : userApplications.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {userApplications.map((application) => (
-                <Card key={application.id} className="overflow-hidden">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg">
-                        <Link to={`/projects/${application.project_id}`} className="hover:text-primary transition-colors">
-                          {application.projects?.title || "Untitled Project"}
-                        </Link>
-                      </CardTitle>
-                      <Badge variant={getStatusBadgeVariant(application.status)}>
-                        {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                      </Badge>
-                    </div>
-                    <CardDescription className="line-clamp-2">
-                      {application.projects?.description || "No description available"}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pb-2">
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <div className="flex items-center">
-                        <CalendarDays className="mr-2 h-4 w-4" />
-                        Applied on {new Date(application.created_at).toLocaleDateString()}
+          <TabsContent value="applications" className="space-y-4">
+            <h2 className="text-xl font-semibold">Applications</h2>
+            
+            {isLoading ? (
+              <div className="flex items-center justify-center py-10">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+              </div>
+            ) : userApplications.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {userApplications.map((application) => (
+                  <Card key={application.id} className="overflow-hidden">
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="text-lg">
+                          <Link to={`/projects/${application.project_id}`} className="hover:text-primary transition-colors">
+                            {application.projects?.title || "Untitled Project"}
+                          </Link>
+                        </CardTitle>
+                        <Badge variant={getStatusBadgeVariant(application.status)}>
+                          {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                        </Badge>
                       </div>
-                      <div className="flex items-center">
-                        <Users className="mr-2 h-4 w-4" />
-                        Partnership Type: {application.partnership_type}
-                      </div>
-                      {application.message && (
-                        <div className="mt-2">
-                          <p className="font-medium text-sm">Your message:</p>
-                          <p className="text-sm italic">{application.message}</p>
+                      <CardDescription className="line-clamp-2">
+                        {application.projects?.description || "No description available"}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pb-2">
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <div className="flex items-center">
+                          <CalendarDays className="mr-2 h-4 w-4" />
+                          Applied on {new Date(application.created_at).toLocaleDateString()}
                         </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card className="bg-muted/50">
-              <CardContent className="flex flex-col items-center justify-center py-10 text-center">
-                <LayoutDashboard className="h-10 w-10 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">No Applications Yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  You haven't applied to any projects yet.
-                </p>
-                <Button asChild variant="secondary">
-                  <Link to="/projects">Browse Projects</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="projects" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">My Projects</h2>
-            <Button asChild size="sm">
-              <Link to="/projects/create">Create New Project</Link>
-            </Button>
-          </div>
-
-          {isLoading ? (
-            <div className="flex items-center justify-center py-10">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
-            </div>
-          ) : projects.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {projects.map((project) => (
-                <Card key={project.id} className="overflow-hidden">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg">
-                        <Link to={`/projects/${project.id}`} className="hover:text-primary transition-colors">
-                          {project.title}
-                        </Link>
-                      </CardTitle>
-                      <Badge variant={project.status === 'published' ? "success" : "secondary"}>
-                        {project.status === 'published' ? 'Active' : 'Draft'}
-                      </Badge>
-                    </div>
-                    <CardDescription className="line-clamp-2">
-                      {project.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pb-2">
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <div className="flex items-center">
-                        <Clock className="mr-2 h-4 w-4" />
-                        Created on {new Date(project.created_at).toLocaleDateString()}
-                      </div>
-                      {project.location && (
                         <div className="flex items-center">
                           <Users className="mr-2 h-4 w-4" />
-                          Location: {project.location}
+                          Partnership Type: {application.partnership_type}
                         </div>
-                      )}
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button asChild variant="secondary" size="sm">
-                      <Link to={`/projects/${project.id}`}>View Details</Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
+                        {application.message && (
+                          <div className="mt-2">
+                            <p className="font-medium text-sm">Your message:</p>
+                            <p className="text-sm italic">{application.message}</p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="bg-muted/50">
+                <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+                  <LayoutDashboard className="h-10 w-10 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Applications Yet</h3>
+                  <p className="text-muted-foreground mb-4">
+                    You haven't applied to any projects yet.
+                  </p>
+                  <Button asChild variant="secondary">
+                    <Link to="/projects">Browse Projects</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="projects" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">My Projects</h2>
+              <Button asChild size="sm">
+                <Link to="/projects/create">Create New Project</Link>
+              </Button>
             </div>
-          ) : (
-            <Card className="bg-muted/50">
-              <CardContent className="flex flex-col items-center justify-center py-10 text-center">
-                <Folder className="h-10 w-10 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">No Projects Yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  You haven't created any projects yet.
-                </p>
-                <Button asChild>
-                  <Link to="/projects/create">Create Your First Project</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
+
+            {isLoading ? (
+              <div className="flex items-center justify-center py-10">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+              </div>
+            ) : projects.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {projects.map((project) => (
+                  <Card key={project.id} className="overflow-hidden">
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="text-lg">
+                          <Link to={`/projects/${project.id}`} className="hover:text-primary transition-colors">
+                            {project.title}
+                          </Link>
+                        </CardTitle>
+                        <Badge variant={project.status === 'published' ? "success" : "secondary"}>
+                          {project.status === 'published' ? 'Active' : 'Draft'}
+                        </Badge>
+                      </div>
+                      <CardDescription className="line-clamp-2">
+                        {project.description}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pb-2">
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <div className="flex items-center">
+                          <Clock className="mr-2 h-4 w-4" />
+                          Created on {new Date(project.created_at).toLocaleDateString()}
+                        </div>
+                        {project.location && (
+                          <div className="flex items-center">
+                            <Users className="mr-2 h-4 w-4" />
+                            Location: {project.location}
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button asChild variant="secondary" size="sm">
+                        <Link to={`/projects/${project.id}`}>View Details</Link>
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="bg-muted/50">
+                <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+                  <Folder className="h-10 w-10 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Projects Yet</h3>
+                  <p className="text-muted-foreground mb-4">
+                    You haven't created any projects yet.
+                  </p>
+                  <Button asChild>
+                    <Link to="/projects/create">Create Your First Project</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </Layout>
   );
 };
 
