@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useProjectsQuery } from "@/hooks/use-projects-query";
+import { useProjects } from "@/hooks/use-projects-query";  // Changed from useProjectsQuery
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -14,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export function AdminProjects() {
-  const { data: projects, isLoading, refetch } = useProjectsQuery();
+  const { data: projects, isLoading, refetch } = useProjects();  // Changed from useProjectsQuery
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
