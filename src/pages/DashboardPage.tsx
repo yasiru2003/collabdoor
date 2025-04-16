@@ -1,424 +1,481 @@
 
-import { useState } from "react";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { ProjectCard } from "@/components/project-card";
-import { PartnerCard } from "@/components/partner-card";
-import { Plus, Check, X, Clock } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import { 
-  useUserProjects, 
-  usePartnerships, 
-  useMessages, 
-  useProjectApplications,
-  useUserApplications
-} from "@/hooks/use-supabase-query";
-import { useNavigate } from "react-router-dom";
-import { mapSupabaseProjectToProject } from "@/utils/data-mappers";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useUserProjects, usePartnerships, useUserApplications } from "@/hooks/use-supabase-query";
+import { ProjectCard } from "@/components/project-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { useProjectApplications as useProjectApplicationsHook } from "@/hooks/use-project-applications";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { Plus, ExternalLink } from "lucide-react";
 
 export default function DashboardPage() {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
-  const { data: userProjects, isLoading: projectsLoading } = useUserProjects(user?.id);
-  const { data: partnerships, isLoading: partnershipsLoading } = usePartnerships(user?.id);
-  const { data: conversations, isLoading: messagesLoading } = useMessages(user?.id);
-  const { data: userApplications, isLoading: userApplicationsLoading } = useUserApplications(user?.id);
-  
-  const [dashboardTab, setDashboardTab] = useState<string>(user?.role === "organizer" ? "my-projects" : "recommended");
-  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(
-    userProjects && userProjects.length > 0 ? userProjects[0].id : undefined
-  );
-  
-  const { data: projectApplications, isLoading: projectApplicationsLoading } = useProjectApplications(selectedProjectId);
-  const { updateApplicationStatus } = useProjectApplicationsHook();
-
-  // Get current counts
-  const projectsCount = userProjects?.length || 0;
-  const partnershipsCount = partnerships?.length || 0;
-  const messagesCount = conversations?.reduce((total, conv) => total + (conv.unreadCount || 0), 0) || 0;
-  const applicationsCount = user?.role === "organizer" 
-    ? projectApplications?.length || 0
-    : userApplications?.length || 0;
-
-  // Redirect to login page if not authenticated
-  if (!loading && !user) {
-    navigate("/login");
-    return null;
-  }
-
-  // Handle status badge styling
-  const getStatusBadge = (status: string) => {
-    switch(status) {
-      case 'pending':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-          <Clock className="h-3 w-3 mr-1" /> Pending
-        </Badge>;
-      case 'approved':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-          <Check className="h-3 w-3 mr-1" /> Approved
-        </Badge>;
-      case 'rejected':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-          <X className="h-3 w-3 mr-1" /> Rejected
-        </Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  // Handle application status update
-  const handleUpdateStatus = async (applicationId: string, status: "approved" | "rejected") => {
-    await updateApplicationStatus(applicationId, status);
-  };
+  const { user } = useAuth();
+  const { data: userProjects, isLoading: loadingProjects } = useUserProjects(user?.id);
+  const { data: partnerships, isLoading: loadingPartnerships } = usePartnerships(user?.id);
+  const { data: applications, isLoading: loadingApplications } = useUserApplications(user?.id);
 
   return (
     <Layout>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back! Here's what's happening with your collaborations.</p>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-4 mb-8">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Projects</CardTitle>
-            <CardDescription>
-              {user?.role === "organizer" ? "Your active projects" : "Projects you're involved in"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {projectsLoading ? (
-              <Skeleton className="h-8 w-8" />
-            ) : (
-              <div className="text-3xl font-bold">{projectsCount}</div>
-            )}
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Partners</CardTitle>
-            <CardDescription>
-              {user?.role === "organizer" ? "Organizations partnering with you" : "Your partnership applications"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {partnershipsLoading ? (
-              <Skeleton className="h-8 w-8" />
-            ) : (
-              <div className="text-3xl font-bold">{partnershipsCount}</div>
-            )}
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Applications</CardTitle>
-            <CardDescription>
-              {user?.role === "organizer" ? "Partnership requests" : "Your applications"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {user?.role === "organizer" ? (
-              projectApplicationsLoading ? (
-                <Skeleton className="h-8 w-8" />
-              ) : (
-                <div className="text-3xl font-bold">{applicationsCount}</div>
-              )
-            ) : (
-              userApplicationsLoading ? (
-                <Skeleton className="h-8 w-8" />
-              ) : (
-                <div className="text-3xl font-bold">{applicationsCount}</div>
-              )
-            )}
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Messages</CardTitle>
-            <CardDescription>Unread messages requiring attention</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {messagesLoading ? (
-              <Skeleton className="h-8 w-8" />
-            ) : (
-              <div className="text-3xl font-bold">{messagesCount}</div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs value={dashboardTab} onValueChange={setDashboardTab} className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <TabsList>
-            {user?.role === "organizer" ? (
-              <>
-                <TabsTrigger value="my-projects">My Projects</TabsTrigger>
-                <TabsTrigger value="interested-partners">Partnership Requests</TabsTrigger>
-              </>
-            ) : (
-              <>
-                <TabsTrigger value="recommended">Recommended</TabsTrigger>
-                <TabsTrigger value="applied">My Applications</TabsTrigger>
-              </>
-            )}
-          </TabsList>
-
-          {user?.role === "organizer" && (
-            <Button className="gap-1" onClick={() => navigate("/projects/new")}>
-              <Plus className="h-4 w-4" />
-              <span>New Project</span>
-            </Button>
-          )}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Welcome back, {user?.name || "Partner"}
+          </p>
         </div>
+        <Button asChild>
+          <Link to="/projects/new" className="gap-1 self-start">
+            <Plus className="h-4 w-4" />
+            <span>New Project</span>
+          </Link>
+        </Button>
+      </div>
 
-        {user?.role === "organizer" ? (
-          <>
-            <TabsContent value="my-projects" className="mt-0">
-              {projectsLoading ? (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {[1, 2, 3].map((i) => (
-                    <Skeleton key={i} className="h-64 w-full" />
-                  ))}
-                </div>
-              ) : userProjects && userProjects.length > 0 ? (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {userProjects.map((project) => (
-                    <ProjectCard key={project.id} project={project} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground mb-4">You haven't created any projects yet.</p>
-                  <Button onClick={() => navigate("/projects/new")}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Your First Project
-                  </Button>
-                </div>
-              )}
-            </TabsContent>
-            <TabsContent value="interested-partners" className="mt-0">
-              {projectsLoading ? (
-                <Skeleton className="h-10 w-full mb-4" />
-              ) : userProjects && userProjects.length > 0 ? (
-                <div className="space-y-6">
-                  <div className="flex flex-wrap gap-2">
-                    <p className="text-sm text-muted-foreground mr-2">Select project:</p>
-                    {userProjects.map((project) => (
-                      <Button
-                        key={project.id}
-                        variant={selectedProjectId === project.id ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setSelectedProjectId(project.id)}
-                      >
-                        {project.title}
-                      </Button>
-                    ))}
-                  </div>
-                  
-                  {projectApplicationsLoading ? (
-                    <div className="space-y-3">
-                      {[1, 2, 3].map((i) => (
-                        <Skeleton key={i} className="h-24 w-full" />
-                      ))}
-                    </div>
-                  ) : projectApplications && projectApplications.length > 0 ? (
-                    <div className="space-y-3">
-                      {projectApplications.map((application: any) => (
-                        <Card key={application.id}>
-                          <CardContent className="p-4">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
-                              <div className="flex items-center gap-3">
-                                <Avatar>
-                                  <AvatarImage src={application.profiles?.profile_image} />
-                                  <AvatarFallback className="bg-primary text-primary-foreground">
-                                    {application.profiles?.name ? 
-                                      application.profiles.name.substring(0, 2).toUpperCase() : 
-                                      "UN"}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <div className="font-medium">{application.profiles?.name || "Unknown"}</div>
-                                  <div className="text-sm text-muted-foreground">
-                                    Applied for: {application.partnership_type}
-                                  </div>
-                                  <div className="text-sm text-muted-foreground">
-                                    {new Date(application.created_at).toLocaleDateString()}
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                                {getStatusBadge(application.status)}
-                                
-                                {application.status === 'pending' && (
-                                  <div className="flex gap-2 mt-2 sm:mt-0">
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline"
-                                      className="bg-green-50 hover:bg-green-100 text-green-700 hover:text-green-800"
-                                      onClick={() => handleUpdateStatus(application.id, "approved")}
-                                    >
-                                      <Check className="h-4 w-4 mr-1" /> Approve
-                                    </Button>
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline"
-                                      className="bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-800"
-                                      onClick={() => handleUpdateStatus(application.id, "rejected")}
-                                    >
-                                      <X className="h-4 w-4 mr-1" /> Reject
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            
-                            {application.message && (
-                              <div className="mt-3 p-3 bg-muted rounded-md text-sm">
-                                <p className="font-medium mb-1">Application message:</p>
-                                <p>{application.message}</p>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="projects">My Projects</TabsTrigger>
+          <TabsTrigger value="partnerships">Partnerships</TabsTrigger>
+          <TabsTrigger value="applications">Applications</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  My Projects
+                </CardTitle>
+                <div className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {loadingProjects ? (
+                    <Skeleton className="h-8 w-16" />
                   ) : (
-                    <div className="text-center py-12">
-                      <p className="text-muted-foreground">No partnership applications yet for this project.</p>
-                    </div>
+                    userProjects?.length || 0
                   )}
                 </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground mb-4">You need to create a project first to receive partnership applications.</p>
-                  <Button onClick={() => navigate("/projects/new")}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Your First Project
-                  </Button>
+                <p className="text-xs text-muted-foreground">
+                  Projects you've created
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Active Partnerships
+                </CardTitle>
+                <div className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {loadingPartnerships ? (
+                    <Skeleton className="h-8 w-16" />
+                  ) : (
+                    partnerships?.length || 0
+                  )}
                 </div>
-              )}
-            </TabsContent>
-          </>
-        ) : (
-          <>
-            <TabsContent value="recommended" className="mt-0">
-              {projectsLoading ? (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {[1, 2, 3, 4].map((i) => (
-                    <Skeleton key={i} className="h-64 w-full" />
-                  ))}
+                <p className="text-xs text-muted-foreground">
+                  Projects you're partnering on
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Pending Applications
+                </CardTitle>
+                <div className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {loadingApplications ? (
+                    <Skeleton className="h-8 w-16" />
+                  ) : (
+                    applications?.filter(app => app.status === "pending").length || 0
+                  )}
                 </div>
-              ) : (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {userProjects?.slice(0, 4).map((project) => (
-                    <ProjectCard key={project.id} project={project} />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-            <TabsContent value="applied" className="mt-0">
-              {userApplicationsLoading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map((i) => (
-                    <Skeleton key={i} className="h-24 w-full" />
-                  ))}
-                </div>
-              ) : userApplications && userApplications.length > 0 ? (
-                <div className="space-y-3">
-                  {userApplications.map((application: any) => (
-                    <Card key={application.id}>
-                      <CardContent className="p-4">
-                        <div className="flex flex-col sm:flex-row gap-4 justify-between">
-                          <div>
-                            <h3 className="font-medium">
-                              {application.projects?.title || "Unknown Project"}
-                            </h3>
-                            <div className="flex gap-2 items-center mt-1">
-                              <Badge variant="outline">
-                                {application.partnership_type}
-                              </Badge>
-                              {getStatusBadge(application.status)}
-                              <span className="text-sm text-muted-foreground">
-                                Applied on {new Date(application.created_at).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => navigate(`/projects/${application.project_id}`)}
-                          >
-                            View Project
-                          </Button>
-                        </div>
-                        
-                        {application.message && (
-                          <div className="mt-3 p-3 bg-muted rounded-md text-sm">
-                            <p className="font-medium mb-1">Your message:</p>
-                            <p>{application.message}</p>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground mb-4">You haven't applied to any projects yet.</p>
-                  <Button variant="outline" onClick={() => navigate("/projects")}>
-                    Browse Projects
-                  </Button>
-                </div>
-              )}
-            </TabsContent>
-          </>
-        )}
-      </Tabs>
+                <p className="text-xs text-muted-foreground">
+                  Awaiting response
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-      <div className="mb-6">
-        <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
-        <div className="space-y-4">
-          {messagesLoading ? (
-            <>
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
-            </>
-          ) : conversations && conversations.length > 0 ? (
-            conversations.slice(0, 3).map((conversation) => (
-              <Card key={conversation.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <div className={`h-2 w-2 rounded-full ${conversation.unreadCount > 0 ? 'bg-primary' : 'bg-muted'}`}></div>
-                    <div>
-                      <p className="text-sm">
-                        <span className="font-medium">{conversation.participantName}</span> sent you a message
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(conversation.lastMessageTime).toLocaleDateString()}
-                      </p>
-                    </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle>Recent Projects</CardTitle>
+                <CardDescription>
+                  Your recently created projects
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingProjects ? (
+                  <div className="space-y-4">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="flex items-center space-x-4">
+                        <Skeleton className="h-12 w-12 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-[250px]" />
+                          <Skeleton className="h-4 w-[200px]" />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No recent activity to display.</p>
-            </div>
-          )}
-        </div>
-      </div>
+                ) : userProjects?.length ? (
+                  <div className="space-y-4">
+                    {userProjects.slice(0, 3).map((project) => (
+                      <div
+                        key={project.id}
+                        className="flex items-center space-x-4"
+                      >
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-primary font-medium">
+                            {project.title.substring(0, 2).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <p className="text-sm font-medium leading-none">
+                            <Link
+                              to={`/projects/${project.id}`}
+                              className="hover:underline"
+                            >
+                              {project.title}
+                            </Link>
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(
+                              new Date(project.createdAt),
+                              "MMMM d, yyyy"
+                            )}
+                            {project.status === "published" && (
+                              <Badge className="ml-2" variant="outline">
+                                Active
+                              </Badge>
+                            )}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1"
+                          asChild
+                        >
+                          <Link to={`/projects/${project.id}`}>
+                            <ExternalLink className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground mb-2">
+                      You haven't created any projects yet
+                    </p>
+                    <Button asChild size="sm">
+                      <Link to="/projects/new">Create Project</Link>
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle>Recent Applications</CardTitle>
+                <CardDescription>
+                  Projects you've applied to partner on
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingApplications ? (
+                  <div className="space-y-4">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="flex items-center space-x-4">
+                        <Skeleton className="h-12 w-12 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-[250px]" />
+                          <Skeleton className="h-4 w-[200px]" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : applications?.length ? (
+                  <div className="space-y-4">
+                    {applications.slice(0, 3).map((application) => (
+                      <div
+                        key={application.id}
+                        className="flex items-center space-x-4"
+                      >
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-primary font-medium">
+                            {application.projects?.title.substring(0, 2).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <p className="text-sm font-medium leading-none">
+                            <Link
+                              to={`/projects/${application.project_id}`}
+                              className="hover:underline"
+                            >
+                              {application.projects?.title}
+                            </Link>
+                          </p>
+                          <div className="flex items-center text-xs text-muted-foreground">
+                            <span>
+                              {format(
+                                new Date(application.created_at),
+                                "MMMM d, yyyy"
+                              )}
+                            </span>
+                            <Badge 
+                              className="ml-2" 
+                              variant={
+                                application.status === "approved" ? "success" :
+                                application.status === "rejected" ? "destructive" :
+                                "outline"
+                              }
+                            >
+                              {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                            </Badge>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1"
+                          asChild
+                        >
+                          <Link to={`/projects/${application.project_id}`}>
+                            <ExternalLink className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground mb-2">
+                      You haven't applied to any projects yet
+                    </p>
+                    <Button asChild size="sm">
+                      <Link to="/projects">Browse Projects</Link>
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="projects" className="space-y-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {loadingProjects ? (
+              [1, 2, 3].map((i) => (
+                <Card key={i} className="relative overflow-hidden">
+                  <Skeleton className="h-48 w-full" />
+                  <div className="p-4 space-y-2">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-2/3" />
+                  </div>
+                </Card>
+              ))
+            ) : userProjects?.length ? (
+              userProjects.map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <h3 className="text-lg font-medium mb-2">
+                  No projects found
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  You haven't created any projects yet.
+                </p>
+                <Button asChild>
+                  <Link to="/projects/new">Create Project</Link>
+                </Button>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="partnerships" className="space-y-4">
+          <div className="grid gap-4">
+            {loadingPartnerships ? (
+              [1, 2, 3].map((i) => (
+                <Card key={i}>
+                  <CardContent className="p-6">
+                    <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-4">
+                        <Skeleton className="h-12 w-12 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-[200px]" />
+                          <Skeleton className="h-4 w-[150px]" />
+                        </div>
+                      </div>
+                      <Skeleton className="h-9 w-24" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : partnerships?.length ? (
+              partnerships.map((partnership) => (
+                <Card key={partnership.id}>
+                  <CardContent className="p-6">
+                    <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarFallback>
+                            {partnership.project?.title?.substring(0, 2).toUpperCase() || "??"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h3 className="font-medium">
+                            {partnership.project?.title || "Unknown Project"}
+                          </h3>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Badge variant="outline">
+                              {partnership.partnership_type.charAt(0).toUpperCase() +
+                                partnership.partnership_type.slice(1)}
+                            </Badge>
+                            <span>•</span>
+                            <span>
+                              {format(
+                                new Date(partnership.created_at),
+                                "MMMM d, yyyy"
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <Button asChild>
+                        <Link to={`/projects/${partnership.project_id}`}>
+                          View Project
+                        </Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <h3 className="text-lg font-medium mb-2">
+                  No partnerships found
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  You're not partnering on any projects yet.
+                </p>
+                <Button asChild>
+                  <Link to="/projects">Browse Projects</Link>
+                </Button>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="applications" className="space-y-4">
+          <div className="grid gap-4">
+            {loadingApplications ? (
+              [1, 2, 3].map((i) => (
+                <Card key={i}>
+                  <CardContent className="p-6">
+                    <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-4">
+                        <Skeleton className="h-12 w-12 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-[200px]" />
+                          <Skeleton className="h-4 w-[150px]" />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-8 w-20" />
+                        <Skeleton className="h-8 w-24" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : applications?.length ? (
+              applications.map((application) => (
+                <Card key={application.id}>
+                  <CardContent className="p-6">
+                    <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarFallback>
+                            {application.projects?.title?.substring(0, 2).toUpperCase() || "??"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h3 className="font-medium">
+                            {application.projects?.title || "Unknown Project"}
+                          </h3>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Badge variant="outline">
+                              {application.partnership_type.charAt(0).toUpperCase() +
+                                application.partnership_type.slice(1)}
+                            </Badge>
+                            <span>•</span>
+                            <span>
+                              Applied {format(
+                                new Date(application.created_at),
+                                "MMMM d, yyyy"
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={
+                            application.status === "approved" ? "success" :
+                            application.status === "rejected" ? "destructive" :
+                            "secondary"
+                          }
+                        >
+                          {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                        </Badge>
+                        <Button asChild>
+                          <Link to={`/projects/${application.project_id}`}>
+                            View Project
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                    {application.message && (
+                      <div className="mt-4 p-3 bg-muted rounded-md">
+                        <p className="text-sm italic">{application.message}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <h3 className="text-lg font-medium mb-2">
+                  No applications found
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  You haven't applied to any projects yet.
+                </p>
+                <Button asChild>
+                  <Link to="/projects">Browse Projects</Link>
+                </Button>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
     </Layout>
   );
 }

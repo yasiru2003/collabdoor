@@ -8,12 +8,13 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Project, PartnershipType } from "@/types";
-import { useProject } from "@/hooks/use-supabase-query";
+import { useProject, useProjectApplications } from "@/hooks/use-supabase-query";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -33,9 +34,10 @@ import {
   Mail,
   Check,
   Loader2,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useProjectApplications } from "@/hooks/use-project-applications";
+import { useProjectApplications as useProjectApps } from "@/hooks/use-project-applications";
 import {
   Dialog,
   DialogContent,
@@ -54,6 +56,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -64,8 +67,10 @@ export default function ProjectDetailPage() {
   const { 
     checkApplicationStatus, 
     applyToProject, 
-    isLoading: applicationLoading 
-  } = useProjectApplications();
+    isLoading: applicationLoading,
+    updateApplicationStatus,
+  } = useProjectApps();
+  const { data: projectApplications, isLoading: loadingApplications } = useProjectApplications(id);
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
   const [applicationOpen, setApplicationOpen] = useState(false);
   const [partnershipType, setPartnershipType] = useState<PartnershipType>("skilled");
@@ -93,7 +98,7 @@ export default function ProjectDetailPage() {
     if (user) {
       checkApplication();
     }
-  }, [id, user]);
+  }, [id, user, checkApplicationStatus]);
 
   const handleSaveProject = () => {
     const newSaved = !saved;
@@ -117,6 +122,10 @@ export default function ProjectDetailPage() {
       setApplicationOpen(false);
       setMessage("");
     }
+  };
+
+  const handleUpdateApplicationStatus = async (applicationId: string, status: "approved" | "rejected") => {
+    await updateApplicationStatus(applicationId, status);
   };
 
   const renderApplyButton = () => {
@@ -361,6 +370,102 @@ export default function ProjectDetailPage() {
     );
   };
 
+  // New function to render partnership applications for project owners
+  const renderApplicationsTable = () => {
+    if (!isOwner || !projectApplications || projectApplications.length === 0) {
+      return null;
+    }
+
+    return (
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Partnership Applications</CardTitle>
+          <CardDescription>Review and manage applications to partner on this project</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Applicant</TableHead>
+                <TableHead>Partnership Type</TableHead>
+                <TableHead>Date Applied</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {projectApplications.map((application) => (
+                <TableRow key={application.id}>
+                  <TableCell className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={application.profiles?.profile_image || ""} />
+                      <AvatarFallback>
+                        {application.profiles?.name ? application.profiles.name.substring(0, 2).toUpperCase() : "??"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">{application.profiles?.name || "Unknown"}</div>
+                      <div className="text-xs text-muted-foreground">{application.profiles?.email}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {application.partnership_type.charAt(0).toUpperCase() + application.partnership_type.slice(1)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {format(new Date(application.created_at), "MMM d, yyyy")}
+                  </TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant={
+                        application.status === "approved" ? "success" : 
+                        application.status === "rejected" ? "destructive" : 
+                        "secondary"
+                      }
+                    >
+                      {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {application.status === "pending" && (
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="h-8 text-green-700 hover:bg-green-100"
+                          onClick={() => handleUpdateApplicationStatus(application.id, "approved")}
+                        >
+                          <Check className="h-4 w-4 mr-1" /> Approve
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="h-8 text-red-700 hover:bg-red-100"
+                          onClick={() => handleUpdateApplicationStatus(application.id, "rejected")}
+                        >
+                          <X className="h-4 w-4 mr-1" /> Reject
+                        </Button>
+                      </div>
+                    )}
+                    {application.status !== "pending" && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                      >
+                        <Mail className="h-4 w-4 mr-1" /> Contact
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    );
+  };
+
   if (isLoading) {
     return (
       <Layout>
@@ -491,6 +596,8 @@ export default function ProjectDetailPage() {
                 </div>
               </CardContent>
             </Card>
+            
+            {renderApplicationsTable()}
           </div>
 
           <div className="space-y-6">

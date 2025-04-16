@@ -157,6 +157,43 @@ export function usePartnerships(userId: string | undefined) {
   });
 }
 
+export function useSavedProjects(userId: string | undefined) {
+  const { toast: shadcnToast } = useToast();
+  
+  return useQuery({
+    queryKey: ["savedProjects", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+
+      const { data, error } = await supabase
+        .from("saved_projects")
+        .select(`
+          *,
+          projects(*, profiles(name))
+        `)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        shadcnToast({
+          title: "Error fetching saved projects",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+
+      return (data || []).map(savedProject => {
+        if (!savedProject.projects) return null;
+        const mappedProject = mapSupabaseProjectToProject(savedProject.projects);
+        mappedProject.organizerName = savedProject.projects.profiles?.name || "Unknown";
+        return mappedProject;
+      }).filter(Boolean);
+    },
+    enabled: !!userId,
+  });
+}
+
 export function useMessages(userId: string | undefined) {
   const { toast: shadcnToast } = useToast();
   
@@ -339,7 +376,7 @@ export function useUserApplications(userId: string | undefined) {
         .from("project_applications")
         .select(`
           *,
-          projects:projects!project_id(*)
+          projects:projects!project_id(*, profiles(name))
         `)
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
@@ -354,7 +391,15 @@ export function useUserApplications(userId: string | undefined) {
         throw error;
       }
 
-      return data || [];
+      // Map the projects data in each application
+      return (data || []).map(application => {
+        if (application.projects && application.projects.profiles) {
+          const mappedProject = mapSupabaseProjectToProject(application.projects);
+          mappedProject.organizerName = application.projects.profiles.name || "Unknown";
+          application.projects = mappedProject;
+        }
+        return application;
+      });
     },
     enabled: !!userId,
   });
