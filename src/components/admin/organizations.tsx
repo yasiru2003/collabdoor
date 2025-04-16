@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -45,6 +44,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import type { 
+  TablesInsert, 
+  Tables, 
+  TablesUpdate 
+} from "@/integrations/supabase/types";
 
 export function AdminOrganizations() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -83,7 +88,7 @@ export function AdminOrganizations() {
         .from("organization_join_requests")
         .select(`
           *,
-          organizations!organization_join_requests_organization_id_fkey (name),
+          organizations (name),
           profiles!organization_join_requests_user_id_fkey (name, email, profile_image)
         `)
         .eq("status", "pending")
@@ -110,12 +115,12 @@ export function AdminOrganizations() {
       organizationName: string
     }) => {
       // Update the request status
-      const { error } = await supabase
+      const { error: requestError } = await supabase
         .from("organization_join_requests")
         .update({ status })
         .eq("id", requestId);
         
-      if (error) throw error;
+      if (requestError) throw requestError;
       
       // If approved, add user to organization members
       if (status === 'approved') {

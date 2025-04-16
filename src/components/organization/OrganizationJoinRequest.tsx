@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import type { TablesInsert } from "@/integrations/supabase/types";
 
 interface OrganizationJoinRequestProps {
   organizationId: string;
@@ -43,27 +44,31 @@ export function OrganizationJoinRequest({
       setIsSubmitting(true);
       
       // Insert the join request
+      const joinRequest: TablesInsert<'organization_join_requests'> = {
+        organization_id: organizationId,
+        user_id: user.id,
+        message: message,
+        status: "pending"
+      };
+
       const { error } = await supabase
         .from("organization_join_requests")
-        .insert({
-          organization_id: organizationId,
-          user_id: user.id,
-          message: message,
-          status: "pending"
-        });
+        .insert(joinRequest);
         
       if (error) throw error;
       
       // Send notification to the organization owner
+      const notification: TablesInsert<'notifications'> = {
+        user_id: ownerId,
+        title: "New Join Request",
+        message: `${user.name || user.email} has requested to join ${organizationName}`,
+        link: `/admin?tab=organizations`,
+        read: false
+      };
+
       await supabase
         .from("notifications")
-        .insert({
-          user_id: ownerId,
-          title: "New Join Request",
-          message: `${user.name || user.email} has requested to join ${organizationName}`,
-          link: `/admin?tab=organizations`,
-          read: false
-        });
+        .insert(notification);
       
       onStatusChange('pending');
       setIsDialogOpen(false);
