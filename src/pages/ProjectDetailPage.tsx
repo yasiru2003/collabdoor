@@ -370,101 +370,101 @@ export default function ProjectDetailPage() {
     );
   };
 
-  // New function to render partnership applications for project owners
-  const renderApplicationsTable = () => {
-    if (!isOwner || !projectApplications || projectApplications.length === 0) {
-      return null;
-    }
+// Let's focus on fixing the applications table section
+const renderApplicationsTable = () => {
+  if (!isOwner || !projectApplications || projectApplications.length === 0) {
+    return null;
+  }
 
-    return (
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Partnership Applications</CardTitle>
-          <CardDescription>Review and manage applications to partner on this project</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Applicant</TableHead>
-                <TableHead>Partnership Type</TableHead>
-                <TableHead>Date Applied</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {projectApplications.map((application) => (
-                <TableRow key={application.id}>
-                  <TableCell className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={application.profiles?.profile_image || ""} />
-                      <AvatarFallback>
-                        {application.profiles?.name ? application.profiles.name.substring(0, 2).toUpperCase() : "??"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-medium">{application.profiles?.name || "Unknown"}</div>
-                      <div className="text-xs text-muted-foreground">{application.profiles?.email}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {application.partnership_type.charAt(0).toUpperCase() + application.partnership_type.slice(1)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(application.created_at), "MMM d, yyyy")}
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant={
-                        application.status === "approved" ? "success" : 
-                        application.status === "rejected" ? "destructive" : 
-                        "secondary"
-                      }
-                    >
-                      {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {application.status === "pending" && (
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="h-8 text-green-700 hover:bg-green-100"
-                          onClick={() => handleUpdateApplicationStatus(application.id, "approved")}
-                        >
-                          <Check className="h-4 w-4 mr-1" /> Approve
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="h-8 text-red-700 hover:bg-red-100"
-                          onClick={() => handleUpdateApplicationStatus(application.id, "rejected")}
-                        >
-                          <X className="h-4 w-4 mr-1" /> Reject
-                        </Button>
-                      </div>
-                    )}
-                    {application.status !== "pending" && (
+  return (
+    <Card className="mt-6">
+      <CardHeader>
+        <CardTitle>Partnership Applications</CardTitle>
+        <CardDescription>Review and manage applications to partner on this project</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Applicant</TableHead>
+              <TableHead>Partnership Type</TableHead>
+              <TableHead>Date Applied</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {projectApplications.map((application) => (
+              <TableRow key={application.id}>
+                <TableCell className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={application.user?.profile_image || ""} />
+                    <AvatarFallback>
+                      {application.user?.name ? application.user.name.substring(0, 2).toUpperCase() : "??"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="font-medium">{application.user?.name || "Unknown"}</div>
+                    <div className="text-xs text-muted-foreground">{application.user?.email}</div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline">
+                    {application.partnership_type.charAt(0).toUpperCase() + application.partnership_type.slice(1)}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {format(new Date(application.created_at), "MMM d, yyyy")}
+                </TableCell>
+                <TableCell>
+                  <Badge 
+                    variant={
+                      application.status === "approved" ? "success" : 
+                      application.status === "rejected" ? "destructive" : 
+                      "secondary"
+                    }
+                  >
+                    {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {application.status === "pending" && (
+                    <div className="flex gap-2">
                       <Button 
                         size="sm" 
                         variant="outline"
+                        className="h-8 text-green-700 hover:bg-green-100"
+                        onClick={() => handleUpdateApplicationStatus(application.id, "approved")}
                       >
-                        <Mail className="h-4 w-4 mr-1" /> Contact
+                        <Check className="h-4 w-4 mr-1" /> Approve
                       </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    );
-  };
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="h-8 text-red-700 hover:bg-red-100"
+                        onClick={() => handleUpdateApplicationStatus(application.id, "rejected")}
+                      >
+                        <X className="h-4 w-4 mr-1" /> Reject
+                      </Button>
+                    </div>
+                  )}
+                  {application.status !== "pending" && (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                    >
+                      <Mail className="h-4 w-4 mr-1" /> Contact
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+};
 
   if (isLoading) {
     return (

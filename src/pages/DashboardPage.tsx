@@ -1,4 +1,3 @@
-
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -241,7 +240,7 @@ export default function DashboardPage() {
                               variant={
                                 application.status === "approved" ? "success" :
                                 application.status === "rejected" ? "destructive" :
-                                "outline"
+                                "secondary"
                               }
                             >
                               {application.status.charAt(0).toUpperCase() + application.status.slice(1)}

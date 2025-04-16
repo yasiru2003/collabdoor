@@ -1,6 +1,7 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/sonner";
+import { toast as sonnerToast } from "@/components/ui/sonner";
 import { useToast } from "@/hooks/use-toast";
 import { mapSupabaseProjectToProject, mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
 
@@ -339,11 +340,12 @@ export function useProjectApplications(projectId: string | undefined) {
     queryFn: async () => {
       if (!projectId) return [];
 
+      // Use a simpler query with proper error handling
       const { data, error } = await supabase
         .from("project_applications")
         .select(`
           *,
-          profiles:profiles!user_id(name, email, profile_image)
+          user:profiles!user_id(name, email, profile_image)
         `)
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
@@ -376,7 +378,7 @@ export function useUserApplications(userId: string | undefined) {
         .from("project_applications")
         .select(`
           *,
-          projects:projects!project_id(*, profiles(name))
+          projects(*, profiles(name))
         `)
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
@@ -393,9 +395,13 @@ export function useUserApplications(userId: string | undefined) {
 
       // Map the projects data in each application
       return (data || []).map(application => {
-        if (application.projects && application.projects.profiles) {
-          const mappedProject = mapSupabaseProjectToProject(application.projects);
-          mappedProject.organizerName = application.projects.profiles.name || "Unknown";
+        if (application.projects) {
+          const projectData = {
+            ...application.projects,
+            profiles: application.projects.profiles
+          };
+          const mappedProject = mapSupabaseProjectToProject(projectData);
+          mappedProject.organizerName = application.projects.profiles?.name || "Unknown";
           application.projects = mappedProject;
         }
         return application;
