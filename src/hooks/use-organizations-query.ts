@@ -27,7 +27,7 @@ export function usePartners() {
 }
 
 /**
- * Hook to fetch partnerships for a specific user
+ * Hook to fetch partnerships for a specific user with related data
  */
 export function usePartnerships(userId: string | undefined) {
   const { toast } = useToast();
@@ -41,8 +41,8 @@ export function usePartnerships(userId: string | undefined) {
         .from("partnerships")
         .select(`
           *,
-          project:projects(*),
-          organization:organizations(*)
+          projects:project_id(id, title, status, organization_name, completed_at),
+          organizations:organization_id(id, name, logo, industry, location)
         `)
         .eq("partner_id", userId)
         .order("created_at", { ascending: false });
