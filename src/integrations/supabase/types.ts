@@ -230,6 +230,8 @@ export type Database = {
           created_at: string
           id: string
           message: string | null
+          organization_id: string | null
+          organization_name: string | null
           partnership_type: string
           project_id: string
           status: Database["public"]["Enums"]["application_status"]
@@ -240,6 +242,8 @@ export type Database = {
           created_at?: string
           id?: string
           message?: string | null
+          organization_id?: string | null
+          organization_name?: string | null
           partnership_type: string
           project_id: string
           status?: Database["public"]["Enums"]["application_status"]
@@ -250,6 +254,8 @@ export type Database = {
           created_at?: string
           id?: string
           message?: string | null
+          organization_id?: string | null
+          organization_name?: string | null
           partnership_type?: string
           project_id?: string
           status?: Database["public"]["Enums"]["application_status"]
@@ -257,6 +263,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "project_applications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "project_applications_project_id_fkey"
             columns: ["project_id"]
