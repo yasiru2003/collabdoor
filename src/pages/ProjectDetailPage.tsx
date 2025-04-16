@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -448,6 +447,16 @@ export default function ProjectDetailPage() {
     );
   };
 
+  // Add a function to handle messaging with applicants
+  const handleMessageApplicant = (applicantId: string, applicantName: string) => {
+    navigate("/messages", { 
+      state: { 
+        participantId: applicantId,
+        participantName: applicantName
+      } 
+    });
+  };
+
 // Let's specifically fix the renderApplicationsTable function that's causing the error
 const renderApplicationsTable = () => {
   if (!isOwner || !projectApplications || projectApplications.length === 0) {
@@ -482,6 +491,7 @@ const renderApplicationsTable = () => {
               const profileImage = hasProfileData ? application.profiles?.profile_image || "" : "";
               const profileName = hasProfileData ? application.profiles?.name || "Unknown" : "Unknown";
               const profileEmail = hasProfileData ? application.profiles?.email || "" : "";
+              const applicantId = application.user_id;
               
               // Only calculate initials if we have a valid name
               const initials = profileName !== "Unknown" 
@@ -537,27 +547,36 @@ const renderApplicationsTable = () => {
                           onClick={() => handleUpdateApplicationStatus(application.id, "rejected")}
                         >
                           <X className="h-4 w-4 mr-1" /> Reject
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="h-8"
+                            onClick={() => handleMessageApplicant(applicantId, profileName)}
+                          >
+                            <Mail className="h-4 w-4 mr-1" /> Contact
+                          </Button>
+                        </div>
+                      )}
+                      {application.status !== "pending" && (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleMessageApplicant(applicantId, profileName)}
+                        >
+                          <Mail className="h-4 w-4 mr-1" /> Contact
                         </Button>
-                      </div>
-                    )}
-                    {application.status !== "pending" && (
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                      >
-                        <Mail className="h-4 w-4 mr-1" /> Contact
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
-};
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -898,50 +917,4 @@ const renderApplicationsTable = () => {
       
       {/* Progress Update Dialog */}
       <Dialog open={progressDialogOpen} onOpenChange={setProgressDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Add Progress Update</DialogTitle>
-            <DialogDescription>
-              Provide details about the progress made on this phase.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="progress-note">Progress Notes</Label>
-              <Textarea
-                id="progress-note"
-                placeholder="Describe the progress made, challenges encountered, and next steps..."
-                value={progressNote}
-                onChange={(e) => setProgressNote(e.target.value)}
-                rows={5}
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setProgressDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddProgressNote}>
-              Save Progress Update
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Project Completion Dialog */}
-      <Dialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <ProjectComplete 
-            projectId={id as string} 
-            projectTitle={project?.title || ''} 
-            partners={project?.partners || []}
-            onComplete={onProjectCompleted} 
-            onCancel={() => setCompleteDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
-    </Layout>
-  );
-}
+        <DialogContent className="sm:max-w-[5

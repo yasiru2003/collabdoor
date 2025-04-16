@@ -3,7 +3,7 @@ import { Project } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Calendar, MapPin, Users, Check, Loader2, BarChart2, Building } from "lucide-react";
+import { Calendar, MapPin, Users, Check, Loader2, BarChart2, Building, Mail } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
@@ -86,6 +86,26 @@ export function ProjectCard({ project }: ProjectCardProps) {
     e.preventDefault();
     navigate(`/projects/${project.id}?tab=progress`);
   };
+  
+  // Handle contact button click to message project organizer
+  const handleContact = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      // Redirect to login if not authenticated
+      navigate('/login', { state: { returnTo: `/projects/${project.id}` } });
+      return;
+    }
+    
+    // Navigate to messages with the organizer info
+    navigate("/messages", { 
+      state: { 
+        participantId: project.organizerId,
+        participantName: project.organizerName
+      } 
+    });
+  };
 
   // Render apply button based on conditions
   const renderApplyButton = () => {
@@ -99,9 +119,18 @@ export function ProjectCard({ project }: ProjectCardProps) {
     
     if (applicationStatus === "pending") {
       return (
-        <Button size="sm" variant="outline" disabled>
-          <Check className="h-4 w-4 mr-1" /> Applied
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" disabled>
+            <Check className="h-4 w-4 mr-1" /> Applied
+          </Button>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleContact}
+          >
+            <Mail className="h-4 w-4" />
+          </Button>
+        </div>
       );
     }
     
@@ -111,8 +140,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
           <Button size="sm" variant="outline" className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800" disabled>
             <Check className="h-4 w-4 mr-1" /> Approved
           </Button>
-          <Button size="sm" variant="outline" onClick={handleProgressClick}>
-            <BarChart2 className="h-4 w-4" />
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleContact}
+          >
+            <Mail className="h-4 w-4" />
           </Button>
         </div>
       );
@@ -120,17 +153,35 @@ export function ProjectCard({ project }: ProjectCardProps) {
     
     if (applicationStatus === "rejected") {
       return (
-        <Button size="sm" variant="outline" className="bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800" disabled>
-          Application Rejected
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800" disabled>
+            Application Rejected
+          </Button>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleContact}
+          >
+            <Mail className="h-4 w-4" />
+          </Button>
+        </div>
       );
     }
     
     return (
-      <Button size="sm" onClick={handleApply} disabled={isLoading}>
-        {isLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
-        Apply
-      </Button>
+      <div className="flex gap-2">
+        <Button size="sm" onClick={handleApply} disabled={isLoading}>
+          {isLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+          Apply
+        </Button>
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={handleContact}
+        >
+          <Mail className="h-4 w-4" />
+        </Button>
+      </div>
     );
   };
 

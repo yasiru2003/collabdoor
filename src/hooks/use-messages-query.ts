@@ -84,11 +84,26 @@ export function useMessages(userId: string | undefined) {
             return null;
           }
 
+          // Enhanced with organization info if available
+          let organizationName = null;
+          if (profile?.organization_id) {
+            const { data: organization, error: orgError } = await supabase
+              .from("organizations")
+              .select("name")
+              .eq("id", profile.organization_id)
+              .single();
+              
+            if (!orgError && organization) {
+              organizationName = organization.name;
+            }
+          }
+
           return {
             id: participantId, // Using the participant ID as conversation ID
             participantId: participantId,
             participantName: profile?.name || "Unknown User",
             participantImage: profile?.profile_image,
+            organizationName: organizationName,
             lastMessage: latestMessage?.content || "",
             lastMessageTime: latestMessage?.created_at || "",
             unreadCount: count || 0

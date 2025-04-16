@@ -1,4 +1,3 @@
-
 import { Organization } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -39,23 +38,6 @@ export function PartnerCard({ organization, skills = [] }: PartnerCardProps) {
       toast({
         title: "Cannot contact own organization",
         description: "You cannot start a conversation with your own organization.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check if there's already a conversation with this organization owner
-    const { data: existingMessages, error: messagesError } = await supabase
-      .from("messages")
-      .select("*")
-      .or(`and(sender_id.eq.${user.id},recipient_id.eq.${organization.owner_id}),and(sender_id.eq.${organization.owner_id},recipient_id.eq.${user.id})`)
-      .limit(1);
-
-    if (messagesError) {
-      console.error("Error checking existing messages:", messagesError);
-      toast({
-        title: "Error",
-        description: "There was a problem initiating contact. Please try again.",
         variant: "destructive",
       });
       return;
