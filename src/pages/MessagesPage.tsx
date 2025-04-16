@@ -11,19 +11,41 @@ import { useAuth } from "@/hooks/use-auth";
 import { useMessages, useConversation } from "@/hooks/use-supabase-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { NewConversation } from "@/components/messages/new-conversation";
 
 export default function MessagesPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeConversation, setActiveConversation] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
+  const [newContactInfo, setNewContactInfo] = useState<{
+    participantId: string;
+    participantName: string;
+  } | null>(null);
   
   const { data: conversations, isLoading: conversationsLoading, refetch: refetchConversations } = useMessages(user?.id);
   const { data: messages, isLoading: messagesLoading, refetch: refetchMessages } = useConversation(user?.id, activeConversation || undefined);
   
-  // Set first conversation as active by default
+  // Check if we navigated here with a contact request
+  useEffect(() => {
+    const contactState = location.state as { participantId?: string, participantName?: string } | null;
+    
+    if (contactState?.participantId && contactState?.participantName && user) {
+      setActiveConversation(contactState.participantId);
+      setNewContactInfo({
+        participantId: contactState.participantId,
+        participantName: contactState.participantName
+      });
+      
+      // Clear the location state to prevent re-triggering on navigation
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location, user, navigate]);
+
+  // Set first conversation as active by default if no active one is set
   useEffect(() => {
     if (conversations && conversations.length > 0 && !activeConversation) {
       setActiveConversation(conversations[0].participantId);
@@ -59,6 +81,12 @@ export default function MessagesPage() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleNewMessageSent = () => {
+    refetchMessages();
+    refetchConversations();
+    setNewContactInfo(null);
   };
 
   const filteredConversations = conversations?.filter(conv => 
@@ -130,7 +158,10 @@ export default function MessagesPage() {
               filteredConversations.map((conversation) => (
                 <div 
                   key={conversation.participantId}
-                  onClick={() => setActiveConversation(conversation.participantId)}
+                  onClick={() => {
+                    setActiveConversation(conversation.participantId);
+                    setNewContactInfo(null);
+                  }}
                   className={`p-3 border-b cursor-pointer hover:bg-muted/50 transition-colors ${activeConversation === conversation.participantId ? 'bg-muted' : ''}`}
                 >
                   <div className="flex items-start gap-3">
@@ -244,6 +275,12 @@ export default function MessagesPage() {
                       </div>
                     </div>
                   ))
+                ) : newContactInfo ? (
+                  <NewConversation 
+                    participantId={newContactInfo.participantId}
+                    participantName={newContactInfo.participantName}
+                    onMessageSent={handleNewMessageSent}
+                  />
                 ) : (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
@@ -254,19 +291,27 @@ export default function MessagesPage() {
                 )}
               </div>
 
-              {/* Message input */}
-              <div className="p-4 border-t">
-                <form onSubmit={handleSendMessage} className="flex gap-2">
-                  <Input 
-                    placeholder="Type your message..." 
-                    value={newMessage} 
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button type="submit" disabled={!newMessage.trim()}>Send</Button>
-                </form>
-              </div>
+              {/* Message input - only show if there are messages or we're not in new contact mode */}
+              {(!newContactInfo || messages?.length > 0) && (
+                <div className="p-4 border-t">
+                  <form onSubmit={handleSendMessage} className="flex gap-2">
+                    <Input 
+                      placeholder="Type your message..." 
+                      value={newMessage} 
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button type="submit" disabled={!newMessage.trim()}>Send</Button>
+                  </form>
+                </div>
+              )}
             </>
+          ) : activeConversation && newContactInfo ? (
+            <NewConversation 
+              participantId={newContactInfo.participantId}
+              participantName={newContactInfo.participantName}
+              onMessageSent={handleNewMessageSent}
+            />
           ) : (
             <div className="flex items-center justify-center h-full">
               <div className="text-center p-6">

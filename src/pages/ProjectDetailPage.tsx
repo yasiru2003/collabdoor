@@ -57,6 +57,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useProjectPhases } from "@/hooks/use-supabase-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useNavigate } from "react-router-dom";
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -80,6 +81,7 @@ export default function ProjectDetailPage() {
   const [progressNote, setProgressNote] = useState("");
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
   const { data: phases } = useProjectPhases(id);
+  const navigate = useNavigate();
   
   // Get default tab from URL or set to "overview"
   const defaultTab = searchParams.get("tab") || "overview";
@@ -92,6 +94,26 @@ export default function ProjectDetailPage() {
   
   // Check if user can update progress (either owner or approved partner)
   const canUpdateProgress = isOwner || isApprovedPartner;
+
+  const handleContact = () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to contact project organizers.",
+        variant: "destructive",
+      });
+      navigate("/login", { state: { returnTo: `/projects/${id}` } });
+      return;
+    }
+
+    // Navigate to messages page with the organizer contact info
+    navigate("/messages", { 
+      state: { 
+        participantId: project.organizerId,
+        participantName: project.organizerName
+      } 
+    });
+  };
 
   useEffect(() => {
     // Simulate checking if project is saved
@@ -182,10 +204,10 @@ export default function ProjectDetailPage() {
         <Button 
           variant="outline" 
           size="sm" 
-          disabled 
+          onClick={handleContact}
           className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 flex items-center gap-1"
         >
-          <Check className="h-4 w-4" /> Approved
+          <Mail className="h-4 w-4 mr-1" /> Contact
         </Button>
       );
     }

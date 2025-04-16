@@ -4,8 +4,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 import { Building, ExternalLink, MapPin, Users } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Badge } from "./ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 interface PartnerCardProps {
   organization: Organization;
@@ -13,6 +16,47 @@ interface PartnerCardProps {
 }
 
 export function PartnerCard({ organization, skills = [] }: PartnerCardProps) {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  const handleContact = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to contact organizations.",
+        variant: "destructive",
+      });
+      navigate("/login", { state: { returnTo: "/partners" } });
+      return;
+    }
+
+    // Check if there's already a conversation with this organization owner
+    const { data: existingMessages, error: messagesError } = await supabase
+      .from("messages")
+      .select("*")
+      .or(`and(sender_id.eq.${user.id},recipient_id.eq.${organization.owner_id}),and(sender_id.eq.${organization.owner_id},recipient_id.eq.${user.id})`)
+      .limit(1);
+
+    if (messagesError) {
+      console.error("Error checking existing messages:", messagesError);
+      toast({
+        title: "Error",
+        description: "There was a problem initiating contact. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Navigate to messages page with the participant ID
+    navigate("/messages", { 
+      state: { 
+        participantId: organization.owner_id,
+        participantName: organization.name
+      } 
+    });
+  };
+
   return (
     <Card className="h-full flex flex-col overflow-hidden transition-all hover:shadow-md hover:border-primary/20">
       <CardHeader className="pb-2">
@@ -92,7 +136,7 @@ export function PartnerCard({ organization, skills = [] }: PartnerCardProps) {
         ) : (
           <span></span>
         )}
-        <Button size="sm">Contact</Button>
+        <Button size="sm" onClick={handleContact}>Contact</Button>
       </CardFooter>
     </Card>
   );
