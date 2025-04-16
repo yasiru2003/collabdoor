@@ -13,11 +13,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Heart, MessageSquare, Share, Send, Users, 
-  AtSign, User, Building, MapPin 
+  AtSign, User, Building, MapPin, Loader2
 } from "lucide-react";
 import { FeedPost } from "@/components/feed/FeedPost";
 import { CreatePostForm } from "@/components/feed/CreatePostForm";
 import { Separator } from "@/components/ui/separator";
+import { FeedPost as FeedPostType } from "./types";
 
 export default function FeedPage() {
   const { user, loading: authLoading } = useAuth();
@@ -115,6 +116,44 @@ export default function FeedPage() {
               }
             });
           }
+          
+          // Fetch tagged organizations if any
+          const postsWithTags = data.filter(post => post.tagged_organizations && post.tagged_organizations.length > 0);
+          
+          if (postsWithTags.length > 0) {
+            // Get all unique organization IDs from tagged_organizations
+            const orgIds = new Set<string>();
+            postsWithTags.forEach(post => {
+              if (post.tagged_organizations) {
+                post.tagged_organizations.forEach(orgId => orgIds.add(orgId));
+              }
+            });
+            
+            // Fetch organization details
+            const { data: taggedOrgs, error: taggedOrgsError } = await supabase
+              .from("organizations")
+              .select("id, name, logo")
+              .in("id", Array.from(orgIds));
+              
+            if (taggedOrgsError) {
+              console.error("Error fetching tagged organizations:", taggedOrgsError);
+            } else if (taggedOrgs) {
+              // Create a map of organizations by ID
+              const orgsMap = taggedOrgs.reduce((acc, org) => {
+                acc[org.id] = org;
+                return acc;
+              }, {});
+              
+              // Attach tagged organizations details to posts
+              postsWithTags.forEach(post => {
+                if (post.tagged_organizations) {
+                  post.taggedOrganizationsDetails = post.tagged_organizations
+                    .map(orgId => orgsMap[orgId])
+                    .filter(Boolean);
+                }
+              });
+            }
+          }
         }
         
         return data || [];
@@ -193,10 +232,10 @@ export default function FeedPage() {
 
   return (
     <Layout>
-      <div className="container mx-auto py-6">
+      <div className="container mx-auto py-6 px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Left sidebar */}
-          <div className="md:col-span-1">
+          {/* Left sidebar - hidden on mobile, shown on tablet and above */}
+          <div className="hidden md:block md:col-span-1">
             <Card>
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-3">
@@ -248,7 +287,7 @@ export default function FeedPage() {
           </div>
           
           {/* Main content */}
-          <div className="md:col-span-2">
+          <div className="col-span-1 md:col-span-2">
             <CreatePostForm userOrganizations={userOrganizations || []} />
             
             <Tabs 
@@ -263,11 +302,13 @@ export default function FeedPage() {
               
               <TabsContent value="all" className="space-y-4">
                 {postsLoading ? (
-                  <p>Loading posts...</p>
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
                 ) : postsError ? (
                   <p className="text-red-500">Error loading posts</p>
                 ) : posts && posts.length > 0 ? (
-                  posts.map((post) => (
+                  posts.map((post: FeedPostType) => (
                     <FeedPost key={post.id} post={post} currentUser={user} />
                   ))
                 ) : (
@@ -283,11 +324,13 @@ export default function FeedPage() {
               
               <TabsContent value="following" className="space-y-4">
                 {postsLoading ? (
-                  <p>Loading posts...</p>
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
                 ) : postsError ? (
                   <p className="text-red-500">Error loading posts</p>
                 ) : posts && posts.length > 0 ? (
-                  posts.map((post) => (
+                  posts.map((post: FeedPostType) => (
                     <FeedPost key={post.id} post={post} currentUser={user} />
                   ))
                 ) : (
