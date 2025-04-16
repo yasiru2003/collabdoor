@@ -45,8 +45,10 @@ export function useProjects() {
         updatedAt: project.updated_at,
         image: project.image,
         location: project.location,
-        startDate: project.start_date,
-        endDate: project.end_date,
+        timeline: {
+          start: project.start_date,
+          end: project.end_date
+        },
         requiredSkills: project.required_skills,
         partnershipTypes: project.partnership_types,
         category: project.category,
@@ -101,8 +103,10 @@ export function useProject(projectId: string | undefined) {
         updatedAt: data.updated_at,
         image: data.image,
         location: data.location,
-        startDate: data.start_date,
-        endDate: data.end_date,
+        timeline: {
+          start: data.start_date,
+          end: data.end_date
+        },
         requiredSkills: data.required_skills,
         partnershipTypes: data.partnership_types,
         category: data.category,
@@ -159,8 +163,10 @@ export function useUserProjects(userId: string | undefined) {
         updatedAt: project.updated_at,
         image: project.image,
         location: project.location,
-        startDate: project.start_date,
-        endDate: project.end_date,
+        timeline: {
+          start: project.start_date,
+          end: project.end_date
+        },
         requiredSkills: project.required_skills,
         partnershipTypes: project.partnership_types,
         category: project.category,
@@ -220,8 +226,10 @@ export function useSavedProjects(userId: string | undefined) {
           updatedAt: project.updated_at,
           image: project.image,
           location: project.location,
-          startDate: project.start_date,
-          endDate: project.end_date,
+          timeline: {
+            start: project.start_date,
+            end: project.end_date
+          },
           requiredSkills: project.required_skills,
           partnershipTypes: project.partnership_types,
           category: project.category,
@@ -278,8 +286,10 @@ export function useActiveProjects() {
         updatedAt: project.updated_at,
         image: project.image,
         location: project.location,
-        startDate: project.start_date,
-        endDate: project.end_date,
+        timeline: {
+          start: project.start_date,
+          end: project.end_date
+        },
         requiredSkills: project.required_skills,
         partnershipTypes: project.partnership_types,
         category: project.category,
