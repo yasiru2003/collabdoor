@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -20,8 +19,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { NotificationsList } from "./notifications/NotificationsList";
 
-export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) {
+export function Header() {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const { 
@@ -78,38 +78,12 @@ export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) 
                       </Button>
                     )}
                   </div>
-                  <div className="max-h-64 md:max-h-80 overflow-y-auto">
-                    {notifications.length > 0 ? (
-                      notifications.map((notification) => (
-                        <div 
-                          key={notification.id} 
-                          className={`p-4 border-b last:border-0 hover:bg-muted/50 transition-colors ${notification.read ? 'bg-background' : 'bg-muted/30'}`}
-                        >
-                          <div className="flex justify-between items-start mb-1">
-                            <h4 className="font-medium text-sm">{notification.title}</h4>
-                            {!notification.read && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => markAsRead(notification.id)}
-                                className="h-6 px-2 text-xs"
-                              >
-                                Mark read
-                              </Button>
-                            )}
-                          </div>
-                          <p className="text-muted-foreground text-sm mb-1">{notification.message}</p>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(notification.created_at).toLocaleString()}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-4 text-center text-muted-foreground">
-                        No notifications
-                      </div>
-                    )}
-                  </div>
+                  <NotificationsList 
+                    notifications={notifications}
+                    loading={false}
+                    markAsRead={markAsRead}
+                    onClose={() => document.body.click()} // Close popover
+                  />
                 </PopoverContent>
               </Popover>
               

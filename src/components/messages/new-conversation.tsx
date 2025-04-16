@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { notifyNewMessage } from "@/services/notification-service";
 
 interface NewConversationProps {
   participantId: string;
@@ -42,6 +43,9 @@ export function NewConversation({ participantId, participantName, onMessageSent 
       });
 
       if (error) throw error;
+      
+      // Send notification to recipient
+      await notifyNewMessage(participantId, user.id, message);
       
       setMessage("");
       onMessageSent();

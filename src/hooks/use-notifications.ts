@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./use-auth";
 import { useToast } from "./use-toast";
+import { toast } from "@/components/ui/sonner";
 
 export interface Notification {
   id: string;
@@ -47,6 +48,48 @@ export function useNotifications() {
     }
 
     fetchNotifications();
+
+    // Setup real-time subscription for new notifications
+    const channel = supabase
+      .channel('public:notifications')
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        console.log('New notification:', payload);
+        // Show a toast notification
+        toast({
+          title: payload.new.title,
+          description: payload.new.message,
+        });
+        
+        // Add to notifications array
+        setNotifications(prev => [payload.new as Notification, ...prev]);
+      })
+      .subscribe();
+
+    // Also listen for updates (marking as read)
+    const updateChannel = supabase
+      .channel('public:notifications:updates')
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        console.log('Updated notification:', payload);
+        setNotifications(prev => 
+          prev.map(n => n.id === payload.new.id ? {...n, ...payload.new} : n)
+        );
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(updateChannel);
+    };
   }, [user]);
 
   // Mark notification as read
@@ -66,11 +109,6 @@ export function useNotifications() {
       setNotifications(notifications.map(n => 
         n.id === id ? { ...n, read: true } : n
       ));
-
-      toast({
-        title: "Notification marked as read",
-        description: "The notification has been marked as read.",
-      });
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }

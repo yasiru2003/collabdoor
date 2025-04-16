@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Layout } from "@/components/layout";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,8 +14,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { NewConversation } from "@/components/messages/new-conversation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { notifyNewMessage } from "@/services/notification-service";
 
 export default function MessagesPage() {
+  // ... keep existing code (state, hooks, etc.)
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -28,10 +30,13 @@ export default function MessagesPage() {
   } | null>(null);
   const [showSidebar, setShowSidebar] = useState(true);
   const isMobile = useIsMobile();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { data: conversations, isLoading: conversationsLoading, refetch: refetchConversations } = useMessages(user?.id);
   const { data: messages, isLoading: messagesLoading, refetch: refetchMessages } = useConversation(user?.id, activeConversation || undefined);
   
+  // ... keep existing code (effects, early returns, etc.)
+
   // Check if we navigated here with a contact request
   useEffect(() => {
     const contactState = location.state as { participantId?: string, participantName?: string } | null;
@@ -55,6 +60,13 @@ export default function MessagesPage() {
     }
   }, [conversations, activeConversation]);
 
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+
   // Redirect to login page if not authenticated
   if (!loading && !user) {
     navigate("/login");
@@ -74,6 +86,9 @@ export default function MessagesPage() {
 
       if (error) throw error;
       
+      // Send notification to recipient
+      await notifyNewMessage(activeConversation, user.id, newMessage);
+      
       setNewMessage("");
       refetchMessages();
       refetchConversations();
@@ -92,6 +107,7 @@ export default function MessagesPage() {
     setNewContactInfo(null);
   };
 
+  // ... keep existing code (helper functions)
   const filteredConversations = conversations?.filter(conv => 
     conv.participantName.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
@@ -130,8 +146,7 @@ export default function MessagesPage() {
     }
   }, [activeConversation, isMobile]);
 
-  // ... keep existing code (other utility functions)
-
+  // ... keep existing code (JSX)
   return (
     <Layout>
       <div className="mb-4 md:mb-6">
@@ -156,6 +171,7 @@ export default function MessagesPage() {
         {/* Conversations sidebar */}
         {(!isMobile || showSidebar) && (
           <div className={`${isMobile ? 'w-full' : 'w-full max-w-xs'} border-r`}>
+            {/* ... keep existing code (search bar and conversations list) */}
             <div className="p-3 border-b">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -228,6 +244,7 @@ export default function MessagesPage() {
         {/* Messages area */}
         {(!isMobile || !showSidebar) && (
           <div className="flex-1 flex flex-col">
+            {/* ... keep existing code (message display) */}
             {activeConversation && conversations?.length > 0 ? (
               <>
                 {/* Conversation header */}
@@ -275,36 +292,39 @@ export default function MessagesPage() {
                       ))}
                     </div>
                   ) : messages && messages.length > 0 ? (
-                    messages.map((message) => (
-                      <div 
-                        key={message.id} 
-                        className={`flex ${message.sender_id === user?.id ? "justify-end" : ""}`}
-                      >
-                        <div className={`flex items-start gap-2 max-w-[70%] ${message.sender_id === user?.id ? "flex-row-reverse" : ""}`}>
-                          {message.sender_id !== user?.id && (
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="text-xs">
-                                {conversations.find(c => c.participantId === message.sender_id)?.participantName.substring(0, 2).toUpperCase() || "UN"}
-                              </AvatarFallback>
-                            </Avatar>
-                          )}
-                          <div>
-                            <div 
-                              className={`p-3 rounded-lg ${
-                                message.sender_id === user?.id 
-                                  ? "bg-primary text-primary-foreground" 
-                                  : "bg-muted"
-                              }`}
-                            >
-                              <p className="text-sm">{message.content}</p>
-                            </div>
-                            <div className={`mt-1 text-xs text-muted-foreground ${message.sender_id === user?.id ? "text-right" : ""}`}>
-                              {formatTime(message.created_at)}
+                    <>
+                      {messages.map((message) => (
+                        <div 
+                          key={message.id} 
+                          className={`flex ${message.sender_id === user?.id ? "justify-end" : ""}`}
+                        >
+                          <div className={`flex items-start gap-2 max-w-[70%] ${message.sender_id === user?.id ? "flex-row-reverse" : ""}`}>
+                            {message.sender_id !== user?.id && (
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className="text-xs">
+                                  {conversations.find(c => c.participantId === message.sender_id)?.participantName.substring(0, 2).toUpperCase() || "UN"}
+                                </AvatarFallback>
+                              </Avatar>
+                            )}
+                            <div>
+                              <div 
+                                className={`p-3 rounded-lg ${
+                                  message.sender_id === user?.id 
+                                    ? "bg-primary text-primary-foreground" 
+                                    : "bg-muted"
+                                }`}
+                              >
+                                <p className="text-sm">{message.content}</p>
+                              </div>
+                              <div className={`mt-1 text-xs text-muted-foreground ${message.sender_id === user?.id ? "text-right" : ""}`}>
+                                {formatTime(message.created_at)}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      ))}
+                      <div ref={messagesEndRef} />
+                    </>
                   ) : newContactInfo ? (
                     <NewConversation 
                       participantId={newContactInfo.participantId}

@@ -132,3 +132,87 @@ export async function notifyProjectPartners(
     return false;
   }
 }
+
+// New function to notify about a new message
+export async function notifyNewMessage(
+  recipientId: string,
+  senderId: string,
+  messageContent: string
+): Promise<boolean> {
+  try {
+    // Get sender name
+    const { data: senderProfile, error: senderError } = await supabase
+      .from('profiles')
+      .select('name')
+      .eq('id', senderId)
+      .single();
+
+    if (senderError) {
+      console.error('Error fetching sender profile:', senderError);
+      throw senderError;
+    }
+
+    const senderName = senderProfile?.name || 'Someone';
+    const truncatedMessage = messageContent.length > 30 
+      ? `${messageContent.substring(0, 30)}...` 
+      : messageContent;
+
+    return await createNotification(
+      recipientId,
+      `New message from ${senderName}`,
+      truncatedMessage,
+      `/messages`
+    );
+  } catch (error) {
+    console.error('Error notifying about new message:', error);
+    return false;
+  }
+}
+
+// New function to notify about partnership status changes
+export async function notifyPartnershipStatus(
+  userId: string,
+  projectId: string,
+  projectName: string,
+  status: 'accepted' | 'rejected'
+): Promise<boolean> {
+  try {
+    const title = status === 'accepted' 
+      ? 'Partnership request accepted' 
+      : 'Partnership request rejected';
+    
+    const message = status === 'accepted'
+      ? `Your partnership request for "${projectName}" has been accepted!`
+      : `Your partnership request for "${projectName}" has been rejected.`;
+
+    return await createNotification(
+      userId,
+      title,
+      message,
+      `/projects/${projectId}`
+    );
+  } catch (error) {
+    console.error('Error notifying about partnership status:', error);
+    return false;
+  }
+}
+
+// New function to notify project owner about partnership request
+export async function notifyPartnershipRequest(
+  projectOwnerId: string,
+  projectId: string,
+  projectName: string,
+  applicantName: string
+): Promise<boolean> {
+  try {
+    return await createNotification(
+      projectOwnerId,
+      'New partnership request',
+      `${applicantName} wants to partner on your project "${projectName}"`,
+      `/projects/${projectId}`
+    );
+  } catch (error) {
+    console.error('Error notifying about partnership request:', error);
+    return false;
+  }
+}
