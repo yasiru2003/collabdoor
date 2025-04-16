@@ -1,5 +1,5 @@
 
-import { Project } from "@/types";
+import { Project, PartnershipType } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -9,6 +9,23 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { useState, useEffect } from "react";
 import { useProjectApplications } from "@/hooks/use-project-applications";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProjectCardProps {
   project: Project;
@@ -34,6 +51,17 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
   const navigate = useNavigate();
   
+  // New state for application dialog
+  const [applicationOpen, setApplicationOpen] = useState(false);
+  const [partnershipType, setPartnershipType] = useState<PartnershipType>(
+    project.partnershipTypes && project.partnershipTypes.length > 0 
+      ? project.partnershipTypes[0] as PartnershipType
+      : "skilled"
+  );
+  const [message, setMessage] = useState("");
+  const [userOrganizations, setUserOrganizations] = useState<{id: string, name: string}[]>([]);
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
+  
   // Check if current user is the project owner
   const isOwner = user && user.id === project.organizerId;
   
@@ -42,11 +70,28 @@ export function ProjectCard({ project }: ProjectCardProps) {
   
   // Check if applications are paused for this project
   const isApplicationPaused = project.applicationsEnabled === false;
-  
-  // Select default partnership type to apply with (first one in the list)
-  const defaultPartnershipType = project.partnershipTypes && project.partnershipTypes.length > 0 
-    ? project.partnershipTypes[0] 
-    : "skilled";
+
+  // Load user organizations
+  useEffect(() => {
+    const fetchUserOrganizations = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from("organizations")
+          .select("id, name")
+          .eq("owner_id", user.id);
+          
+        if (error) throw error;
+        
+        setUserOrganizations(data || []);
+      } catch (error) {
+        console.error("Error fetching user organizations:", error);
+      }
+    };
+    
+    fetchUserOrganizations();
+  }, [user]);
 
   // Check if the user has already applied
   useEffect(() => {
@@ -81,9 +126,19 @@ export function ProjectCard({ project }: ProjectCardProps) {
       return;
     }
     
-    const result = await applyToProject(project.id, user.id, defaultPartnershipType);
+    const result = await applyToProject(
+      project.id, 
+      user.id, 
+      partnershipType, 
+      message, 
+      selectedOrganizationId
+    );
+    
     if (result) {
       setApplicationStatus("pending");
+      setApplicationOpen(false);
+      setMessage("");
+      setSelectedOrganizationId(null);
     }
   };
 
@@ -111,6 +166,20 @@ export function ProjectCard({ project }: ProjectCardProps) {
         participantName: project.organizerName
       } 
     });
+  };
+
+  // Open application dialog instead of direct apply
+  const openApplicationDialog = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      // Redirect to login if not authenticated
+      navigate('/login', { state: { returnTo: `/projects/${project.id}` } });
+      return;
+    }
+    
+    setApplicationOpen(true);
   };
 
   // Render apply button based on conditions
@@ -201,7 +270,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
     
     return (
       <div className="flex gap-2">
-        <Button size="sm" onClick={handleApply} disabled={isLoading}>
+        <Button size="sm" onClick={openApplicationDialog} disabled={isLoading}>
           {isLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
           Apply
         </Button>
@@ -220,95 +289,172 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const hasOrganization = !!project.organizationId && !!project.organizationName;
 
   return (
-    <Card className="h-full flex flex-col overflow-hidden transition-all hover:shadow-md hover:border-primary/20">
-      <div className="aspect-video w-full bg-muted overflow-hidden">
-        {project.image ? (
-          <img 
-            src={project.image} 
-            alt={project.title} 
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/10">
-            <span className="text-lg font-semibold text-primary/70">{project.title.substring(0, 2).toUpperCase()}</span>
-          </div>
-        )}
-      </div>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <CardTitle>
-            <Link to={`/projects/${project.id}`} className="hover:text-primary transition-colors">
-              {project.title}
-            </Link>
-          </CardTitle>
-          <Badge variant={project.status === 'published' ? "default" : "outline"}>
-            {project.status === 'published' ? 'Active' : 'Completed'}
-          </Badge>
-        </div>
-        <CardDescription className="line-clamp-2">
-          {project.description}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex-grow">
-        <div className="flex flex-wrap gap-2 mb-4">
-          {project.partnershipTypes && project.partnershipTypes.map((type) => (
-            <Badge key={type} variant="outline" className={partnershipTypeColors[type as keyof typeof partnershipTypeColors]}>
-              {partnershipTypeLabels[type as keyof typeof partnershipTypeLabels]}
-            </Badge>
-          ))}
-        </div>
-        
-        <div className="space-y-2 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            <span>
-              {project.timeline && project.timeline.start ? new Date(project.timeline.start).toLocaleDateString() : "No start date"} - 
-              {project.timeline && project.timeline.end ? new Date(project.timeline.end).toLocaleDateString() : "No end date"}
-            </span>
-          </div>
-          {project.location && (
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
-              <span>{project.location}</span>
+    <>
+      <Card className="h-full flex flex-col overflow-hidden transition-all hover:shadow-md hover:border-primary/20">
+        <div className="aspect-video w-full bg-muted overflow-hidden">
+          {project.image ? (
+            <img 
+              src={project.image} 
+              alt={project.title} 
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/10">
+              <span className="text-lg font-semibold text-primary/70">{project.title.substring(0, 2).toUpperCase()}</span>
             </div>
           )}
+        </div>
+        <CardHeader className="pb-2">
+          <div className="flex justify-between items-start">
+            <CardTitle>
+              <Link to={`/projects/${project.id}`} className="hover:text-primary transition-colors">
+                {project.title}
+              </Link>
+            </CardTitle>
+            <Badge variant={project.status === 'published' ? "default" : "outline"}>
+              {project.status === 'published' ? 'Active' : 'Completed'}
+            </Badge>
+          </div>
+          <CardDescription className="line-clamp-2">
+            {project.description}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex-grow">
+          <div className="flex flex-wrap gap-2 mb-4">
+            {project.partnershipTypes && project.partnershipTypes.map((type) => (
+              <Badge key={type} variant="outline" className={partnershipTypeColors[type as keyof typeof partnershipTypeColors]}>
+                {partnershipTypeLabels[type as keyof typeof partnershipTypeLabels]}
+              </Badge>
+            ))}
+          </div>
+          
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              <span>
+                {project.timeline && project.timeline.start ? new Date(project.timeline.start).toLocaleDateString() : "No start date"} - 
+                {project.timeline && project.timeline.end ? new Date(project.timeline.end).toLocaleDateString() : "No end date"}
+              </span>
+            </div>
+            {project.location && (
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                <span>{project.location}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <span>{project.partners?.length || 0} partners</span>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-between border-t pt-4">
           <div className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span>{project.partners?.length || 0} partners</span>
-          </div>
-        </div>
-      </CardContent>
-      <CardFooter className="flex justify-between border-t pt-4">
-        <div className="flex items-center gap-2">
-          <Avatar className="h-7 w-7">
-            {hasOrganization ? (
-              <AvatarFallback className="text-xs bg-blue-100 text-blue-800">
-                {project.organizationName?.substring(0, 2).toUpperCase() || "OR"}
-              </AvatarFallback>
-            ) : (
-              <AvatarFallback className="text-xs bg-muted">
-                {project.organizerName ? project.organizerName.substring(0, 2).toUpperCase() : "??"}
-              </AvatarFallback>
-            )}
-          </Avatar>
-          <div className="flex flex-col">
-            <span className="text-sm">
+            <Avatar className="h-7 w-7">
               {hasOrganization ? (
-                <Link to={`/organizations/${project.organizationId}`} className="flex items-center hover:text-primary">
-                  <Building className="inline-block h-3 w-3 mr-1" />
-                  {project.organizationName}
-                </Link>
+                <AvatarFallback className="text-xs bg-blue-100 text-blue-800">
+                  {project.organizationName?.substring(0, 2).toUpperCase() || "OR"}
+                </AvatarFallback>
               ) : (
-                project.organizerName || "Unknown"
+                <AvatarFallback className="text-xs bg-muted">
+                  {project.organizerName ? project.organizerName.substring(0, 2).toUpperCase() : "??"}
+                </AvatarFallback>
               )}
-            </span>
-            {hasOrganization && (
-              <span className="text-xs text-muted-foreground">from {project.organizerName}</span>
-            )}
+            </Avatar>
+            <div className="flex flex-col">
+              <span className="text-sm">
+                {hasOrganization ? (
+                  <Link to={`/organizations/${project.organizationId}`} className="flex items-center hover:text-primary">
+                    <Building className="inline-block h-3 w-3 mr-1" />
+                    {project.organizationName}
+                  </Link>
+                ) : (
+                  project.organizerName || "Unknown"
+                )}
+              </span>
+              {hasOrganization && (
+                <span className="text-xs text-muted-foreground">from {project.organizerName}</span>
+              )}
+            </div>
           </div>
-        </div>
-        {renderApplyButton()}
-      </CardFooter>
-    </Card>
+          {renderApplyButton()}
+        </CardFooter>
+      </Card>
+
+      {/* Application Dialog */}
+      <Dialog open={applicationOpen} onOpenChange={setApplicationOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Apply to Join Project</DialogTitle>
+            <DialogDescription>
+              Apply to collaborate on "{project.title}". Provide details about how you can contribute.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Choose partnership type:</h4>
+              <Select
+                value={partnershipType}
+                onValueChange={(value) => setPartnershipType(value as PartnershipType)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select partnership type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {project.partnershipTypes.map((type) => (
+                    <SelectItem key={type} value={type} className="capitalize">
+                      {type} partnership
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Apply from organization (optional):</h4>
+              <Select
+                value={selectedOrganizationId || ""}
+                onValueChange={setSelectedOrganizationId}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Apply as individual" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Apply as individual</SelectItem>
+                  {userOrganizations.map((org) => (
+                    <SelectItem key={org.id} value={org.id}>
+                      {org.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Message (optional):</h4>
+              <Textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Describe how you or your organization can contribute to this project..."
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApplicationOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleApply} 
+              disabled={isLoading || !partnershipType}
+            >
+              {isLoading ? "Submitting..." : "Submit Application"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
