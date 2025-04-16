@@ -22,6 +22,16 @@ export function NewConversation({ participantId, participantName, onMessageSent 
     e.preventDefault();
     if (!message.trim() || !participantId || !user) return;
 
+    // Check if user is trying to message themselves or their own organization
+    if (participantId === user.id) {
+      toast({
+        title: "Cannot message yourself",
+        description: "You cannot send messages to yourself.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setSending(true);
       

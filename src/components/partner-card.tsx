@@ -19,6 +19,9 @@ export function PartnerCard({ organization, skills = [] }: PartnerCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  
+  // Check if the organization belongs to the current user
+  const isOwnOrganization = user?.id === organization.owner_id;
 
   const handleContact = async () => {
     if (!user) {
@@ -28,6 +31,16 @@ export function PartnerCard({ organization, skills = [] }: PartnerCardProps) {
         variant: "destructive",
       });
       navigate("/login", { state: { returnTo: "/partners" } });
+      return;
+    }
+
+    // Prevent contacting own organization
+    if (isOwnOrganization) {
+      toast({
+        title: "Cannot contact own organization",
+        description: "You cannot start a conversation with your own organization.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -136,7 +149,15 @@ export function PartnerCard({ organization, skills = [] }: PartnerCardProps) {
         ) : (
           <span></span>
         )}
-        <Button size="sm" onClick={handleContact}>Contact</Button>
+        <Button 
+          size="sm" 
+          onClick={handleContact}
+          disabled={isOwnOrganization}
+          aria-label={isOwnOrganization ? "Cannot contact your own organization" : "Contact organization"}
+          title={isOwnOrganization ? "Cannot contact your own organization" : "Contact organization"}
+        >
+          Contact
+        </Button>
       </CardFooter>
     </Card>
   );

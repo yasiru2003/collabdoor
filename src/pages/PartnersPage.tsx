@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Layout } from "@/components/layout";
 import { PartnerCard } from "@/components/partner-card";
@@ -9,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { usePartners } from "@/hooks/use-supabase-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/use-auth";
 
 // Define industry skill mappings
 const industrySkills: Record<string, string[]> = {
@@ -27,11 +29,17 @@ export default function PartnersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [industryFilter, setIndustryFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
+  const { user } = useAuth();
 
   const { data: partners, isLoading } = usePartners();
 
   // Filter and search organizations
   const filteredOrganizations = partners?.filter(org => {
+    // Exclude user's own organizations
+    if (user && org.owner_id === user.id) {
+      return false;
+    }
+    
     // Search filter
     const matchesSearch = 
       !searchQuery || 
