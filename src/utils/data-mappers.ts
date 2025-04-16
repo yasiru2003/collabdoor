@@ -38,6 +38,7 @@ export function mapSupabaseProjectToProject(supabaseProject: any): Project {
     createdAt: supabaseProject.created_at,
     updatedAt: supabaseProject.updated_at,
     completedAt: supabaseProject.completed_at,
-    applicationsEnabled: supabaseProject.applications_enabled,
+    applicationsEnabled: supabaseProject.applications_enabled !== false,
+    proposalFilePath: supabaseProject.proposal_file_path,
   };
 }
