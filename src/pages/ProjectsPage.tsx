@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Layout } from "@/components/layout";
 import { ProjectCard } from "@/components/project-card";
@@ -10,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useProjects, useUserProjects } from "@/hooks/use-supabase-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function ProjectsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -20,6 +22,7 @@ export default function ProjectsPage() {
   const { user } = useAuth();
   const { data: allProjects, isLoading: isLoadingProjects } = useProjects();
   const { data: userProjects, isLoading: isLoadingUserProjects } = useUserProjects(user?.id);
+  const navigate = useNavigate();
 
   // Filter and search projects
   const filterProjects = (projects = []) => {
@@ -68,7 +71,7 @@ export default function ProjectsPage() {
           <h1 className="text-3xl font-bold">Projects</h1>
           <p className="text-muted-foreground">Explore collaboration opportunities or manage your projects</p>
         </div>
-        <Button className="gap-1 self-start">
+        <Button className="gap-1 self-start" onClick={() => navigate("/projects/new")}>
           <Plus className="h-4 w-4" />
           <span>New Project</span>
         </Button>
@@ -196,7 +199,7 @@ export default function ProjectsPage() {
           ) : (
             <div className="text-center py-12">
               <p className="text-muted-foreground">You haven't created any projects yet.</p>
-              <Button className="mt-4">
+              <Button className="mt-4" onClick={() => navigate("/projects/new")}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Your First Project
               </Button>
