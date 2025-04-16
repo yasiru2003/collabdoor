@@ -17,9 +17,10 @@ interface ProjectCompleteProps {
     name: string;
   }>;
   onComplete: () => void;
+  onCancel?: () => void; // Add the optional onCancel prop
 }
 
-export function ProjectComplete({ projectId, projectTitle, partners, onComplete }: ProjectCompleteProps) {
+export function ProjectComplete({ projectId, projectTitle, partners, onComplete, onCancel }: ProjectCompleteProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -114,7 +115,15 @@ export function ProjectComplete({ projectId, projectTitle, partners, onComplete 
             <li>Allow partners to leave reviews for the project</li>
           </ul>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex justify-between">
+          {onCancel && (
+            <Button 
+              variant="outline" 
+              onClick={onCancel}
+            >
+              Cancel
+            </Button>
+          )}
           <Button 
             onClick={handleComplete} 
             disabled={loading}
