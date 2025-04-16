@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,8 @@ import { useNavigate } from "react-router-dom";
 import { usePartnerships } from "@/hooks/use-organizations-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useProjectApplications } from "@/hooks/use-project-applications";
+import type { ApplicationStatus } from "@/hooks/use-project-applications";
 
 export default function PartnersPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -29,6 +32,9 @@ export default function PartnersPage() {
   
   // Use the enhanced usePartnerships hook
   const { data: partnerships, isLoading: isLoadingPartnerships, refetch } = usePartnerships(user?.id);
+
+  // Import the useProjectApplications hook that contains the working accept/reject logic
+  const { updateApplicationStatus } = useProjectApplications();
 
   // Filter partnerships based on search query
   const filteredPartnerships = partnerships?.filter(partnership => {
@@ -55,16 +61,40 @@ export default function PartnersPage() {
   // Find rejected partnerships
   const rejectedPartnerships = filteredPartnerships?.filter(p => p.status === 'rejected') || [];
 
-  // Accept a partnership request
+  // Accept a partnership request using the application hook
   const handleAcceptPartnership = async (partnershipId) => {
     try {
-      // Fixed: Update the partnership status in the partnerships table
-      const { error } = await supabase
+      // Get the partnership details to get application ID
+      const { data: partnershipData, error: fetchError } = await supabase
         .from("partnerships")
-        .update({ status: "active" })
-        .eq("id", partnershipId);
+        .select("*")
+        .eq("id", partnershipId)
+        .single();
 
-      if (error) throw error;
+      if (fetchError) throw fetchError;
+
+      // Check if there's a corresponding application
+      const { data: applicationData, error: appError } = await supabase
+        .from("project_applications")
+        .select("id")
+        .eq("project_id", partnershipData.project_id)
+        .eq("user_id", partnershipData.partner_id)
+        .maybeSingle();
+
+      if (appError) throw appError;
+
+      if (applicationData?.id) {
+        // If there's an application, use the updateApplicationStatus function
+        await updateApplicationStatus(applicationData.id, "approved" as ApplicationStatus);
+      } else {
+        // If no application exists, just update the partnership status directly
+        const { error } = await supabase
+          .from("partnerships")
+          .update({ status: "active" })
+          .eq("id", partnershipId);
+
+        if (error) throw error;
+      }
 
       toast({
         title: "Partnership accepted",
@@ -82,15 +112,40 @@ export default function PartnersPage() {
     }
   };
 
-  // Reject a partnership request
+  // Reject a partnership request using the application hook
   const handleRejectPartnership = async (partnershipId) => {
     try {
-      const { error } = await supabase
+      // Get the partnership details to get application ID
+      const { data: partnershipData, error: fetchError } = await supabase
         .from("partnerships")
-        .update({ status: "rejected" })
-        .eq("id", partnershipId);
+        .select("*")
+        .eq("id", partnershipId)
+        .single();
 
-      if (error) throw error;
+      if (fetchError) throw fetchError;
+
+      // Check if there's a corresponding application
+      const { data: applicationData, error: appError } = await supabase
+        .from("project_applications")
+        .select("id")
+        .eq("project_id", partnershipData.project_id)
+        .eq("user_id", partnershipData.partner_id)
+        .maybeSingle();
+
+      if (appError) throw appError;
+
+      if (applicationData?.id) {
+        // If there's an application, use the updateApplicationStatus function
+        await updateApplicationStatus(applicationData.id, "rejected" as ApplicationStatus);
+      } else {
+        // If no application exists, just update the partnership status directly
+        const { error } = await supabase
+          .from("partnerships")
+          .update({ status: "rejected" })
+          .eq("id", partnershipId);
+
+        if (error) throw error;
+      }
 
       toast({
         title: "Partnership rejected",
