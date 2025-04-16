@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Project, PartnershipType } from "@/types";
-import { useProject, useProjectApplications } from "@/hooks/use-supabase-query";
+import { useProject, useProjectApplications } from "@/hooks/use-projects-query";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
