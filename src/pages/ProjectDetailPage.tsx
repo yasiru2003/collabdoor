@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -13,9 +14,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Project, PartnershipType, ProjectPhase } from "@/types";
+import { Project, PartnershipType, ProjectPhase, ApplicationWithProfile } from "@/types";
 import { useProject } from "@/hooks/use-projects-query";
-import { useProjectApplications, ApplicationWithProfile, ProfileData } from "@/hooks/use-applications-query";
+import { useProjectApplications } from "@/hooks/use-applications-query";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
