@@ -68,7 +68,7 @@ export function BottomNav() {
           </Button>
         </SheetTrigger>
         <SheetContent className="w-[300px] p-0" side="right">
-          <Sidebar />
+          <Sidebar open={open} setOpen={setOpen} />
         </SheetContent>
       </Sheet>
     </div>
