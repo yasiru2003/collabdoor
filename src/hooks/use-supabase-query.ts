@@ -85,7 +85,10 @@ export function usePartners() {
 }
 
 export function useUserProjects(userId: string | undefined) {
-  if (!userId) return [];
+  return useQuery({
+    queryKey: ["userProjects", userId],
+    queryFn: async () => {
+      if (!userId) return [];
 
       const { data, error } = await supabase
         .from("projects")
