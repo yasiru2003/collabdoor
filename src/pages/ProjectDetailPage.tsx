@@ -398,14 +398,14 @@ const renderApplicationsTable = () => {
               <TableRow key={application.id}>
                 <TableCell className="flex items-center gap-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={application.user?.profile_image || ""} />
+                    <AvatarImage src={application.profiles?.profile_image || ""} />
                     <AvatarFallback>
-                      {application.user?.name ? application.user.name.substring(0, 2).toUpperCase() : "??"}
+                      {application.profiles?.name ? application.profiles.name.substring(0, 2).toUpperCase() : "??"}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="font-medium">{application.user?.name || "Unknown"}</div>
-                    <div className="text-xs text-muted-foreground">{application.user?.email}</div>
+                    <div className="font-medium">{application.profiles?.name || "Unknown"}</div>
+                    <div className="text-xs text-muted-foreground">{application.profiles?.email}</div>
                   </div>
                 </TableCell>
                 <TableCell>
