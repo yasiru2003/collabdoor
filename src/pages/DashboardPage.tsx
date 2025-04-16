@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Clock, Folder, LayoutDashboard, Mail, Users, Users2 } from "lucide-react";
+import { CalendarDays, Clock, Folder, LayoutDashboard, Mail, Users, Users2, Filter } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +26,9 @@ const DashboardPage = () => {
   // Use the hooks to fetch data
   const { data: projects = [], isLoading: projectsLoading } = useUserProjects(user?.id);
   const { data: userApplications = [], isLoading: applicationsLoading } = useUserApplications(user?.id);
+  
+  // Add application filter state
+  const [applicationFilter, setApplicationFilter] = useState<ApplicationStatus | "all">("all");
 
   useEffect(() => {
     const fetchReceivedApplications = async () => {
@@ -174,6 +177,11 @@ const DashboardPage = () => {
     }
   };
 
+  // Filter applications based on status
+  const filteredUserApplications = userApplications.filter(app => 
+    applicationFilter === "all" || app.status === applicationFilter
+  );
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -213,15 +221,30 @@ const DashboardPage = () => {
           </div>
 
           <TabsContent value="applications" className="space-y-4">
-            <h2 className="text-xl font-semibold">Applications</h2>
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Applications</h2>
+              <div className="flex items-center space-x-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <select 
+                  className="bg-background text-sm border rounded-md px-2 py-1"
+                  value={applicationFilter}
+                  onChange={(e) => setApplicationFilter(e.target.value as ApplicationStatus | "all")}
+                >
+                  <option value="all">All Applications</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+            </div>
             
             {isLoading ? (
               <div className="flex items-center justify-center py-10">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
               </div>
-            ) : userApplications.length > 0 ? (
+            ) : filteredUserApplications.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2">
-                {userApplications.map((application) => (
+                {filteredUserApplications.map((application) => (
                   <Card key={application.id} className="overflow-hidden">
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
@@ -263,9 +286,11 @@ const DashboardPage = () => {
               <Card className="bg-muted/50">
                 <CardContent className="flex flex-col items-center justify-center py-10 text-center">
                   <LayoutDashboard className="h-10 w-10 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No Applications Yet</h3>
+                  <h3 className="text-lg font-medium mb-2">No Applications Found</h3>
                   <p className="text-muted-foreground mb-4">
-                    You haven't applied to any projects yet.
+                    {applicationFilter === "all" 
+                      ? "You haven't applied to any projects yet."
+                      : `No ${applicationFilter} applications found.`}
                   </p>
                   <Button asChild variant="secondary">
                     <Link to="/projects">Browse Projects</Link>
@@ -345,7 +370,28 @@ const DashboardPage = () => {
           </TabsContent>
 
           <TabsContent value="received" className="space-y-4">
-            <h2 className="text-xl font-semibold">Applications to My Projects</h2>
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Applications to My Projects</h2>
+              <div className="flex items-center space-x-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <select 
+                  className="bg-background text-sm border rounded-md px-2 py-1"
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const filtered = value === "all" 
+                      ? receivedApplications 
+                      : receivedApplications.filter(app => app.status === value);
+                    setReceivedApplications(filtered);
+                  }}
+                  defaultValue="all"
+                >
+                  <option value="all">All Applications</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+            </div>
             
             {isLoading ? (
               <div className="flex items-center justify-center py-10">

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, Filter, Check, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { 
@@ -19,14 +19,17 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { usePartnerships } from "@/hooks/use-organizations-query";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function PartnersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   // Use the enhanced usePartnerships hook
-  const { data: partnerships, isLoading: isLoadingPartnerships } = usePartnerships(user?.id);
+  const { data: partnerships, isLoading: isLoadingPartnerships, refetch } = usePartnerships(user?.id);
 
   // Filter partnerships based on search query
   const filteredPartnerships = partnerships?.filter(partnership => {
@@ -49,6 +52,60 @@ export default function PartnersPage() {
   const pastPartnerships = filteredPartnerships?.filter(p => 
     p.status === 'completed' || (p.projects?.status === 'completed')
   ) || [];
+
+  // Find rejected partnerships
+  const rejectedPartnerships = filteredPartnerships?.filter(p => p.status === 'rejected') || [];
+
+  // Accept a partnership request
+  const handleAcceptPartnership = async (partnershipId) => {
+    try {
+      const { error } = await supabase
+        .from("partnerships")
+        .update({ status: "active" })
+        .eq("id", partnershipId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Partnership accepted",
+        description: "The partnership has been activated successfully.",
+      });
+      
+      refetch();
+    } catch (error) {
+      toast({
+        title: "Error accepting partnership",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Reject a partnership request
+  const handleRejectPartnership = async (partnershipId) => {
+    try {
+      const { error } = await supabase
+        .from("partnerships")
+        .update({ status: "rejected" })
+        .eq("id", partnershipId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Partnership rejected",
+        description: "The partnership has been rejected.",
+        variant: "destructive",
+      });
+      
+      refetch();
+    } catch (error) {
+      toast({
+        title: "Error rejecting partnership",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   // View partnership details (navigate to project page)
   const handleViewDetails = (projectId) => {
@@ -88,6 +145,9 @@ export default function PartnersPage() {
                 {partnership.status === 'active' && (
                   <Badge variant="default">Active</Badge>
                 )}
+                {partnership.status === 'rejected' && (
+                  <Badge variant="destructive">Rejected</Badge>
+                )}
                 {(partnership.status === 'completed' || partnership.projects?.status === 'completed') && (
                   <Badge variant="outline">Completed</Badge>
                 )}
@@ -95,7 +155,7 @@ export default function PartnersPage() {
               <TableCell className="text-muted-foreground">
                 {format(new Date(partnership.created_at), "MMM d, yyyy")}
               </TableCell>
-              <TableCell>
+              <TableCell className="space-x-2">
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -103,6 +163,29 @@ export default function PartnersPage() {
                 >
                   View Details
                 </Button>
+                
+                {partnership.status === 'pending' && (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="text-green-600"
+                      onClick={() => handleAcceptPartnership(partnership.id)}
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      Accept
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="text-red-600"
+                      onClick={() => handleRejectPartnership(partnership.id)}
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Reject
+                    </Button>
+                  </>
+                )}
               </TableCell>
             </TableRow>
           ))
@@ -140,7 +223,8 @@ export default function PartnersPage() {
         <TabsList>
           <TabsTrigger value="requested">Requested Partners</TabsTrigger>
           <TabsTrigger value="active">Active Partners</TabsTrigger>
-          <TabsTrigger value="past">Past Partners</TabsTrigger>
+          <TabsTrigger value="past">Completed Partners</TabsTrigger>
+          <TabsTrigger value="rejected">Rejected Partners</TabsTrigger>
         </TabsList>
 
         <TabsContent value="requested" className="mt-4">
@@ -176,6 +260,18 @@ export default function PartnersPage() {
             </div>
           ) : (
             renderPartnershipTable(pastPartnerships)
+          )}
+        </TabsContent>
+
+        <TabsContent value="rejected" className="mt-4">
+          {isLoadingPartnerships ? (
+            <div className="py-8">
+              <Skeleton className="h-12 w-full mb-4" />
+              <Skeleton className="h-12 w-full mb-4" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : (
+            renderPartnershipTable(rejectedPartnerships)
           )}
         </TabsContent>
       </Tabs>

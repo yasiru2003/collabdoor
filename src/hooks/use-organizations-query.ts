@@ -72,7 +72,7 @@ export function usePartnerships(userId: string | undefined) {
         organization_id: app.organization_id,
         // Cast partnership_type to the correct enum type
         partnership_type: app.partnership_type as PartnershipType,
-        status: app.status === 'pending' ? 'pending' : (app.status === 'approved' ? 'active' : 'rejected'),
+        status: app.status === 'pending' ? 'pending' : (app.status === 'approved' ? 'active' : app.status),
         created_at: app.created_at,
         updated_at: app.updated_at,
         projects: app.projects,
@@ -89,7 +89,18 @@ export function usePartnerships(userId: string | undefined) {
         }
       });
 
-      return allPartnerships;
+      // Mark partnerships as completed if their project is completed
+      const finalPartnerships = allPartnerships.map(partnership => {
+        if (partnership.projects?.status === 'completed') {
+          return {
+            ...partnership,
+            status: 'completed'
+          };
+        }
+        return partnership;
+      });
+
+      return finalPartnerships;
     },
     enabled: !!userId,
   });
