@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -43,6 +42,8 @@ export default function ProjectDetailPage() {
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
   const { data: phases } = useProjectPhases(id);
   const navigate = useNavigate();
+  
+  // New state for organization selection
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
   
   // Get default tab from URL or set to "overview"
@@ -120,6 +121,7 @@ export default function ProjectDetailPage() {
   const handleApply = async () => {
     if (!user || !id) return;
     
+    // Pass the organization ID to the applyToProject function
     const result = await applyToProject(id, user.id, partnershipType, message, selectedOrganizationId);
     if (result) {
       setApplicationStatus("pending");
@@ -151,7 +153,6 @@ export default function ProjectDetailPage() {
     }
   };
 
-  // Add a function to handle messaging with applicants
   const handleMessageApplicant = (applicantId: string, applicantName: string) => {
     navigate("/messages", { 
       state: { 
@@ -198,23 +199,7 @@ export default function ProjectDetailPage() {
     );
   }
 
-  if (error) {
-    return (
-      <Layout>
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold mb-2">Project Not Found</h2>
-          <p className="text-muted-foreground mb-6">
-            The project you're looking for doesn't exist or has been removed.
-          </p>
-          <Button asChild>
-            <Link to="/projects">Browse Projects</Link>
-          </Button>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (!project) {
+  if (error || !project) {
     return (
       <Layout>
         <div className="text-center py-12">

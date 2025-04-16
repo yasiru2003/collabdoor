@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bookmark, CalendarIcon, MapPin, Users } from "lucide-react";
+import { Bookmark, CalendarIcon, MapPin, Users, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog,
@@ -63,6 +64,7 @@ export function ProjectHeader({
   const { user } = useAuth();
   const [userOrganizations, setUserOrganizations] = useState<{id: string, name: string}[]>([]);
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
+  const navigate = useNavigate();
   
   useEffect(() => {
     const fetchUserOrganizations = async () => {
@@ -91,27 +93,43 @@ export function ProjectHeader({
   };
   
   const handleApplicationSubmit = () => {
-    // Pass the selected organization to the parent component
     if (handleApply) {
-      // We'll modify the parent component to accept the organization ID
       handleApply();
     }
   };
 
+  const openApplicationDialog = () => {
+    if (!user) {
+      navigate('/login', { state: { returnTo: `/projects/${project.id}` } });
+      return;
+    }
+    
+    setApplicationOpen(true);
+  };
+
+  // Format dates for display
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return "";
+    return format(new Date(dateString), "MMM yyyy");
+  };
+
+  const startDate = project.timeline?.start ? formatDate(project.timeline.start) : "";
+  const endDate = project.timeline?.end ? formatDate(project.timeline.end) : "";
+  
   return (
     <div className="mb-8">
       <div className="relative overflow-hidden rounded-lg">
-        {/* Background image or color */}
-        <div className="h-32 md:h-48 bg-gradient-to-r from-blue-600 to-indigo-700"></div>
+        {/* Background image or color - reduced height */}
+        <div className="h-24 md:h-32 bg-gradient-to-r from-indigo-600 to-blue-500"></div>
         
         {/* Project info overlay */}
-        <div className="relative px-4 pb-4 pt-0 sm:px-6 -mt-20">
-          <div className="flex flex-col md:flex-row md:items-end gap-4">
+        <div className="relative px-4 pb-4 pt-0 sm:px-6 -mt-16">
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
             {/* Project image */}
-            <div className="flex-shrink-0">
-              <Avatar className="h-24 w-24 md:h-32 md:w-32 rounded-lg border-4 border-white bg-white shadow-lg">
+            <div className="flex-shrink-0 bg-white p-1 rounded-lg shadow-lg">
+              <Avatar className="h-24 w-24 rounded-lg border-2 border-white bg-white">
                 <AvatarImage src={project.image} alt={project.title} />
-                <AvatarFallback className="bg-muted">
+                <AvatarFallback className="bg-muted text-lg font-bold">
                   {project.title.substring(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -119,14 +137,15 @@ export function ProjectHeader({
             
             {/* Project details */}
             <div className="flex-1">
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground mt-2">
                 {project.title}
               </h1>
               
               <div className="mt-2 flex flex-wrap items-center gap-4">
                 {project.organizationName && (
-                  <div className="text-sm text-muted-foreground">
-                    By {project.organizationName}
+                  <div className="flex items-center gap-1 text-sm font-medium">
+                    <Building className="h-3.5 w-3.5" />
+                    <span>{project.organizationName}</span>
                   </div>
                 )}
                 
@@ -141,9 +160,7 @@ export function ProjectHeader({
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                     <CalendarIcon className="h-3.5 w-3.5" />
                     <span>
-                      {format(new Date(project.timeline.start), "MMM yyyy")}
-                      {project.timeline.end && 
-                        ` - ${format(new Date(project.timeline.end), "MMM yyyy")}`}
+                      {startDate}{endDate && ` - ${endDate}`}
                     </span>
                   </div>
                 )}
@@ -168,15 +185,16 @@ export function ProjectHeader({
               </div>
             </div>
             
-            {/* Action buttons */}
-            <div className="flex flex-col gap-2 mt-4 md:mt-0">
+            {/* Action buttons - Fixed position and styling */}
+            <div className="flex md:flex-col gap-2 mt-4 md:mt-0 md:min-w-36">
               {!isOwner && (
-                <div className="flex gap-2">
+                <div className="flex md:flex-col gap-2 w-full">
                   {applicationStatus === null && project.status === "published" && (
                     <Button 
-                      onClick={() => setApplicationOpen(true)}
+                      onClick={openApplicationDialog}
                       disabled={applicationLoading || !user}
                       className="w-full"
+                      size="lg"
                     >
                       Apply to Join
                     </Button>
@@ -200,28 +218,30 @@ export function ProjectHeader({
                     </Button>
                   )}
                   
-                  <Button 
-                    onClick={handleSaveProject}
-                    variant={saved ? "default" : "outline"}
-                    size="icon"
-                  >
-                    <Bookmark className={saved ? "fill-white" : ""} />
-                  </Button>
+                  <div className="flex gap-2 w-full">
+                    <Button 
+                      onClick={handleSaveProject}
+                      variant={saved ? "default" : "outline"}
+                      size="icon"
+                      className="flex-grow-0"
+                    >
+                      <Bookmark className={saved ? "fill-white" : ""} />
+                    </Button>
+                    
+                    <Button 
+                      onClick={handleContact} 
+                      variant="outline"
+                      disabled={!user}
+                      className="flex-grow"
+                    >
+                      Contact Organizer
+                    </Button>
+                  </div>
                 </div>
               )}
               
-              {!isOwner && (
-                <Button 
-                  onClick={handleContact} 
-                  variant="outline"
-                  disabled={!user}
-                >
-                  Contact Organizer
-                </Button>
-              )}
-              
               {isOwner && (
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full">
                   <Button variant="outline" className="w-full">
                     Edit Project
                   </Button>
