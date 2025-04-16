@@ -1,28 +1,20 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Heart, MessageSquare, Share, Send, Users, 
-  AtSign, User, Building, MapPin 
-} from "lucide-react";
+import { MessageSquare, User, Building, Users } from "lucide-react";
 import { FeedPost } from "@/components/feed/FeedPost";
 import { CreatePostForm } from "@/components/feed/CreatePostForm";
-import { Separator } from "@/components/ui/separator";
 
 export default function FeedPage() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("all");
 
   // Query to fetch all posts
@@ -40,10 +32,10 @@ export default function FeedPage() {
           .from("feed_posts")
           .select(`
             *,
-            profiles!inner(name, profile_image),
+            profiles(*),
             organizations(name, logo),
             feed_likes(id, user_id),
-            feed_comments(id, content, created_at, user_id, profiles!inner(name, profile_image))
+            feed_comments(id, content, created_at, user_id, profiles(*))
           `)
           .order("created_at", { ascending: false });
         
