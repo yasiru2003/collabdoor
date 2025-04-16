@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./use-auth";
 import { useToast } from "./use-toast";
@@ -31,7 +31,7 @@ export function useReviews() {
   const getUserReviews = async (userId: string) => {
     try {
       setLoading(true);
-      // Use generic query to avoid type errors with the reviews table
+      // Use any type to avoid TypeScript errors with the reviews table
       const { data, error } = await supabase
         .from('reviews')
         .select(`
@@ -45,7 +45,7 @@ export function useReviews() {
           )
         `)
         .eq('reviewee_id', userId)
-        .order('created_at', { ascending: false }) as { data: Review[] | null, error: any };
+        .order('created_at', { ascending: false }) as any;
 
       if (error) throw error;
       return data || [];
@@ -61,7 +61,7 @@ export function useReviews() {
   const getProjectReviews = async (projectId: string) => {
     try {
       setLoading(true);
-      // Use generic query to avoid type errors
+      // Use any type to avoid TypeScript errors
       const { data, error } = await supabase
         .from('reviews')
         .select(`
@@ -72,7 +72,7 @@ export function useReviews() {
           )
         `)
         .eq('project_id', projectId)
-        .order('created_at', { ascending: false }) as { data: Review[] | null, error: any };
+        .order('created_at', { ascending: false }) as any;
 
       if (error) throw error;
       return data || [];
@@ -102,7 +102,7 @@ export function useReviews() {
         return false;
       }
 
-      // Use generic query to avoid type errors
+      // Use any type to avoid TypeScript errors
       const { data, error } = await supabase
         .from('reviews')
         .insert({
@@ -113,7 +113,7 @@ export function useReviews() {
           comment,
           is_organizer_review: isOrganizerReview
         })
-        .select() as { data: any, error: any };
+        .select() as any;
 
       if (error) throw error;
 

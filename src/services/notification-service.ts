@@ -20,7 +20,7 @@ export async function createNotification(
         message,
         link,
         read: false
-      }) as { error: any };
+      }) as any;
 
     if (error) throw error;
     return true;
@@ -51,7 +51,7 @@ export async function createMultipleNotifications(
     // Use a generic query to avoid type errors
     const { error } = await supabase
       .from('notifications')
-      .insert(notifications) as { error: any };
+      .insert(notifications) as any;
 
     if (error) throw error;
     return true;

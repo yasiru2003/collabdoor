@@ -46,7 +46,7 @@ export function OrganizationReviews({ organizationId, ownerId }: OrganizationRev
       try {
         if (!ownerId) return;
         const ownerReviews = await getUserReviews(ownerId);
-        setReviews(ownerReviews);
+        setReviews(ownerReviews as Review[]);
       } catch (error) {
         console.error('Error fetching organization reviews:', error);
       }
