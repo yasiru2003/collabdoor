@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -267,7 +266,7 @@ export function useProjectApplications() {
           toast({
             title: "Application approved with warning",
             description: "The application status was updated but there was an issue creating the partnership record. Please check your database permissions.",
-            variant: "warning"
+            variant: "default"
           });
           
           // Still proceed with notification
