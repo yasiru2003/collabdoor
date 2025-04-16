@@ -1,10 +1,12 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/sonner";
 import { useToast } from "@/hooks/use-toast";
 import { mapSupabaseProjectToProject, mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
 
 export function useProjects() {
+  const { toast: shadcnToast } = useToast();
+  
   return useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
@@ -14,7 +16,7 @@ export function useProjects() {
         .order("created_at", { ascending: false });
 
       if (error) {
-        useToast().toast({
+        shadcnToast({
           title: "Error fetching projects",
           description: error.message,
           variant: "destructive",
@@ -32,6 +34,8 @@ export function useProjects() {
 }
 
 export function useProject(id: string | undefined) {
+  const { toast: shadcnToast } = useToast();
+  
   return useQuery({
     queryKey: ["project", id],
     queryFn: async () => {
@@ -45,7 +49,7 @@ export function useProject(id: string | undefined) {
 
       if (error) {
         if (error.code !== "PGRST116") { // PGRST116 is "no rows returned" error
-          toast({
+          shadcnToast({
             title: "Error fetching project",
             description: error.message,
             variant: "destructive",
@@ -63,6 +67,8 @@ export function useProject(id: string | undefined) {
 }
 
 export function usePartners() {
+  const { toast: shadcnToast } = useToast();
+  
   return useQuery({
     queryKey: ["partners"],
     queryFn: async () => {
@@ -72,7 +78,7 @@ export function usePartners() {
         .order("name", { ascending: true });
 
       if (error) {
-        toast({
+        shadcnToast({
           title: "Error fetching partners",
           description: error.message,
           variant: "destructive",
@@ -86,6 +92,8 @@ export function usePartners() {
 }
 
 export function useUserProjects(userId: string | undefined) {
+  const { toast: shadcnToast } = useToast();
+  
   return useQuery({
     queryKey: ["userProjects", userId],
     queryFn: async () => {
@@ -98,7 +106,7 @@ export function useUserProjects(userId: string | undefined) {
         .order("created_at", { ascending: false });
 
       if (error) {
-        toast({
+        shadcnToast({
           title: "Error fetching user projects",
           description: error.message,
           variant: "destructive",
@@ -117,6 +125,8 @@ export function useUserProjects(userId: string | undefined) {
 }
 
 export function usePartnerships(userId: string | undefined) {
+  const { toast: shadcnToast } = useToast();
+  
   return useQuery({
     queryKey: ["partnerships", userId],
     queryFn: async () => {
@@ -133,7 +143,7 @@ export function usePartnerships(userId: string | undefined) {
         .order("created_at", { ascending: false });
 
       if (error) {
-        toast({
+        shadcnToast({
           title: "Error fetching partnerships",
           description: error.message,
           variant: "destructive",
@@ -148,6 +158,8 @@ export function usePartnerships(userId: string | undefined) {
 }
 
 export function useMessages(userId: string | undefined) {
+  const { toast: shadcnToast } = useToast();
+  
   return useQuery({
     queryKey: ["messages", userId],
     queryFn: async () => {
@@ -167,7 +179,7 @@ export function useMessages(userId: string | undefined) {
         .order("created_at", { ascending: false });
 
       if (sentError || receivedError) {
-        toast({
+        shadcnToast({
           title: "Error fetching messages",
           description: sentError?.message || receivedError?.message,
           variant: "destructive",
@@ -241,6 +253,8 @@ export function useMessages(userId: string | undefined) {
 }
 
 export function useConversation(userId: string | undefined, participantId: string | undefined) {
+  const { toast: shadcnToast } = useToast();
+  
   return useQuery({
     queryKey: ["conversation", userId, participantId],
     queryFn: async () => {
@@ -253,7 +267,7 @@ export function useConversation(userId: string | undefined, participantId: strin
         .order("created_at", { ascending: true });
 
       if (error) {
-        toast({
+        shadcnToast({
           title: "Error fetching conversation",
           description: error.message,
           variant: "destructive",
@@ -281,7 +295,7 @@ export function useConversation(userId: string | undefined, participantId: strin
 }
 
 export function useProjectApplications(projectId: string | undefined) {
-  const { toast } = useToast();
+  const { toast: shadcnToast } = useToast();
   
   return useQuery({
     queryKey: ["projectApplications", projectId],
@@ -299,7 +313,7 @@ export function useProjectApplications(projectId: string | undefined) {
 
       if (error) {
         console.error("Error fetching project applications:", error);
-        toast({
+        shadcnToast({
           title: "Error fetching project applications",
           description: error.message,
           variant: "destructive",
@@ -314,7 +328,7 @@ export function useProjectApplications(projectId: string | undefined) {
 }
 
 export function useUserApplications(userId: string | undefined) {
-  const { toast } = useToast();
+  const { toast: shadcnToast } = useToast();
   
   return useQuery({
     queryKey: ["userApplications", userId],
@@ -332,7 +346,7 @@ export function useUserApplications(userId: string | undefined) {
 
       if (error) {
         console.error("Error fetching user applications:", error);
-        toast({
+        shadcnToast({
           title: "Error fetching user applications",
           description: error.message,
           variant: "destructive",
