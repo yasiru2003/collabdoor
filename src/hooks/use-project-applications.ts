@@ -6,6 +6,9 @@ import { PartnershipType } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { notifyNewApplicant } from "@/services/notification-service";
 
+// Define ApplicationStatus type and export it
+export type ApplicationStatus = "pending" | "approved" | "rejected";
+
 export function useProjectApplications() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -123,7 +126,7 @@ export function useProjectApplications() {
   };
 
   // Update application status
-  const updateApplicationStatus = async (applicationId: string, status: "approved" | "rejected") => {
+  const updateApplicationStatus = async (applicationId: string, status: ApplicationStatus) => {
     try {
       // Get application details before updating
       const { data: application, error: fetchError } = await supabase
@@ -149,7 +152,7 @@ export function useProjectApplications() {
           .insert({
             project_id: application.project_id,
             partner_id: application.user_id,
-            partnership_type: application.partnership_type,
+            partnership_type: application.partnership_type as PartnershipType,
             organization_id: application.organization_id,
             status: "active"
           });

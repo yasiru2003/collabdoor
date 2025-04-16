@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Layout } from "@/components/layout";
@@ -11,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
-import { ApplicationStatus, useProjectApplications } from "@/hooks/use-project-applications";
+import { useProjectApplications, type ApplicationStatus } from "@/hooks/use-project-applications";
 import { useUserProjects, useUserApplications } from "@/hooks/use-supabase-query";
 import { useIsMobile } from "@/hooks/use-mobile";
 

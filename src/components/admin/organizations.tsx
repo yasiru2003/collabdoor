@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -84,18 +85,44 @@ export function AdminOrganizations() {
   } = useQuery({
     queryKey: ["organization-join-requests"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First fetch the join requests
+      const { data: requestsData, error: requestsError } = await supabase
         .from("organization_join_requests")
         .select(`
           *,
-          organizations (name),
-          profiles!organization_join_requests_user_id_fkey (name, email, profile_image)
+          organizations (name)
         `)
         .eq("status", "pending")
         .order("created_at", { ascending: false });
       
-      if (error) throw error;
-      return data || [];
+      if (requestsError) throw requestsError;
+      
+      if (requestsData && requestsData.length > 0) {
+        // Get all user IDs 
+        const userIds = requestsData.map(request => request.user_id);
+        
+        // Fetch profiles separately
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, name, email, profile_image")
+          .in("id", userIds);
+          
+        if (profilesError) throw profilesError;
+        
+        // Merge the data
+        const requestsWithProfiles = requestsData.map(request => {
+          // Find the matching profile
+          const profile = profilesData?.find(profile => profile.id === request.user_id);
+          return {
+            ...request,
+            profile: profile || null
+          };
+        });
+        
+        return requestsWithProfiles;
+      }
+      
+      return requestsData || [];
     }
   });
   
@@ -383,14 +410,14 @@ export function AdminOrganizations() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={request.profiles?.profile_image || ""} />
+                            <AvatarImage src={request.profile?.profile_image || ""} />
                             <AvatarFallback className="text-xs">
-                              {request.profiles?.name?.substring(0, 2).toUpperCase() || "U"}
+                              {request.profile?.name?.substring(0, 2).toUpperCase() || "U"}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="font-medium text-sm">{request.profiles?.name}</p>
-                            <p className="text-xs text-muted-foreground">{request.profiles?.email}</p>
+                            <p className="font-medium text-sm">{request.profile?.name || "Unknown User"}</p>
+                            <p className="text-xs text-muted-foreground">{request.profile?.email || ""}</p>
                           </div>
                         </div>
                       </TableCell>
