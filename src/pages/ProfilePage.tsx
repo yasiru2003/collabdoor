@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -7,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function ProfilePage() {
   const { user, updateUserProfile } = useAuth();
@@ -16,13 +18,34 @@ export default function ProfilePage() {
   const [bio, setBio] = useState("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
-      setName(user.name || "");
-      setEmail(user.email || "");
-      setBio(user.bio || "");
-      setProfileImage(user.profile_image || null);
+      // Fetch the user profile data from the profiles table
+      const fetchUserProfile = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+            
+          if (error) throw error;
+          
+          if (data) {
+            setUserData(data);
+            setName(data.name || "");
+            setEmail(user.email || "");
+            setBio(data.bio || "");
+            setProfileImage(data.profile_image || null);
+          }
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+        }
+      };
+      
+      fetchUserProfile();
     }
   }, [user]);
 
@@ -45,7 +68,7 @@ export default function ProfilePage() {
     }
   };
 
-  // Use the correct role value that matches our defined type
+  // Use the corrected role value that matches our defined type
   const tempUser = {
     id: "123",
     name: "John Doe",
@@ -73,7 +96,7 @@ export default function ProfilePage() {
             <div className="mt-2 flex items-center space-x-4">
               <Avatar className="h-16 w-16">
                 <AvatarImage src={profileImage || tempUser.profile_image || "/placeholder.svg"} alt="Profile Image" />
-                <AvatarFallback>{tempUser.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                <AvatarFallback>{name ? name.substring(0, 2).toUpperCase() : "U"}</AvatarFallback>
               </Avatar>
               <Button variant="outline">Change</Button>
             </div>

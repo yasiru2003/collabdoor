@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
@@ -36,6 +35,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PartnershipType, Organization } from "@/types";
 import { uploadImage } from "@/utils/upload-utils";
+import { mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_FILE_TYPES = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
@@ -117,7 +117,8 @@ export function ProjectForm() {
           
         if (error) throw error;
         
-        setUserOrganizations(data || []);
+        const mappedOrgs = (data || []).map(org => mapSupabaseOrgToOrganization(org));
+        setUserOrganizations(mappedOrgs);
       } catch (error) {
         console.error("Error fetching organizations:", error);
       } finally {

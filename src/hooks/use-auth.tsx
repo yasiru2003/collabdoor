@@ -12,6 +12,7 @@ type AuthContextType = {
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   loading: boolean;
+  updateUserProfile: (profile: any) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -125,8 +126,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateUserProfile = async (profile: any) => {
+    if (!user) {
+      toast({
+        title: "Error updating profile",
+        description: "You must be logged in to update your profile",
+        variant: "destructive",
+      });
+      throw new Error("User not authenticated");
+    }
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: profile.name,
+          bio: profile.bio,
+          profile_image: profile.profile_image,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        title: "Error updating profile",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, signIn, signUp, signOut, signInWithGoogle, loading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      signIn, 
+      signUp, 
+      signOut, 
+      signInWithGoogle, 
+      loading,
+      updateUserProfile
+    }}>
       {children}
     </AuthContext.Provider>
   );
