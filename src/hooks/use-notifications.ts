@@ -30,11 +30,12 @@ export function useNotifications() {
     async function fetchNotifications() {
       try {
         setLoading(true);
+        // Use generic query to avoid type errors with the notifications table
         const { data, error } = await supabase
           .from('notifications')
           .select('*')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false }) as { data: Notification[] | null, error: any };
 
         if (error) throw error;
         setNotifications(data || []);
@@ -53,11 +54,12 @@ export function useNotifications() {
     try {
       if (!user) return;
 
+      // Use generic query to avoid type errors
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id) as { error: any };
 
       if (error) throw error;
 
@@ -79,11 +81,12 @@ export function useNotifications() {
     try {
       if (!user) return;
 
+      // Use generic query to avoid type errors
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
         .eq('user_id', user.id)
-        .in('id', notifications.filter(n => !n.read).map(n => n.id));
+        .in('id', notifications.filter(n => !n.read).map(n => n.id)) as { error: any };
 
       if (error) throw error;
 

@@ -11,6 +11,7 @@ export async function createNotification(
   link?: string
 ): Promise<boolean> {
   try {
+    // Use a generic query to avoid type errors
     const { error } = await supabase
       .from('notifications')
       .insert({
@@ -19,7 +20,7 @@ export async function createNotification(
         message,
         link,
         read: false
-      });
+      }) as { error: any };
 
     if (error) throw error;
     return true;
@@ -47,9 +48,10 @@ export async function createMultipleNotifications(
       read: false
     }));
 
+    // Use a generic query to avoid type errors
     const { error } = await supabase
       .from('notifications')
-      .insert(notifications);
+      .insert(notifications) as { error: any };
 
     if (error) throw error;
     return true;

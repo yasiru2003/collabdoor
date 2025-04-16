@@ -27,7 +27,9 @@ export function OrganizationReviews({ organizationId, ownerId }: OrganizationRev
           .eq('organization_id', organizationId);
           
         if (error) throw error;
-        setProjectIds(data.map(p => p.id));
+        if (data) {
+          setProjectIds(data.map(p => p.id));
+        }
       } catch (error) {
         console.error('Error fetching organization projects:', error);
       } finally {
@@ -42,6 +44,7 @@ export function OrganizationReviews({ organizationId, ownerId }: OrganizationRev
   useEffect(() => {
     async function fetchReviews() {
       try {
+        if (!ownerId) return;
         const ownerReviews = await getUserReviews(ownerId);
         setReviews(ownerReviews);
       } catch (error) {

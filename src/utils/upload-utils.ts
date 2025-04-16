@@ -1,6 +1,5 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { v4 as uuidv4 } from "uuid";
 
 /**
  * Uploads an image to a specified Supabase storage bucket
@@ -12,7 +11,9 @@ export async function uploadImage(
 ): Promise<string | null> {
   try {
     const fileExt = file.name.split('.').pop();
-    const fileName = `${userId}-${uuidv4()}.${fileExt}`;
+    // Generate a unique ID without uuid dependency
+    const uniqueId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+    const fileName = `${userId}-${uniqueId}.${fileExt}`;
     const filePath = `${fileName}`;
 
     // Upload the file

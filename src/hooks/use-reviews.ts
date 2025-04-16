@@ -31,20 +31,21 @@ export function useReviews() {
   const getUserReviews = async (userId: string) => {
     try {
       setLoading(true);
+      // Use generic query to avoid type errors with the reviews table
       const { data, error } = await supabase
         .from('reviews')
         .select(`
           *,
-          reviewer: reviewer_id (
+          reviewer:reviewer_id (
             name,
             profile_image
           ),
-          project: project_id (
+          project:project_id (
             title
           )
         `)
         .eq('reviewee_id', userId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }) as { data: Review[] | null, error: any };
 
       if (error) throw error;
       return data || [];
@@ -60,17 +61,18 @@ export function useReviews() {
   const getProjectReviews = async (projectId: string) => {
     try {
       setLoading(true);
+      // Use generic query to avoid type errors
       const { data, error } = await supabase
         .from('reviews')
         .select(`
           *,
-          reviewer: reviewer_id (
+          reviewer:reviewer_id (
             name,
             profile_image
           )
         `)
         .eq('project_id', projectId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }) as { data: Review[] | null, error: any };
 
       if (error) throw error;
       return data || [];
@@ -100,6 +102,7 @@ export function useReviews() {
         return false;
       }
 
+      // Use generic query to avoid type errors
       const { data, error } = await supabase
         .from('reviews')
         .insert({
@@ -110,7 +113,7 @@ export function useReviews() {
           comment,
           is_organizer_review: isOrganizerReview
         })
-        .select();
+        .select() as { data: any, error: any };
 
       if (error) throw error;
 
