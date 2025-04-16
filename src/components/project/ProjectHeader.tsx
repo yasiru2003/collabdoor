@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -285,14 +284,14 @@ export function ProjectHeader({
             <div className="space-y-2">
               <h4 className="text-sm font-medium">Apply from organization (optional):</h4>
               <Select
-                value={selectedOrganizationId || ""}
+                value={selectedOrganizationId || "individual"}
                 onValueChange={setSelectedOrganizationId}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Apply as individual" />
+                  <SelectValue placeholder="Select organization" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Apply as individual</SelectItem>
+                  <SelectItem value="individual">Apply as individual</SelectItem>
                   {userOrganizations.map((org) => (
                     <SelectItem key={org.id} value={org.id}>
                       {org.name}

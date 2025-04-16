@@ -1,4 +1,3 @@
-
 import { Project, PartnershipType } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
@@ -414,14 +413,14 @@ export function ProjectCard({ project }: ProjectCardProps) {
             <div className="space-y-2">
               <h4 className="text-sm font-medium">Apply from organization (optional):</h4>
               <Select
-                value={selectedOrganizationId || ""}
+                value={selectedOrganizationId || "individual"}
                 onValueChange={setSelectedOrganizationId}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Apply as individual" />
+                  <SelectValue placeholder="Select organization" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Apply as individual</SelectItem>
+                  <SelectItem value="individual">Apply as individual</SelectItem>
                   {userOrganizations.map((org) => (
                     <SelectItem key={org.id} value={org.id}>
                       {org.name}

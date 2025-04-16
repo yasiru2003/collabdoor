@@ -121,14 +121,30 @@ export default function ProjectDetailPage() {
   const handleApply = async () => {
     if (!user || !id) return;
     
+    // Process the selectedOrganizationId - if it's "individual", pass null
+    const orgId = selectedOrganizationId === "individual" ? null : selectedOrganizationId;
+    
     // Pass the organization ID to the applyToProject function
-    const result = await applyToProject(id, user.id, partnershipType, message, selectedOrganizationId);
+    const result = await applyToProject(id, user.id, partnershipType, message, orgId);
     if (result) {
       setApplicationStatus("pending");
       setApplicationOpen(false);
       setMessage("");
       setSelectedOrganizationId(null);
     }
+  };
+
+  const openApplicationDialog = () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to apply to projects.",
+        variant: "destructive",
+      });
+      navigate("/login", { state: { returnTo: `/projects/${id}` } });
+      return;
+    }
+    setApplicationOpen(true);
   };
 
   const handleUpdateApplicationStatus = async (applicationId: string, status: "approved" | "rejected") => {
