@@ -1,8 +1,9 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { handleSupabaseError } from "./use-supabase-utils";
-import { ApplicationWithProfile, ProfileData } from "@/types";
+import { ApplicationWithProfile } from "@/types";
 
 /**
  * Hook to fetch all applications for a specific project

@@ -22,8 +22,6 @@ export {
 export {
   useProjectApplications,
   useUserApplications,
-  type ApplicationWithProfile,
-  type ProfileData,
 } from "./use-applications-query";
 
 export {

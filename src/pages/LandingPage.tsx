@@ -1,12 +1,50 @@
 
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ProjectCard } from "@/components/project-card";
-import { mockProjects } from "@/data/mockData";
 import { Header } from "@/components/header";
 import { ArrowRight, Building, CheckCircle2, MessageSquare } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Project } from "@/types";
+import { useState, useEffect } from "react";
+import { mapSupabaseProjectToProject } from "@/utils/data-mappers";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function LandingPage() {
+  const { user } = useAuth();
+  const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
+  
+  // If user is logged in, redirect to dashboard
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  // Fetch featured projects
+  const { data: projects, isLoading } = useQuery({
+    queryKey: ["featured-projects"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("status", "published")
+        .order("created_at", { ascending: false })
+        .limit(3);
+        
+      if (error) throw error;
+      
+      return (data || []).map(project => mapSupabaseProjectToProject(project));
+    },
+  });
+  
+  // Set featured projects once data is loaded
+  useEffect(() => {
+    if (projects) {
+      setFeaturedProjects(projects);
+    }
+  }, [projects]);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -116,9 +154,27 @@ export default function LandingPage() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {mockProjects.slice(0, 3).map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
+            {isLoading ? (
+              // Loading skeletons while fetching project data
+              Array(3).fill(0).map((_, index) => (
+                <div key={index} className="border rounded-lg p-4">
+                  <Skeleton className="h-48 w-full mb-4" />
+                  <Skeleton className="h-6 w-3/4 mb-2" />
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              ))
+            ) : featuredProjects.length > 0 ? (
+              // Display actual projects
+              featuredProjects.map(project => (
+                <ProjectCard key={project.id} project={project} />
+              ))
+            ) : (
+              // Fallback for no projects
+              <div className="col-span-3 text-center py-8 text-muted-foreground">
+                No featured projects available at the moment.
+              </div>
+            )}
           </div>
         </div>
       </section>
