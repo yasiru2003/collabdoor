@@ -42,13 +42,13 @@ export function ApplicationsTable({
           </TableHeader>
           <TableBody>
             {applications.map((application) => {
-              // Extract profile data safely with proper type checks
-              const hasProfileData = application && 'profiles' in application && application.profiles;
+              // Get the profile data safely, checking both profile and profiles fields
+              const profileData = application.profile || application.profiles;
               
               // Extract profile data with safe access
-              const profileImage = hasProfileData ? application.profiles?.profile_image || "" : "";
-              const profileName = hasProfileData ? application.profiles?.name || "Unknown" : "Unknown";
-              const profileEmail = hasProfileData ? application.profiles?.email || "" : "";
+              const profileImage = profileData?.profile_image || "";
+              const profileName = profileData?.name || "Unknown";
+              const profileEmail = profileData?.email || "";
               const applicantId = application.user_id;
               
               // Only calculate initials if we have a valid name

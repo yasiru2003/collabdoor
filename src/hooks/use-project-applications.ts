@@ -272,7 +272,7 @@ export function useProjectApplications() {
 
   // New function to create initial project phases based on partnership type
   const createInitialProjectPhases = async (projectId: string, partnershipType: string) => {
-    const defaultPhases: Omit<ProjectPhase, 'id'>[] = [];
+    const defaultPhases = [];
 
     switch (partnershipType) {
       case 'skilled':

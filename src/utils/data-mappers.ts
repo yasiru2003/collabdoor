@@ -1,4 +1,3 @@
-
 import { Organization, Project } from "@/types";
 
 export function mapSupabaseProjectToProject(supabaseProject: any): Project {
@@ -41,6 +40,10 @@ export function mapSupabaseOrgToOrganization(supabaseOrg: any): Organization {
     logo: supabaseOrg.logo,
     createdAt: supabaseOrg.created_at,
     updatedAt: supabaseOrg.updated_at,
-    owner_id: supabaseOrg.owner_id
+    owner_id: supabaseOrg.owner_id,
+    // Keep original properties for compatibility
+    created_at: supabaseOrg.created_at,
+    updated_at: supabaseOrg.updated_at,
+    founded_year: supabaseOrg.founded_year
   };
 }

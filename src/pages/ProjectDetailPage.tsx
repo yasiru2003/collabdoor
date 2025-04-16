@@ -171,7 +171,9 @@ export default function ProjectDetailPage() {
     return projectApplications
       .filter(app => app.status === "approved")
       .map(app => {
-        const name = app.profiles?.name || "Unknown";
+        // Access either profile or profiles property
+        const profileData = app.profile || app.profiles;
+        const name = profileData?.name || "Unknown";
         return {
           id: app.user_id,
           name: name

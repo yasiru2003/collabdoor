@@ -1,293 +1,122 @@
-
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout";
-import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { User } from "@/types";
-import { ProfileHeader } from "@/components/profile/ProfileHeader";
-import { ProfileTabs } from "@/components/profile/ProfileTabs";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function ProfilePage() {
+  const { user, updateUserProfile } = useAuth();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState({
-    name: "",
-    email: "",
-    bio: "",
-    skills: [] as string[],
-    profileImage: "",
-  });
-  const [organization, setOrganization] = useState({
-    name: "",
-    description: "",
-    industry: "",
-    location: "",
-    website: "",
-    size: "",
-    foundedYear: "",
-    logo: "",
-  });
-  const [newSkill, setNewSkill] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [bio, setBio] = useState("");
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Fetch user and profile data
   useEffect(() => {
-    const getProfile = async () => {
-      try {
-        setLoading(true);
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          return;
-        }
+    if (user) {
+      setName(user.name || "");
+      setEmail(user.email || "");
+      setBio(user.bio || "");
+      setProfileImage(user.profile_image || null);
+    }
+  }, [user]);
 
-        setUser({
-          id: user.id,
-          email: user.email || "",
-          name: "",
-          role: "user"
-        });
-
-        // Fetch profile from database
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (profileError) {
-          console.error("Error fetching profile:", profileError);
-          throw profileError;
-        }
-
-        if (profileData) {
-          setProfile({
-            name: profileData.name || "",
-            email: profileData.email,
-            bio: profileData.bio || "",
-            skills: profileData.skills || [],
-            profileImage: profileData.profile_image || "",
-          });
-          
-          // Set user data with name from profile
-          setUser(prev => prev ? {
-            ...prev,
-            name: profileData.name || "",
-            // We no longer need to set the role from profileData since it's always "user"
-          } : null);
-        }
-
-        // Fetch organization if exists
-        const { data: orgData, error: orgError } = await supabase
-          .from('organizations')
-          .select('*')
-          .eq('owner_id', user.id)
-          .maybeSingle();
-
-        if (orgError && orgError.code !== 'PGRST116') {
-          console.error("Error fetching organization:", orgError);
-        }
-
-        if (orgData) {
-          setOrganization({
-            name: orgData.name || "",
-            description: orgData.description || "",
-            industry: orgData.industry || "",
-            location: orgData.location || "",
-            website: orgData.website || "",
-            size: orgData.size || "",
-            foundedYear: orgData.founded_year ? orgData.founded_year.toString() : "",
-            logo: orgData.logo || "",
-          });
-        }
-      } catch (error) {
-        console.error("Error loading user data:", error);
-        toast({
-          title: "Error loading profile",
-          description: "There was a problem loading your profile data.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getProfile();
-  }, [toast]);
-
-  // Update profile
-  const handleUpdateProfile = async () => {
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
     try {
-      setLoading(true);
-      if (!user) return;
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          name: profile.name,
-          bio: profile.bio,
-          skills: profile.skills,
-          profile_image: profile.profileImage,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id);
-
-      if (error) throw error;
-
+      await updateUserProfile({ name, bio, profile_image: profileImage });
       toast({
         title: "Profile updated",
         description: "Your profile has been updated successfully.",
       });
-    } catch (error) {
-      console.error("Error updating profile:", error);
+    } catch (error: any) {
       toast({
         title: "Error updating profile",
-        description: "There was a problem updating your profile.",
+        description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsSaving(false);
     }
   };
 
-  // Update organization
-  const handleUpdateOrganization = async () => {
-    try {
-      setLoading(true);
-      if (!user) return;
-
-      // Check if organization exists
-      const { data: orgData, error: orgError } = await supabase
-        .from('organizations')
-        .select('id')
-        .eq('owner_id', user.id)
-        .maybeSingle();
-
-      if (orgError && orgError.code !== 'PGRST116') {
-        throw orgError;
-      }
-
-      const foundedYear = organization.foundedYear ? parseInt(organization.foundedYear) : null;
-
-      if (orgData) {
-        // Update existing organization
-        const { error } = await supabase
-          .from('organizations')
-          .update({
-            name: organization.name,
-            description: organization.description,
-            industry: organization.industry,
-            location: organization.location,
-            website: organization.website,
-            size: organization.size,
-            founded_year: foundedYear,
-            logo: organization.logo,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', orgData.id);
-
-        if (error) throw error;
-      } else {
-        // Create new organization
-        const { error } = await supabase
-          .from('organizations')
-          .insert({
-            owner_id: user.id,
-            name: organization.name,
-            description: organization.description,
-            industry: organization.industry,
-            location: organization.location,
-            website: organization.website,
-            size: organization.size,
-            founded_year: foundedYear,
-            logo: organization.logo,
-          });
-
-        if (error) throw error;
-      }
-
-      toast({
-        title: "Organization updated",
-        description: "Your organization has been updated successfully.",
-      });
-    } catch (error) {
-      console.error("Error updating organization:", error);
-      toast({
-        title: "Error updating organization",
-        description: "There was a problem updating your organization.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Manage skills
-  const handleAddSkill = () => {
-    if (newSkill.trim() && !profile.skills.includes(newSkill)) {
-      setProfile({
-        ...profile,
-        skills: [...profile.skills, newSkill.trim()]
-      });
-      setNewSkill("");
-    }
-  };
-
-  const handleRemoveSkill = (skillToRemove: string) => {
-    setProfile({
-      ...profile,
-      skills: profile.skills.filter(skill => skill !== skillToRemove)
-    });
-  };
-
-  const handleOrganizationChange = (field: string, value: string) => {
-    setOrganization(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleRemoveProfileImage = () => {
-    setProfile({
-      ...profile,
-      profileImage: ""
-    });
-  };
-
-  const handleProfileImageUpdate = (url: string) => {
-    setProfile({
-      ...profile,
-      profileImage: url
-    });
+  // Use the correct role value that matches our defined type
+  const tempUser = {
+    id: "123",
+    name: "John Doe",
+    email: "john@example.com",
+    role: "partner", // Changed from "user" to "partner"
+    profile_image: "/placeholder.svg",
+    bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    skills: ["React", "TypeScript", "Node.js"],
   };
 
   return (
     <Layout>
-      <ProfileHeader 
-        title="Profile" 
-        description="Manage your personal information and organization details" 
-      />
-      
-      <ProfileTabs 
-        name={profile.name}
-        email={profile.email}
-        bio={profile.bio}
-        skills={profile.skills}
-        profileImage={profile.profileImage}
-        newSkill={newSkill}
-        loading={loading}
-        organization={organization}
-        onNameChange={(value) => setProfile({...profile, name: value})}
-        onBioChange={(value) => setProfile({...profile, bio: value})}
-        onProfileImageRemove={handleRemoveProfileImage}
-        onProfileImageUpdate={handleProfileImageUpdate}
-        onNewSkillChange={setNewSkill}
-        onAddSkill={handleAddSkill}
-        onRemoveSkill={handleRemoveSkill}
-        onUpdateProfile={handleUpdateProfile}
-        onOrganizationChange={handleOrganizationChange}
-        onUpdateOrganization={handleUpdateOrganization}
-      />
+      <div className="container mx-auto py-10">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold">Your Profile</h1>
+          <p className="text-muted-foreground">
+            Manage your profile information and settings.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Profile Picture Section */}
+          <div>
+            <Label htmlFor="profile-image">Profile Picture</Label>
+            <div className="mt-2 flex items-center space-x-4">
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={profileImage || tempUser.profile_image || "/placeholder.svg"} alt="Profile Image" />
+                <AvatarFallback>{tempUser.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <Button variant="outline">Change</Button>
+            </div>
+          </div>
+
+          {/* Profile Information Form */}
+          <div>
+            <form className="space-y-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled
+                />
+              </div>
+              <div>
+                <Label htmlFor="bio">Bio</Label>
+                <Textarea
+                  id="bio"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  rows={4}
+                />
+              </div>
+              <Button onClick={handleSaveProfile} disabled={isSaving}>
+                {isSaving ? "Saving..." : "Save Profile"}
+              </Button>
+            </form>
+          </div>
+        </div>
+      </div>
     </Layout>
   );
 }

@@ -44,6 +44,10 @@ export interface Organization {
   createdAt: string;
   updatedAt: string;
   owner_id: string;
+  // Adding these for compatibility with raw DB objects
+  created_at?: string;
+  updated_at?: string;
+  founded_year?: number;
 }
 
 export interface User {
@@ -61,6 +65,7 @@ export interface User {
 export interface ProjectPhase {
   id: string;
   projectId: string;
+  project_id?: string; // For compatibility with DB format
   title: string;
   description?: string;
   status: string;
@@ -69,6 +74,11 @@ export interface ProjectPhase {
   completedDate?: string;
   createdAt: string;
   updatedAt: string;
+  // Adding these for compatibility with raw DB objects
+  created_at?: string;
+  updated_at?: string;
+  due_date?: string;
+  completed_date?: string;
 }
 
 export interface ApplicationWithProfile {
@@ -81,6 +91,13 @@ export interface ApplicationWithProfile {
   created_at: string;
   updated_at: string;
   profile?: {
+    name: string;
+    email: string;
+    profile_image?: string;
+    skills?: string[];
+  };
+  // For backward compatibility with existing code
+  profiles?: {
     name: string;
     email: string;
     profile_image?: string;

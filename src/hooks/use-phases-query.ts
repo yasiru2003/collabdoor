@@ -28,13 +28,20 @@ export function useProjectPhases(projectId: string | undefined) {
       
       return (data || []).map(phase => ({
         id: phase.id,
-        project_id: phase.project_id,
+        projectId: phase.project_id,
+        project_id: phase.project_id, // Keep for compatibility
         title: phase.title,
         description: phase.description,
         status: phase.status,
         dueDate: phase.due_date,
         completedDate: phase.completed_date,
+        due_date: phase.due_date, // Keep for compatibility
+        completed_date: phase.completed_date, // Keep for compatibility
         order: phase.order,
+        createdAt: phase.created_at,
+        updatedAt: phase.updated_at,
+        created_at: phase.created_at, // Keep for compatibility
+        updated_at: phase.updated_at, // Keep for compatibility
       })) as ProjectPhase[];
     },
     enabled: !!projectId,
