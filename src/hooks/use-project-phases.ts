@@ -92,8 +92,8 @@ export function useProjectPhases() {
       if (updates.title) dbUpdates.title = updates.title;
       if (updates.description) dbUpdates.description = updates.description;
       if (updates.status) dbUpdates.status = updates.status;
-      if (updates.dueDate) dbUpdates.due_date = updates.dueDate;
-      if (updates.completedDate) dbUpdates.completed_date = updates.completedDate;
+      if ('dueDate' in updates) dbUpdates.due_date = updates.dueDate;
+      if ('completedDate' in updates) dbUpdates.completed_date = updates.completedDate;
       if (updates.order !== undefined) dbUpdates.order = updates.order;
 
       const { data, error } = await supabase

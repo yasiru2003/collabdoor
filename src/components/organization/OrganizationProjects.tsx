@@ -46,17 +46,17 @@ export function OrganizationProjects({ organizationId, organizationName, isOwner
             start: project.start_date,
             end: project.end_date,
           },
-          status: project.status,
+          status: project.status as "draft" | "published" | "in-progress" | "completed",
           category: project.category,
           image: project.image,
           requiredSkills: project.required_skills,
           location: project.location,
-          proposalFilePath: project.proposal_file_path,
           partners: [],
           createdAt: project.created_at,
           updatedAt: project.updated_at,
           completedAt: project.completed_at,
-        }));
+          applicationsEnabled: project.applications_enabled
+        })) as Project[];
         
         setProjects(mappedProjects);
       } catch (error) {

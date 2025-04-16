@@ -28,6 +28,7 @@ export function useProjectPhases(projectId: string | undefined) {
       
       return (data || []).map(phase => ({
         id: phase.id,
+        project_id: phase.project_id,
         title: phase.title,
         description: phase.description,
         status: phase.status,
