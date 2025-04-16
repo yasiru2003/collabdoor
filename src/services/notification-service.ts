@@ -188,12 +188,19 @@ export async function notifyProjectPartners(
       read: false
     }));
     
-    // Insert notifications
+    console.log(`Creating ${notifications.length} partner notifications`);
+    
+    // Insert notifications directly to overcome potential function timeout
     const { error } = await supabase
       .from("notifications")
       .insert(notifications);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error creating partner notifications:", error);
+      throw error;
+    }
+    
+    console.log("Successfully created partner notifications");
     return true;
   } catch (error) {
     console.error("Error notifying project partners:", error);

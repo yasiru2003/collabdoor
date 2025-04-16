@@ -32,16 +32,18 @@ export function ProjectProgressContent({
   const { getProjectReviews } = useReviews();
   const isCompleted = projectStatus === "completed";
 
-  // Load project reviews when the component mounts
+  // Load project reviews when the component mounts or when projectId/status changes
   useEffect(() => {
     async function loadReviews() {
-      if (projectId) {
+      if (projectId && isCompleted) {
+        console.log(`Loading reviews for completed project: ${projectId}`);
         const reviews = await getProjectReviews(projectId);
+        console.log(`Found ${reviews.length} reviews`);
         setProjectReviews(reviews);
       }
     }
     loadReviews();
-  }, [projectId, getProjectReviews]);
+  }, [projectId, getProjectReviews, isCompleted]);
 
   return (
     <>
@@ -101,7 +103,7 @@ export function ProjectProgressContent({
                       onClick={() => openProgressDialog(phase.id)} 
                       className="w-full" 
                       size="sm"
-                      variant={phase.status === 'not-started' ? "outline" : "progress"}
+                      variant={phase.status === 'not-started' ? "outline" : "default"}
                     >
                       <PlusCircle className="h-4 w-4 mr-1" />
                       Add Progress Update
@@ -114,7 +116,6 @@ export function ProjectProgressContent({
         </Card>
       )}
       
-      {/* Add Complete Project button at the bottom of the progress tab */}
       {isOwner && !isCompleted && (
         <Card className="mt-6">
           <CardHeader>

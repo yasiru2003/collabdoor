@@ -17,7 +17,7 @@ interface ProjectCompleteProps {
     name: string;
   }>;
   onComplete: () => void;
-  onCancel?: () => void; // Add the optional onCancel prop
+  onCancel?: () => void;
 }
 
 export function ProjectComplete({ projectId, projectTitle, partners = [], onComplete, onCancel }: ProjectCompleteProps) {
@@ -46,13 +46,49 @@ export function ProjectComplete({ projectId, projectTitle, partners = [], onComp
         throw error;
       }
 
-      // Notify all partners about project completion
-      await notifyProjectPartners(
-        projectId,
-        "Project Completed",
-        `The project "${projectTitle}" has been marked as completed.`,
-        `/projects/${projectId}`
-      );
+      // We need to ensure notifications reach all partners, so we'll take extra care here
+      try {
+        console.log("Sending notifications to partners for project completion");
+        
+        // Get all partners for this project with approved status
+        const { data: partnersData, error: partnersError } = await supabase
+          .from("project_applications")
+          .select("user_id")
+          .eq("project_id", projectId)
+          .eq("status", "approved");
+          
+        if (partnersError) {
+          console.error("Error fetching partners for notification:", partnersError);
+          throw partnersError;
+        }
+        
+        if (partnersData && partnersData.length > 0) {
+          // Create notifications for all partners
+          const notifications = partnersData.map(partner => ({
+            user_id: partner.user_id,
+            title: "Project Completed",
+            message: `The project "${projectTitle}" has been marked as completed.`,
+            link: `/projects/${projectId}`,
+            read: false
+          }));
+          
+          // Insert notifications directly
+          const { error: notifyError } = await supabase
+            .from("notifications")
+            .insert(notifications);
+            
+          if (notifyError) {
+            console.error("Error creating notifications:", notifyError);
+          } else {
+            console.log(`Successfully created ${notifications.length} notifications`);
+          }
+        } else {
+          console.log("No partners found to notify for project:", projectId);
+        }
+      } catch (notificationError) {
+        console.error("Error in notification system:", notificationError);
+        // Continue execution even if notifications fail
+      }
 
       toast({
         title: "Project completed",

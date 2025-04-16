@@ -2,9 +2,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Notification } from "@/hooks/use-notifications";
 import { formatDistanceToNow } from "date-fns";
-import { Bell, Check, UserCheck, UserPlus, MessageSquare } from "lucide-react";
+import { Bell, Check, UserCheck, UserPlus, MessageSquare, Trophy } from "lucide-react";
 
 interface NotificationsListProps {
   notifications: Notification[];
@@ -38,6 +39,7 @@ export function NotificationsList({
     if (title.includes("Join Request")) return <UserPlus className="h-5 w-5 text-blue-500" />;
     if (title.includes("Approved")) return <Check className="h-5 w-5 text-green-500" />;
     if (title.includes("message")) return <MessageSquare className="h-5 w-5 text-indigo-500" />;
+    if (title.includes("Completed")) return <Trophy className="h-5 w-5 text-yellow-500" />;
     return <Bell className="h-5 w-5 text-primary" />;
   };
 

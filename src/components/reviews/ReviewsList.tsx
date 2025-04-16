@@ -1,7 +1,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Star } from "lucide-react";
+import { Star, MessageSquare } from "lucide-react";
 import { Review } from "@/hooks/use-reviews";
 import { Badge } from "@/components/ui/badge";
 
@@ -28,8 +28,12 @@ export function ReviewsList({
       </CardHeader>
       <CardContent>
         {reviews.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            {emptyMessage}
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-medium mb-2">No Reviews Yet</h3>
+            <p className="text-muted-foreground">
+              {emptyMessage}
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -39,7 +43,7 @@ export function ReviewsList({
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={review.reviewer?.profile_image} />
+                        <AvatarImage src={review.reviewer?.profile_image} alt={review.reviewer?.name || "Reviewer"} />
                         <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                           {review.reviewer?.name?.substring(0, 2).toUpperCase() || "UK"}
                         </AvatarFallback>
