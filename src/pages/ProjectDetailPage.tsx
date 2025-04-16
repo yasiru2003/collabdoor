@@ -3,12 +3,12 @@ import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom"
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Project, PartnershipType } from "@/types";
+import { Project, PartnershipType, ApplicationWithProfile } from "@/types";
 import { useProject } from "@/hooks/use-projects-query";
-import { useProjectApplications } from "@/hooks/use-applications-query";
+import { useProjectApplicationsQuery } from "@/hooks/use-applications-query";
 import { useAuth } from "@/hooks/use-auth";
-import { useProjectApplications as useProjectApps } from "@/hooks/use-project-applications";
-import { useProjectPhases } from "@/hooks/use-supabase-query";
+import { useProjectApplications } from "@/hooks/use-project-applications";
+import { useProjectPhases } from "@/hooks/use-phases-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Import our new components
@@ -34,7 +34,7 @@ export default function ProjectDetailPage() {
   }, [id, navigate]);
   
   // If id is "create", don't try to fetch project data
-  const isValidUuid = id && id !== "create";
+  const isValidUuid = id && id !== "create" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
   
   const { data: project, isLoading, error } = useProject(isValidUuid ? id : undefined);
   const [saved, setSaved] = useState(false);
@@ -45,8 +45,8 @@ export default function ProjectDetailPage() {
     isLoading: applicationLoading,
     updateApplicationStatus,
     userOrganizations
-  } = useProjectApps();
-  const { data: projectApplications } = useProjectApplications(isValidUuid ? id : undefined);
+  } = useProjectApplications();
+  const { data: projectApplications } = useProjectApplicationsQuery(isValidUuid ? id : undefined);
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
   const [applicationOpen, setApplicationOpen] = useState(false);
   const [partnershipType, setPartnershipType] = useState<PartnershipType>("skilled");
@@ -95,7 +95,7 @@ export default function ProjectDetailPage() {
   };
 
   useEffect(() => {
-    // Skip all fetching logic if id is "create"
+    // Skip all fetching logic if id is "create" or not a valid UUID
     if (!isValidUuid) return;
     
     // Simulate checking if project is saved
@@ -308,15 +308,13 @@ export default function ProjectDetailPage() {
             />
           </TabsContent>
           
-          
           <TabsContent value="applications">
             <ApplicationsTable 
-              applications={projectApplications}
+              applications={projectApplications as ApplicationWithProfile[]}
               handleUpdateApplicationStatus={handleUpdateApplicationStatus}
               handleMessageApplicant={handleMessageApplicant}
             />
           </TabsContent>
-        
         </Tabs>
       </div>
       

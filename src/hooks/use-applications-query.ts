@@ -1,7 +1,8 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { PartnershipType } from "@/types";
+import { PartnershipType, ApplicationWithProfile } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { notifyNewApplicant } from "@/services/notification-service";
 
@@ -11,7 +12,7 @@ export type ApplicationStatus = "pending" | "approved" | "rejected";
 /**
  * Hook to fetch all project applications for a specific project
  */
-export function useProjectApplications(projectId: string | undefined) {
+export function useProjectApplicationsQuery(projectId: string | undefined) {
   const { toast } = useToast();
   
   return useQuery({
@@ -47,12 +48,53 @@ export function useProjectApplications(projectId: string | undefined) {
         return [];
       }
       
-      return data;
+      // Transform the data to match the ApplicationWithProfile type
+      return data.map(app => ({
+        ...app,
+        profile: app.profiles
+      })) as ApplicationWithProfile[];
     },
     enabled: !!projectId
   });
 }
 
+// Hook to fetch user's applications
+export function useUserApplications(userId: string | undefined) {
+  const { toast } = useToast();
+  
+  return useQuery({
+    queryKey: ["userApplications", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      
+      const { data, error } = await supabase
+        .from("project_applications")
+        .select(`
+          *,
+          projects(*)
+        `)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching user applications:", error);
+        toast({
+          title: "Error fetching applications",
+          description: error.message,
+          variant: "destructive",
+        });
+        return [];
+      }
+      
+      return data;
+    },
+    enabled: !!userId
+  });
+}
+
+/**
+ * Hook for project application operations
+ */
 export function useProjectApplications() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);

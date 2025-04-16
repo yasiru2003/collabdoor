@@ -20,8 +20,8 @@ export {
 } from "./use-messages-query";
 
 export {
-  useProjectApplications,
-  useUserApplications,
+  useProjectApplicationsQuery as useProjectApplications,
+  useProjectApplications as useProjectApplicationsActions,
 } from "./use-applications-query";
 
 export {
