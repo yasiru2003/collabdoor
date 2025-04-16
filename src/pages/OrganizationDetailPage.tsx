@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
@@ -13,6 +12,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Building, Edit, Globe, MapPin, Users } from "lucide-react";
 import { Organization } from "@/types";
+import { OrganizationReviews } from "@/components/organization/OrganizationReviews";
+import { OrganizationProjects } from "@/components/organization/OrganizationProjects";
 
 export default function OrganizationDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -193,31 +194,15 @@ export default function OrganizationDetailPage() {
               <TabsList>
                 <TabsTrigger value="projects">Projects</TabsTrigger>
                 <TabsTrigger value="members">Members</TabsTrigger>
+                <TabsTrigger value="reviews">Reviews</TabsTrigger>
               </TabsList>
               
               <TabsContent value="projects" className="mt-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Projects</CardTitle>
-                    <CardDescription>
-                      Projects associated with this organization
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-col items-center justify-center py-8 text-center">
-                      <Building className="h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="text-xl font-medium mb-2">No Projects Yet</h3>
-                      <p className="text-muted-foreground mb-6 max-w-md">
-                        This organization doesn't have any projects yet.
-                      </p>
-                      {isOwner && (
-                        <Button onClick={() => navigate("/projects/new")}>
-                          Create a Project
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <OrganizationProjects 
+                  organizationId={id || ''}
+                  organizationName={organization.name}
+                  isOwner={isOwner}
+                />
               </TabsContent>
               
               <TabsContent value="members" className="mt-4">
@@ -262,6 +247,13 @@ export default function OrganizationDetailPage() {
                     )}
                   </CardContent>
                 </Card>
+              </TabsContent>
+              
+              <TabsContent value="reviews" className="mt-4">
+                <OrganizationReviews 
+                  organizationId={id || ''}
+                  ownerId={organization.owner_id}
+                />
               </TabsContent>
             </Tabs>
           </div>
