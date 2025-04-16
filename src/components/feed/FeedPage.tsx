@@ -40,12 +40,9 @@ export default function FeedPage() {
           .from("feed_posts")
           .select(`
             *,
-            profiles!inner(name, profile_image),
             organizations(name, logo),
             feed_likes(id, user_id),
-            feed_comments(id, content, created_at, user_id, 
-              profiles!inner(name, profile_image)
-            )
+            feed_comments(id, content, created_at, user_id)
           `)
           .order("created_at", { ascending: false });
         
@@ -62,7 +59,7 @@ export default function FeedPage() {
             return [];
           }
           
-          if (memberships.length > 0) {
+          if (memberships && memberships.length > 0) {
             const orgIds = memberships.map(m => m.organization_id);
             query = query.in("organization_id", orgIds);
           } else {
@@ -76,6 +73,48 @@ export default function FeedPage() {
         if (error) {
           console.error("Error fetching posts:", error);
           throw error;
+        }
+        
+        // Separately fetch user profiles for post authors and commenters
+        if (data && data.length > 0) {
+          // Get all user IDs from posts
+          const userIds = new Set(data.map(post => post.user_id));
+          
+          // Get all commenter IDs
+          data.forEach(post => {
+            if (post.feed_comments) {
+              post.feed_comments.forEach(comment => {
+                userIds.add(comment.user_id);
+              });
+            }
+          });
+          
+          // Fetch profiles for all users
+          const { data: profiles, error: profilesError } = await supabase
+            .from("profiles")
+            .select("id, name, profile_image")
+            .in("id", Array.from(userIds));
+          
+          if (profilesError) {
+            console.error("Error fetching profiles:", profilesError);
+          } else if (profiles) {
+            // Create a map of profiles by ID for quick lookup
+            const profilesMap = profiles.reduce((acc, profile) => {
+              acc[profile.id] = profile;
+              return acc;
+            }, {});
+            
+            // Attach profiles to posts and comments
+            data.forEach(post => {
+              post.profiles = profilesMap[post.user_id];
+              
+              if (post.feed_comments) {
+                post.feed_comments.forEach(comment => {
+                  comment.profiles = profilesMap[comment.user_id];
+                });
+              }
+            });
+          }
         }
         
         return data || [];
