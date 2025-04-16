@@ -398,18 +398,8 @@ const renderApplicationsTable = () => {
             {projectApplications.map((application) => {
               console.log("Rendering application:", application);
               
-              // Define a type for the profiles property to address TypeScript errors
-              type ProfileData = {
-                id?: string;
-                name?: string;
-                email?: string;
-                profile_image?: string;
-              };
-              
-              // Type assertion with safe fallback
-              const profiles = (application.profiles || {}) as ProfileData;
-              
               // Extract profile data with safe access
+              const profiles = application.profiles || {};
               const profileImage = profiles.profile_image || "";
               const profileName = profiles.name || "Unknown";
               const profileEmail = profiles.email || "";

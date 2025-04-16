@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -16,12 +17,11 @@ export function useProjectApplications(projectId: string | undefined) {
 
       console.log("Fetching project applications for:", projectId);
       
-      const { data, error } = await supabase
+      // Modified query to avoid using the direct join to profiles
+      // Instead, get the user_id from project_applications and then fetch profiles separately
+      const { data: applications, error } = await supabase
         .from("project_applications")
-        .select(`
-          *,
-          profiles(id, name, email, profile_image)
-        `)
+        .select("*")
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
 
@@ -35,8 +35,44 @@ export function useProjectApplications(projectId: string | undefined) {
         throw error;
       }
       
-      console.log("Project applications fetched:", data);
-      return data || [];
+      // If we have applications, fetch the profile details for each applicant
+      if (applications && applications.length > 0) {
+        // Get all user IDs
+        const userIds = applications.map(app => app.user_id);
+        
+        // Fetch profile details for all applicants in one query
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, name, email, profile_image")
+          .in("id", userIds);
+          
+        if (profilesError) {
+          console.error("Error fetching applicant profiles:", profilesError);
+          toast({
+            title: "Error fetching applicant profiles",
+            description: profilesError.message,
+            variant: "destructive",
+          });
+        }
+        
+        // Map profiles to applications
+        if (profilesData) {
+          // Create a map for quick lookup of profiles by ID
+          const profilesMap = profilesData.reduce((map, profile) => {
+            map[profile.id] = profile;
+            return map;
+          }, {} as Record<string, any>);
+          
+          // Add profiles data to each application
+          return applications.map(application => ({
+            ...application,
+            profiles: profilesMap[application.user_id] || null
+          }));
+        }
+      }
+      
+      console.log("Project applications fetched:", applications);
+      return applications || [];
     },
     enabled: !!projectId,
   });
