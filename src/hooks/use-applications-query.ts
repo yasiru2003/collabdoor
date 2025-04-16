@@ -4,6 +4,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { handleSupabaseError } from "./use-supabase-utils";
 
+// Define interface for profile data
+export interface ProfileData {
+  id?: string;
+  name?: string;
+  email?: string;
+  profile_image?: string;
+}
+
+// Define interface for application data with profile field
+export interface ApplicationWithProfile {
+  id: string;
+  project_id: string;
+  user_id: string;
+  status: "pending" | "approved" | "rejected";
+  partnership_type: string;
+  message?: string;
+  created_at: string;
+  updated_at: string;
+  profiles?: ProfileData | null;
+}
+
 /**
  * Hook to fetch all applications for a specific project
  */
@@ -64,10 +85,12 @@ export function useProjectApplications(projectId: string | undefined) {
           }, {} as Record<string, any>);
           
           // Add profiles data to each application
-          return applications.map(application => ({
+          const applicationsWithProfiles: ApplicationWithProfile[] = applications.map(application => ({
             ...application,
             profiles: profilesMap[application.user_id] || null
           }));
+          
+          return applicationsWithProfiles;
         }
       }
       

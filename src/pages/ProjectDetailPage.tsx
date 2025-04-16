@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Project, PartnershipType } from "@/types";
 import { useProject } from "@/hooks/use-projects-query";
-import { useProjectApplications } from "@/hooks/use-applications-query";
+import { useProjectApplications, ApplicationWithProfile, ProfileData } from "@/hooks/use-applications-query";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -58,27 +58,6 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-// Define interface for profile data
-interface ProfileData {
-  id?: string;
-  name?: string;
-  email?: string;
-  profile_image?: string;
-}
-
-// Define interface for application data with profile field
-interface ApplicationWithProfile {
-  id: string;
-  project_id: string;
-  user_id: string;
-  status: "pending" | "approved" | "rejected";
-  partnership_type: string;
-  message?: string;
-  created_at: string;
-  updated_at: string;
-  profiles?: ProfileData | null;
-}
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -416,11 +395,11 @@ const renderApplicationsTable = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {projectApplications.map((application) => {
+            {projectApplications.map((application: ApplicationWithProfile) => {
               console.log("Rendering application:", application);
               
               // Extract profile data with safe access
-              const profiles = application.profiles || {};
+              const profiles = application.profiles || {} as ProfileData;
               const profileImage = profiles.profile_image || "";
               const profileName = profiles.name || "Unknown";
               const profileEmail = profiles.email || "";

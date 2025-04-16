@@ -49,3 +49,22 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface ProfileData {
+  id?: string;
+  name?: string;
+  email?: string;
+  profile_image?: string;
+}
+
+export interface ApplicationWithProfile {
+  id: string;
+  project_id: string;
+  user_id: string;
+  status: "pending" | "approved" | "rejected";
+  partnership_type: string;
+  message?: string;
+  created_at: string;
+  updated_at: string;
+  profiles?: ProfileData | null;
+}
