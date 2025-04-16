@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Layout } from "@/components/layout";
@@ -12,66 +11,65 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { ApplicationStatus, useProjectApplications } from "@/hooks/use-project-applications";
+import { useUserProjects, useUserApplications } from "@/hooks/use-supabase-query";
 
 const DashboardPage = () => {
   const { user } = useAuth();
-  const [projects, setProjects] = useState<any[]>([]);
-  const [userApplications, setUserApplications] = useState<any[]>([]);
   const [receivedApplications, setReceivedApplications] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { getUserApplications, updateApplicationStatus } = useProjectApplications();
+  const { updateApplicationStatus } = useProjectApplications();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  
+  // Use the hooks to fetch data
+  const { data: projects = [], isLoading: projectsLoading } = useUserProjects(user?.id);
+  const { data: userApplications = [], isLoading: applicationsLoading } = useUserApplications(user?.id);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchReceivedApplications = async () => {
+      if (!user || projects.length === 0) return;
+      
       setIsLoading(true);
-      // Fetch projects created by the user
-      if (user) {
-        const { data: projectData, error: projectError } = await supabase
-          .from("projects")
-          .select("*")
-          .eq("organizer_id", user.id)
+      try {
+        // Fetch received applications for the user's projects
+        const projectIds = projects.map(project => project.id);
+        
+        console.log("Fetching applications for projects:", projectIds);
+        
+        const { data: applications, error } = await supabase
+          .from("project_applications")
+          .select(`
+            *,
+            projects(*),
+            profiles(*)
+          `)
+          .in("project_id", projectIds)
           .order("created_at", { ascending: false });
-
-        if (projectError) {
-          console.error("Error fetching projects:", projectError);
-        } else {
-          setProjects(projectData || []);
           
-          // Fetch received applications for the user's projects
-          if (projectData && projectData.length > 0) {
-            const projectIds = projectData.map(project => project.id);
-            
-            const { data: applications, error: applicationsError } = await supabase
-              .from("project_applications")
-              .select(`
-                *,
-                projects(*),
-                profiles:profiles(*)
-              `)
-              .in("project_id", projectIds)
-              .order("created_at", { ascending: false });
-              
-            if (applicationsError) {
-              console.error("Error fetching received applications:", applicationsError);
-            } else {
-              setReceivedApplications(applications || []);
-            }
-          }
+        if (error) {
+          console.error("Error fetching received applications:", error);
+          toast({
+            title: "Error fetching applications",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          console.log("Received applications:", applications);
+          setReceivedApplications(applications || []);
         }
-
-        // Fetch user applications
-        if (user.id) {
-          const applications = await getUserApplications(user.id);
-          setUserApplications(applications);
-        }
+      } catch (err) {
+        console.error("Error in fetchReceivedApplications:", err);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
-    fetchData();
-  }, [user]);
+    if (!projectsLoading && projects.length > 0) {
+      fetchReceivedApplications();
+    } else if (!projectsLoading) {
+      setIsLoading(false);
+    }
+  }, [user, projects, projectsLoading, toast]);
 
   const getStatusBadgeVariant = (status: ApplicationStatus) => {
     switch (status) {
@@ -90,28 +88,22 @@ const DashboardPage = () => {
     try {
       const result = await updateApplicationStatus(applicationId, status);
       if (result) {
-        // Refresh the applications data
-        if (user?.id) {
-          const applications = await getUserApplications(user.id);
-          setUserApplications(applications);
+        // Refresh the received applications data
+        if (user && projects.length > 0) {
+          const projectIds = projects.map(project => project.id);
           
-          // Refresh received applications
-          if (projects.length > 0) {
-            const projectIds = projects.map(project => project.id);
+          const { data: receivedApps, error } = await supabase
+            .from("project_applications")
+            .select(`
+              *,
+              projects(*),
+              profiles(*)
+            `)
+            .in("project_id", projectIds)
+            .order("created_at", { ascending: false });
             
-            const { data: receivedApps, error } = await supabase
-              .from("project_applications")
-              .select(`
-                *,
-                projects(*),
-                profiles:profiles(*)
-              `)
-              .in("project_id", projectIds)
-              .order("created_at", { ascending: false });
-              
-            if (!error) {
-              setReceivedApplications(receivedApps || []);
-            }
+          if (!error) {
+            setReceivedApplications(receivedApps || []);
           }
         }
         

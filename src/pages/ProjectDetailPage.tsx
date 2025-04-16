@@ -395,17 +395,15 @@ const renderApplicationsTable = () => {
           </TableHeader>
           <TableBody>
             {projectApplications.map((application) => {
-              // Type assertion to make TypeScript happy
-              const profileData = application.profiles as { 
-                profile_image?: string; 
-                name?: string; 
-                email?: string; 
-              } | null;
+              console.log("Rendering application:", application);
               
-              // Extract profile data with proper null checks
-              const profileImage = profileData?.profile_image || "";
-              const profileName = profileData?.name || "Unknown";
-              const profileEmail = profileData?.email || "";
+              // Type assertion for profiles data
+              const profiles = application.profiles || {};
+              
+              // Extract profile data with safe fallbacks
+              const profileImage = typeof profiles === 'object' && profiles.profile_image ? profiles.profile_image : "";
+              const profileName = typeof profiles === 'object' && profiles.name ? profiles.name : "Unknown";
+              const profileEmail = typeof profiles === 'object' && profiles.email ? profiles.email : "";
               
               // Only calculate initials if we have a valid name
               const initials = profileName !== "Unknown" 

@@ -339,11 +339,13 @@ export function useProjectApplications(projectId: string | undefined) {
     queryFn: async () => {
       if (!projectId) return [];
 
+      console.log("Fetching project applications for:", projectId);
+      
       const { data, error } = await supabase
         .from("project_applications")
         .select(`
           *,
-          profiles:profiles(id, name, email, profile_image)
+          profiles(id, name, email, profile_image)
         `)
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
@@ -357,7 +359,8 @@ export function useProjectApplications(projectId: string | undefined) {
         });
         throw error;
       }
-
+      
+      console.log("Project applications fetched:", data);
       return data || [];
     },
     enabled: !!projectId,
@@ -372,6 +375,8 @@ export function useUserApplications(userId: string | undefined) {
     queryFn: async () => {
       if (!userId) return [];
 
+      console.log("Fetching user applications for:", userId);
+      
       const { data, error } = await supabase
         .from("project_applications")
         .select(`
@@ -390,7 +395,9 @@ export function useUserApplications(userId: string | undefined) {
         });
         throw error;
       }
-
+      
+      console.log("User applications fetched:", data);
+      
       // Keep the original project data structure rather than trying to map it
       // This maintains compatibility with the existing code
       return data || [];
