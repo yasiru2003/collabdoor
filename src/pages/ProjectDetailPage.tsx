@@ -37,11 +37,14 @@ import {
   Loader2,
   X,
   BarChart2,
-  PlusCircle
+  PlusCircle,
+  CheckCircle,
+  Trophy
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useProjectApplications as useProjectApps } from "@/hooks/use-project-applications";
 import { ProjectTracker } from "@/components/project/ProjectTracker";
+import { ProjectComplete } from "@/components/project/ProjectComplete";
 import {
   Dialog,
   DialogContent,
@@ -60,6 +63,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 
 export default function ProjectDetailPage() {
+  
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
@@ -94,6 +98,9 @@ export default function ProjectDetailPage() {
   
   // Check if user can update progress (either owner or approved partner)
   const canUpdateProgress = isOwner || isApprovedPartner;
+  
+  // State for project completion dialog
+  const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
 
   const handleContact = () => {
     if (!user) {
@@ -147,6 +154,23 @@ export default function ProjectDetailPage() {
         ? "This project has been added to your saved list."
         : "This project has been removed from your saved list.",
     });
+  };
+
+  // Add a function to handle project completion process
+  const handleCompleteProject = () => {
+    setCompleteDialogOpen(true);
+  };
+  
+  const onProjectCompleted = () => {
+    setCompleteDialogOpen(false);
+    toast({
+      title: "Project completed",
+      description: "Project has been marked as completed successfully.",
+    });
+    // Refresh the project data
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
   };
 
   const handleApply = async () => {
@@ -579,12 +603,22 @@ const renderApplicationsTable = () => {
     );
   }
 
+  // Determine if we should show the completed badge
+  const showCompletedBadge = project.status === "completed";
+
   return (
     <Layout>
       <div>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{project.title}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight">{project.title}</h1>
+              {showCompletedBadge && (
+                <Badge className="bg-green-100 text-green-800 flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3" /> Completed
+                </Badge>
+              )}
+            </div>
             <div className="flex items-center gap-3 mt-1 text-muted-foreground">
               <div className="flex items-center gap-1">
                 <UserIcon className="h-4 w-4" />
@@ -681,6 +715,17 @@ const renderApplicationsTable = () => {
                     </div>
                   </CardContent>
                 </Card>
+                
+                {/* Add Complete Project button right after the card for owner's view */}
+                {isOwner && project.status !== "completed" && (
+                  <Button 
+                    onClick={handleCompleteProject}
+                    size="lg"
+                    className="w-full py-6 text-lg bg-purple-600 hover:bg-purple-700 text-white shadow-md"
+                  >
+                    <Trophy className="h-6 w-6 mr-2" /> Complete Project
+                  </Button>
+                )}
               </div>
 
               <div className="space-y-6">
@@ -760,6 +805,27 @@ const renderApplicationsTable = () => {
                 </CardContent>
               </Card>
             )}
+            
+            {/* Add Complete Project button at the bottom of the progress tab */}
+            {isOwner && project.status !== "completed" && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle>Complete This Project</CardTitle>
+                  <CardDescription>
+                    Mark this project as completed, review partners, and wrap up your collaboration
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    onClick={handleCompleteProject}
+                    size="lg"
+                    className="w-full py-6 text-lg bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    <Trophy className="h-6 w-6 mr-2" /> Complete Project
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
           
           <TabsContent value="applications">
@@ -799,6 +865,32 @@ const renderApplicationsTable = () => {
               Save Progress Update
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Complete Project Dialog */}
+      <Dialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Complete Project</DialogTitle>
+            <DialogDescription>
+              Mark this project as completed and review your partners
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ProjectComplete 
+            projectId={id as string} 
+            projectTitle={project.title}
+            partners={
+              projectApplications
+                ?.filter(app => app.status === "approved")
+                .map(app => ({
+                  id: app.user_id,
+                  name: app.profiles?.name || "Unknown Partner"
+                })) || []
+            }
+            onComplete={onProjectCompleted}
+          />
         </DialogContent>
       </Dialog>
     </Layout>
