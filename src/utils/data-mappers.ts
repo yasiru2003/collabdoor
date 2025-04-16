@@ -21,16 +21,7 @@ export function mapSupabaseProjectToProject(supabaseProject: any): Project {
     location: supabaseProject.location,
     partners: [], // Will be filled separately when needed
     createdAt: supabaseProject.created_at,
-    updatedAt: supabaseProject.updated_at,
-    // Add these fields for compatibility with raw supabase data
-    // They're not in our Project type but help with error prevention
-    organization_id: supabaseProject.organization_id,
-    start_date: supabaseProject.start_date,
-    end_date: supabaseProject.end_date,
-    required_skills: supabaseProject.required_skills,
-    partnership_types: supabaseProject.partnership_types,
-    created_at: supabaseProject.created_at,
-    organizer_id: supabaseProject.organizer_id
+    updatedAt: supabaseProject.updated_at
   };
 }
 
@@ -45,14 +36,12 @@ export function mapSupabaseOrgToOrganization(supabaseOrg: any): Organization {
     industry: supabaseOrg.industry,
     location: supabaseOrg.location,
     size: supabaseOrg.size,
-    foundedYear: supabaseOrg.founded_year,
-    // Generate skills from industry for partner cards
-    skills: supabaseOrg.skills || generateSkillsFromIndustry(supabaseOrg.industry)
+    foundedYear: supabaseOrg.founded_year
   };
 }
 
 // Helper function to generate skills based on industry
-function generateSkillsFromIndustry(industry: string | null | undefined): string[] {
+export function generateSkillsFromIndustry(industry: string | null | undefined): string[] {
   if (!industry) return [];
   
   const industrySkillMap: Record<string, string[]> = {

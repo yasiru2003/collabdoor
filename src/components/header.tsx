@@ -14,31 +14,28 @@ import {
 } from "./ui/dropdown-menu";
 import { Switch } from "./ui/switch";
 import { Bell, Menu } from "lucide-react";
-
-// Mock user, will be replaced with auth context
-const mockUser: User = {
-  id: "1",
-  email: "user@example.com",
-  name: "John Doe",
-  role: "partner",
-  profileImage: "",
-};
+import { useAuth } from "@/hooks/use-auth";
 
 export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) {
-  const [user, setUser] = useState<User | null>(null);
+  const { user, signOut } = useAuth();
   const [role, setRole] = useState<UserRole>("partner");
 
   useEffect(() => {
-    // Simulate auth loading
-    const timer = setTimeout(() => {
-      setUser(mockUser);
-      setRole(mockUser.role);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+    if (user?.user_metadata?.role) {
+      setRole(user.user_metadata.role as UserRole);
+    }
+  }, [user]);
 
   const toggleRole = () => {
     setRole(role === "partner" ? "organizer" : "partner");
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   return (
@@ -81,14 +78,14 @@ export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Avatar className="cursor-pointer">
-                    <AvatarImage src={user.profileImage} alt={user.name} />
+                    <AvatarImage src={user.user_metadata?.profile_image || ""} alt={user.user_metadata?.name || "User"} />
                     <AvatarFallback className="bg-primary text-primary-foreground">
-                      {user.name.substring(0, 2).toUpperCase()}
+                      {(user.user_metadata?.name || user.email || "User")?.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
+                  <DropdownMenuLabel>{user.user_metadata?.name || user.email}</DropdownMenuLabel>
                   <DropdownMenuLabel className="text-xs text-muted-foreground">{user.email}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
@@ -106,7 +103,7 @@ export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) 
                     <Switch checked={role === "organizer"} onCheckedChange={toggleRole} />
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>Logout</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </>
