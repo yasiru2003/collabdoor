@@ -1,4 +1,5 @@
 
+import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout";
 import { 
   Card, 
@@ -13,12 +14,243 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { mockUsers } from "@/data/mockData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { User } from "@/types";
 
 export default function ProfilePage() {
-  // In a real app, this would come from authentication context
-  const user = mockUsers[0];
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState({
+    name: "",
+    email: "",
+    bio: "",
+    skills: [] as string[],
+    profileImage: "",
+  });
+  const [organization, setOrganization] = useState({
+    name: "",
+    description: "",
+    industry: "",
+    location: "",
+    website: "",
+    size: "",
+    foundedYear: "",
+    logo: "",
+  });
+  const [newSkill, setNewSkill] = useState("");
+
+  // Fetch user and profile data
+  useEffect(() => {
+    const getProfile = async () => {
+      try {
+        setLoading(true);
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          return;
+        }
+
+        setUser({
+          id: user.id,
+          email: user.email || "",
+          name: "",
+          role: "partner"
+        });
+
+        // Fetch profile from database
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) {
+          console.error("Error fetching profile:", profileError);
+          throw profileError;
+        }
+
+        if (profileData) {
+          setProfile({
+            name: profileData.name || "",
+            email: profileData.email,
+            bio: profileData.bio || "",
+            skills: profileData.skills || [],
+            profileImage: profileData.profile_image || "",
+          });
+          
+          // Set user data with role from profile
+          setUser(prev => prev ? {
+            ...prev,
+            name: profileData.name || "",
+            role: profileData.role as "partner" | "organizer",
+          } : null);
+        }
+
+        // Fetch organization if exists
+        const { data: orgData, error: orgError } = await supabase
+          .from('organizations')
+          .select('*')
+          .eq('owner_id', user.id)
+          .maybeSingle();
+
+        if (orgError && orgError.code !== 'PGRST116') {
+          console.error("Error fetching organization:", orgError);
+        }
+
+        if (orgData) {
+          setOrganization({
+            name: orgData.name || "",
+            description: orgData.description || "",
+            industry: orgData.industry || "",
+            location: orgData.location || "",
+            website: orgData.website || "",
+            size: orgData.size || "",
+            foundedYear: orgData.founded_year ? orgData.founded_year.toString() : "",
+            logo: orgData.logo || "",
+          });
+        }
+      } catch (error) {
+        console.error("Error loading user data:", error);
+        toast({
+          title: "Error loading profile",
+          description: "There was a problem loading your profile data.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getProfile();
+  }, [toast]);
+
+  // Update profile
+  const handleUpdateProfile = async () => {
+    try {
+      setLoading(true);
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: profile.name,
+          bio: profile.bio,
+          skills: profile.skills,
+          profile_image: profile.profileImage,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Error updating profile",
+        description: "There was a problem updating your profile.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update organization
+  const handleUpdateOrganization = async () => {
+    try {
+      setLoading(true);
+      if (!user) return;
+
+      // Check if organization exists
+      const { data: orgData, error: orgError } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('owner_id', user.id)
+        .maybeSingle();
+
+      if (orgError && orgError.code !== 'PGRST116') {
+        throw orgError;
+      }
+
+      const foundedYear = organization.foundedYear ? parseInt(organization.foundedYear) : null;
+
+      if (orgData) {
+        // Update existing organization
+        const { error } = await supabase
+          .from('organizations')
+          .update({
+            name: organization.name,
+            description: organization.description,
+            industry: organization.industry,
+            location: organization.location,
+            website: organization.website,
+            size: organization.size,
+            founded_year: foundedYear,
+            logo: organization.logo,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', orgData.id);
+
+        if (error) throw error;
+      } else {
+        // Create new organization
+        const { error } = await supabase
+          .from('organizations')
+          .insert({
+            owner_id: user.id,
+            name: organization.name,
+            description: organization.description,
+            industry: organization.industry,
+            location: organization.location,
+            website: organization.website,
+            size: organization.size,
+            founded_year: foundedYear,
+            logo: organization.logo,
+          });
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Organization updated",
+        description: "Your organization has been updated successfully.",
+      });
+    } catch (error) {
+      console.error("Error updating organization:", error);
+      toast({
+        title: "Error updating organization",
+        description: "There was a problem updating your organization.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Manage skills
+  const handleAddSkill = () => {
+    if (newSkill.trim() && !profile.skills.includes(newSkill)) {
+      setProfile({
+        ...profile,
+        skills: [...profile.skills, newSkill.trim()]
+      });
+      setNewSkill("");
+    }
+  };
+
+  const handleRemoveSkill = (skillToRemove: string) => {
+    setProfile({
+      ...profile,
+      skills: profile.skills.filter(skill => skill !== skillToRemove)
+    });
+  };
 
   return (
     <Layout>
@@ -42,38 +274,78 @@ export default function ProfilePage() {
                 <CardDescription>Update your personal details</CardDescription>
               </CardHeader>
               <CardContent>
-                <form className="space-y-4">
+                <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleUpdateProfile(); }}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="name">Full Name</Label>
-                      <Input id="name" defaultValue={user.name} />
+                      <Input 
+                        id="name" 
+                        value={profile.name} 
+                        onChange={(e) => setProfile({...profile, name: e.target.value})}
+                        disabled={loading}
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
-                      <Input id="email" type="email" defaultValue={user.email} />
+                      <Input 
+                        id="email" 
+                        type="email" 
+                        value={profile.email} 
+                        disabled={true}
+                      />
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="bio">Bio</Label>
-                    <Textarea id="bio" defaultValue={user.bio} rows={4} />
+                    <Textarea 
+                      id="bio" 
+                      value={profile.bio} 
+                      onChange={(e) => setProfile({...profile, bio: e.target.value})}
+                      rows={4}
+                      disabled={loading}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label>Skills</Label>
                     <div className="flex flex-wrap gap-2">
-                      {user.skills?.map((skill) => (
+                      {profile.skills.map((skill) => (
                         <div key={skill} className="bg-muted px-3 py-1 rounded text-sm flex items-center">
                           {skill}
-                          <button className="ml-2 text-muted-foreground hover:text-foreground">×</button>
+                          <button 
+                            type="button"
+                            className="ml-2 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleRemoveSkill(skill)}
+                            disabled={loading}
+                          >
+                            ×
+                          </button>
                         </div>
                       ))}
-                      <Button variant="outline" size="sm">Add Skill</Button>
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <Input
+                        value={newSkill}
+                        onChange={(e) => setNewSkill(e.target.value)}
+                        placeholder="Add a new skill"
+                        disabled={loading}
+                      />
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={handleAddSkill}
+                        disabled={loading}
+                      >
+                        Add
+                      </Button>
                     </div>
                   </div>
 
                   <div className="pt-4">
-                    <Button>Save Changes</Button>
+                    <Button type="submit" disabled={loading}>
+                      {loading ? "Saving..." : "Save Changes"}
+                    </Button>
                   </div>
                 </form>
               </CardContent>
@@ -87,15 +359,28 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent className="flex flex-col items-center">
                   <Avatar className="w-32 h-32 mb-4">
-                    <AvatarImage src={user.profileImage} alt={user.name} />
+                    <AvatarImage src={profile.profileImage} alt={profile.name} />
                     <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
-                      {user.name.substring(0, 2).toUpperCase()}
+                      {profile.name ? profile.name.substring(0, 2).toUpperCase() : "U"}
                     </AvatarFallback>
                   </Avatar>
 
                   <div className="space-y-2 w-full">
-                    <Button variant="outline" className="w-full">Upload Image</Button>
-                    <Button variant="ghost" className="w-full">Remove</Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      disabled={loading}
+                    >
+                      Upload Image
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      className="w-full"
+                      onClick={() => setProfile({...profile, profileImage: ""})}
+                      disabled={loading || !profile.profileImage}
+                    >
+                      Remove
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -110,15 +395,25 @@ export default function ProfilePage() {
               <CardDescription>Add or update your organization details</CardDescription>
             </CardHeader>
             <CardContent>
-              <form className="space-y-4">
+              <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleUpdateOrganization(); }}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="org-name">Organization Name</Label>
-                    <Input id="org-name" />
+                    <Input 
+                      id="org-name" 
+                      value={organization.name}
+                      onChange={(e) => setOrganization({...organization, name: e.target.value})}
+                      disabled={loading}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="industry">Industry</Label>
-                    <Select>
+                    <Select 
+                      value={organization.industry || ""}
+                      onValueChange={(value) => setOrganization({...organization, industry: value})}
+                      disabled={loading}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select industry" />
                       </SelectTrigger>
@@ -137,18 +432,34 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="location">Location</Label>
-                    <Input id="location" />
+                    <Input 
+                      id="location" 
+                      value={organization.location}
+                      onChange={(e) => setOrganization({...organization, location: e.target.value})}
+                      disabled={loading}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="website">Website</Label>
-                    <Input id="website" type="url" placeholder="https://" />
+                    <Input 
+                      id="website" 
+                      type="url" 
+                      placeholder="https://" 
+                      value={organization.website}
+                      onChange={(e) => setOrganization({...organization, website: e.target.value})}
+                      disabled={loading}
+                    />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="size">Organization Size</Label>
-                    <Select>
+                    <Select 
+                      value={organization.size || ""} 
+                      onValueChange={(value) => setOrganization({...organization, size: value})}
+                      disabled={loading}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select size" />
                       </SelectTrigger>
@@ -163,27 +474,52 @@ export default function ProfilePage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="founded">Founded Year</Label>
-                    <Input id="founded" type="number" min="1900" max="2025" />
+                    <Input 
+                      id="founded" 
+                      type="number" 
+                      min="1900" 
+                      max="2025" 
+                      value={organization.foundedYear}
+                      onChange={(e) => setOrganization({...organization, foundedYear: e.target.value})}
+                      disabled={loading}
+                    />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
-                  <Textarea id="description" rows={4} />
+                  <Textarea 
+                    id="description" 
+                    rows={4} 
+                    value={organization.description}
+                    onChange={(e) => setOrganization({...organization, description: e.target.value})}
+                    disabled={loading}
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="logo">Organization Logo</Label>
                   <div className="flex items-center gap-4">
                     <div className="h-16 w-16 border rounded flex items-center justify-center bg-muted">
-                      Logo
+                      {organization.logo ? (
+                        <img src={organization.logo} alt="Logo" className="h-full w-full object-contain" />
+                      ) : (
+                        "Logo"
+                      )}
                     </div>
-                    <Button variant="outline">Upload Logo</Button>
+                    <Button 
+                      variant="outline"
+                      disabled={loading}
+                    >
+                      Upload Logo
+                    </Button>
                   </div>
                 </div>
 
                 <div className="pt-4">
-                  <Button>Save Organization</Button>
+                  <Button type="submit" disabled={loading}>
+                    {loading ? "Saving..." : "Save Organization"}
+                  </Button>
                 </div>
               </form>
             </CardContent>
@@ -198,7 +534,13 @@ export default function ProfilePage() {
                 <CardDescription>Change your password</CardDescription>
               </CardHeader>
               <CardContent>
-                <form className="space-y-4">
+                <form className="space-y-4" onSubmit={(e) => { 
+                  e.preventDefault(); 
+                  toast({
+                    title: "Coming soon",
+                    description: "Password change functionality will be available soon."
+                  });
+                }}>
                   <div className="space-y-2">
                     <Label htmlFor="current-password">Current Password</Label>
                     <Input id="current-password" type="password" />
@@ -263,7 +605,12 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   
-                  <Button>Save Preferences</Button>
+                  <Button onClick={() => {
+                    toast({
+                      title: "Coming soon",
+                      description: "Email preferences will be available soon."
+                    });
+                  }}>Save Preferences</Button>
                 </div>
               </CardContent>
             </Card>
@@ -276,7 +623,17 @@ export default function ProfilePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="destructive">Delete Account</Button>
+                <Button 
+                  variant="destructive"
+                  onClick={() => {
+                    toast({
+                      title: "Coming soon",
+                      description: "Account deletion will be available soon."
+                    });
+                  }}
+                >
+                  Delete Account
+                </Button>
               </CardContent>
             </Card>
           </div>
