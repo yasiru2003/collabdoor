@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { uploadImage, removeImage } from "@/utils/upload-utils";
+import { Loader2 } from "lucide-react";
 
 interface ProfilePictureProps {
   name: string;
@@ -19,6 +20,7 @@ export function ProfilePicture({ name, profileImage, loading, onRemove, onUpdate
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleUploadClick = () => {
     if (fileInputRef.current) {
@@ -33,8 +35,10 @@ export function ProfilePicture({ name, profileImage, loading, onRemove, onUpdate
 
     const file = e.target.files[0];
     setUploading(true);
+    setError(null);
 
     try {
+      console.log("Starting profile image upload...");
       // Remove old image if it exists
       if (profileImage) {
         await removeImage(profileImage, 'profiles');
@@ -50,12 +54,13 @@ export function ProfilePicture({ name, profileImage, loading, onRemove, onUpdate
           description: "Your profile image has been updated successfully."
         });
       } else {
-        throw new Error("Failed to upload image");
+        throw new Error("Failed to upload image. Please try again.");
       }
     } catch (error: any) {
+      setError(error.message || "An error occurred during upload");
       toast({
         title: "Upload failed",
-        description: error.message,
+        description: error.message || "An error occurred during upload",
         variant: "destructive"
       });
     } finally {
@@ -69,6 +74,7 @@ export function ProfilePicture({ name, profileImage, loading, onRemove, onUpdate
   const handleRemove = async () => {
     if (profileImage) {
       setUploading(true);
+      setError(null);
       try {
         await removeImage(profileImage, 'profiles');
         onRemove();
@@ -77,9 +83,10 @@ export function ProfilePicture({ name, profileImage, loading, onRemove, onUpdate
           description: "Your profile image has been removed successfully."
         });
       } catch (error: any) {
+        setError(error.message || "An error occurred while removing the image");
         toast({
           title: "Remove failed",
-          description: error.message,
+          description: error.message || "An error occurred while removing the image",
           variant: "destructive"
         });
       } finally {
@@ -102,6 +109,12 @@ export function ProfilePicture({ name, profileImage, loading, onRemove, onUpdate
           </AvatarFallback>
         </Avatar>
 
+        {error && (
+          <div className="text-sm text-destructive mb-2">
+            {error}
+          </div>
+        )}
+
         <div className="space-y-2 w-full">
           <input 
             type="file" 
@@ -116,7 +129,12 @@ export function ProfilePicture({ name, profileImage, loading, onRemove, onUpdate
             disabled={loading || uploading}
             onClick={handleUploadClick}
           >
-            {uploading ? "Uploading..." : "Upload Image"}
+            {uploading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Uploading...
+              </>
+            ) : "Upload Image"}
           </Button>
           <Button 
             variant="ghost" 

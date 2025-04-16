@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 /**
  * Creates a notification for a user
@@ -11,7 +12,8 @@ export async function createNotification(
   link?: string
 ): Promise<boolean> {
   try {
-    // Use a generic query to avoid type errors
+    console.log(`Creating notification for user ${userId}: ${title}`);
+    
     const { error } = await supabase
       .from('notifications')
       .insert({
@@ -20,12 +22,22 @@ export async function createNotification(
         message,
         link,
         read: false
-      }) as any;
+      });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error creating notification:', error);
+      throw error;
+    }
+    
+    console.log('Notification created successfully');
     return true;
   } catch (error) {
     console.error('Error creating notification:', error);
+    toast({
+      title: "Notification Error",
+      description: "Failed to create notification",
+      variant: "destructive"
+    });
     return false;
   }
 }
@@ -40,6 +52,13 @@ export async function createMultipleNotifications(
   link?: string
 ): Promise<boolean> {
   try {
+    if (!userIds.length) {
+      console.warn('No user IDs provided for notifications');
+      return true;
+    }
+    
+    console.log(`Creating notifications for ${userIds.length} users: ${title}`);
+    
     const notifications = userIds.map(userId => ({
       user_id: userId,
       title,
@@ -48,15 +67,24 @@ export async function createMultipleNotifications(
       read: false
     }));
 
-    // Use a generic query to avoid type errors
     const { error } = await supabase
       .from('notifications')
-      .insert(notifications) as any;
+      .insert(notifications);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error creating multiple notifications:', error);
+      throw error;
+    }
+    
+    console.log('Multiple notifications created successfully');
     return true;
   } catch (error) {
     console.error('Error creating multiple notifications:', error);
+    toast({
+      title: "Notification Error",
+      description: "Failed to create multiple notifications",
+      variant: "destructive"
+    });
     return false;
   }
 }
@@ -71,23 +99,36 @@ export async function notifyProjectPartners(
   link?: string
 ): Promise<boolean> {
   try {
+    console.log(`Notifying project partners for project ${projectId}: ${title}`);
+    
     // Get all partners for the project
     const { data: partnerships, error: fetchError } = await supabase
       .from('partnerships')
       .select('partner_id')
       .eq('project_id', projectId);
 
-    if (fetchError) throw fetchError;
+    if (fetchError) {
+      console.error('Error fetching project partnerships:', fetchError);
+      throw fetchError;
+    }
     
     if (!partnerships || partnerships.length === 0) {
+      console.log('No partners found for this project');
       return true; // No partners to notify
     }
 
+    console.log(`Found ${partnerships.length} partners to notify`);
+    
     // Create notifications for all partners
     const partnerIds = partnerships.map(p => p.partner_id);
     return await createMultipleNotifications(partnerIds, title, message, link);
   } catch (error) {
     console.error('Error notifying project partners:', error);
+    toast({
+      title: "Notification Error",
+      description: "Failed to notify project partners",
+      variant: "destructive"
+    });
     return false;
   }
 }

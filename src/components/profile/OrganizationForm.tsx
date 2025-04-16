@@ -1,3 +1,4 @@
+
 import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/hooks/use-toast";
 import { uploadImage, removeImage } from "@/utils/upload-utils";
+import { Loader2 } from "lucide-react";
 
 interface OrganizationFormProps {
   organization: {
@@ -34,6 +36,7 @@ export function OrganizationForm({
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleUploadClick = () => {
     if (fileInputRef.current) {
@@ -48,8 +51,10 @@ export function OrganizationForm({
 
     const file = e.target.files[0];
     setUploading(true);
+    setError(null);
 
     try {
+      console.log("Starting organization logo upload...");
       // Remove old logo if it exists
       if (organization.logo) {
         await removeImage(organization.logo, 'organizations');
@@ -65,12 +70,13 @@ export function OrganizationForm({
           description: "Your organization logo has been updated successfully."
         });
       } else {
-        throw new Error("Failed to upload image");
+        throw new Error("Failed to upload logo. Please try again.");
       }
     } catch (error: any) {
+      setError(error.message || "An error occurred during upload");
       toast({
         title: "Upload failed",
-        description: error.message,
+        description: error.message || "An error occurred during upload",
         variant: "destructive"
       });
     } finally {
@@ -84,6 +90,7 @@ export function OrganizationForm({
   const handleRemoveLogo = async () => {
     if (organization.logo) {
       setUploading(true);
+      setError(null);
       try {
         await removeImage(organization.logo, 'organizations');
         onOrganizationChange('logo', '');
@@ -92,9 +99,10 @@ export function OrganizationForm({
           description: "Your organization logo has been removed successfully."
         });
       } catch (error: any) {
+        setError(error.message || "An error occurred while removing the logo");
         toast({
           title: "Remove failed",
-          description: error.message,
+          description: error.message || "An error occurred while removing the logo",
           variant: "destructive"
         });
       } finally {
@@ -223,6 +231,11 @@ export function OrganizationForm({
                 )}
               </div>
               <div className="space-y-2">
+                {error && (
+                  <div className="text-sm text-destructive">
+                    {error}
+                  </div>
+                )}
                 <input 
                   type="file" 
                   id="logo"
@@ -237,7 +250,12 @@ export function OrganizationForm({
                   onClick={handleUploadClick}
                   type="button"
                 >
-                  {uploading ? "Uploading..." : "Upload Logo"}
+                  {uploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : "Upload Logo"}
                 </Button>
                 {organization.logo && (
                   <Button 
@@ -256,7 +274,12 @@ export function OrganizationForm({
 
           <div className="pt-4">
             <Button type="submit" disabled={loading || uploading}>
-              {loading ? "Saving..." : "Save Organization"}
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : "Save Organization"}
             </Button>
           </div>
         </form>

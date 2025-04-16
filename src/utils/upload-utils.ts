@@ -16,17 +16,23 @@ export async function uploadImage(
     const fileName = `${userId}-${uniqueId}.${fileExt}`;
     const filePath = `${fileName}`;
 
+    console.log(`Uploading file to ${bucket} bucket: ${filePath}`);
+
     // Upload the file
-    const { error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from(bucket)
       .upload(filePath, file);
 
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      console.error(`Error uploading ${bucket} image:`, uploadError);
+      throw uploadError;
+    }
 
     // Get the public URL
     const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
     
     if (data) {
+      console.log(`Successfully uploaded file, public URL: ${data.publicUrl}`);
       return data.publicUrl;
     }
     return null;
@@ -44,16 +50,28 @@ export async function removeImage(
   bucket: 'profiles' | 'projects' | 'organizations'
 ): Promise<boolean> {
   try {
+    if (!url) {
+      console.warn(`No URL provided for removal from ${bucket} bucket`);
+      return false;
+    }
+
     // Extract file path from URL
     const urlObj = new URL(url);
     const pathSegments = urlObj.pathname.split('/');
     const fileName = pathSegments[pathSegments.length - 1];
     
+    console.log(`Removing file from ${bucket} bucket: ${fileName}`);
+
     const { error } = await supabase.storage
       .from(bucket)
       .remove([fileName]);
 
-    if (error) throw error;
+    if (error) {
+      console.error(`Error removing ${bucket} image:`, error);
+      throw error;
+    }
+    
+    console.log(`Successfully removed file from ${bucket} bucket`);
     return true;
   } catch (error) {
     console.error(`Error removing ${bucket} image:`, error);
