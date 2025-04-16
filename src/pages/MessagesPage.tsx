@@ -1,134 +1,69 @@
 
+import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { mockUsers, mockOrganizations } from "@/data/mockData";
 import { Search } from "lucide-react";
-import { useState } from "react";
-
-type Message = {
-  id: string;
-  senderId: string;
-  senderName: string;
-  senderImage?: string;
-  content: string;
-  timestamp: string;
-  read: boolean;
-};
-
-type Conversation = {
-  id: string;
-  participantId: string;
-  participantName: string;
-  participantImage?: string;
-  lastMessage: string;
-  lastMessageTime: string;
-  unreadCount: number;
-};
-
-// Mock conversations data
-const mockConversations: Conversation[] = [
-  {
-    id: "1",
-    participantId: "2",
-    participantName: "Sarah Johnson",
-    lastMessage: "I'd like to discuss your application to our Clean Water Initiative project.",
-    lastMessageTime: "2025-04-15T14:30:00Z",
-    unreadCount: 2,
-  },
-  {
-    id: "2",
-    participantId: "3",
-    participantName: "Tech Innovators",
-    participantImage: "",
-    lastMessage: "Thanks for your interest in our organization. Would you be available for a call next week?",
-    lastMessageTime: "2025-04-14T10:15:00Z",
-    unreadCount: 0,
-  },
-  {
-    id: "3",
-    participantId: "4",
-    participantName: "Global Health Initiative",
-    lastMessage: "We've reviewed your proposal and would like to move forward with the partnership.",
-    lastMessageTime: "2025-04-13T16:45:00Z",
-    unreadCount: 0,
-  },
-  {
-    id: "4",
-    participantId: "5",
-    participantName: "Creative Solutions Agency",
-    lastMessage: "Could you provide more details about the technical requirements for the project?",
-    lastMessageTime: "2025-04-12T09:20:00Z",
-    unreadCount: 0,
-  },
-];
-
-// Mock messages for the first conversation
-const mockMessages: Message[] = [
-  {
-    id: "1",
-    senderId: "2",
-    senderName: "Sarah Johnson",
-    content: "Hello! I saw your application to our Clean Water Initiative project and I'm impressed with your organization's background.",
-    timestamp: "2025-04-15T14:30:00Z",
-    read: true,
-  },
-  {
-    id: "2",
-    senderId: "1", // Current user
-    senderName: "John Doe",
-    content: "Thank you, Sarah! We're very interested in contributing to the project. Our team has experience in similar water purification systems.",
-    timestamp: "2025-04-15T14:35:00Z",
-    read: true,
-  },
-  {
-    id: "3",
-    senderId: "2",
-    senderName: "Sarah Johnson",
-    content: "That's great to hear. Could you tell me more about your previous experience with water filtration systems?",
-    timestamp: "2025-04-15T14:40:00Z",
-    read: true,
-  },
-  {
-    id: "4",
-    senderId: "1", // Current user
-    senderName: "John Doe",
-    content: "Absolutely. We've worked on three similar projects in Southeast Asia over the past five years. Our technology has helped provide clean water to over 10,000 people.",
-    timestamp: "2025-04-15T14:45:00Z",
-    read: true,
-  },
-  {
-    id: "5",
-    senderId: "2",
-    senderName: "Sarah Johnson",
-    content: "I'd like to discuss this further. Would you be available for a video call next Tuesday at 2 PM?",
-    timestamp: "2025-04-15T14:50:00Z",
-    read: false,
-  },
-  {
-    id: "6",
-    senderId: "2",
-    senderName: "Sarah Johnson",
-    content: "I can also share more details about the specific requirements and challenges we're facing in our target communities.",
-    timestamp: "2025-04-15T14:51:00Z",
-    read: false,
-  },
-];
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/use-auth";
+import { useMessages, useConversation } from "@/hooks/use-supabase-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export default function MessagesPage() {
-  const [activeConversation, setActiveConversation] = useState<string>(mockConversations[0].id);
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeConversation, setActiveConversation] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
+  
+  const { data: conversations, isLoading: conversationsLoading, refetch: refetchConversations } = useMessages(user?.id);
+  const { data: messages, isLoading: messagesLoading, refetch: refetchMessages } = useConversation(user?.id, activeConversation || undefined);
+  
+  // Set first conversation as active by default
+  useEffect(() => {
+    if (conversations && conversations.length > 0 && !activeConversation) {
+      setActiveConversation(conversations[0].participantId);
+    }
+  }, [conversations, activeConversation]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  // Redirect to login page if not authenticated
+  if (!loading && !user) {
+    navigate("/login");
+    return null;
+  }
+
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newMessage.trim()) {
-      // In a real app, this would send the message to the API
-      console.log("Sending message:", newMessage);
+    if (!newMessage.trim() || !activeConversation || !user) return;
+
+    try {
+      const { error } = await supabase.from("messages").insert({
+        sender_id: user.id,
+        recipient_id: activeConversation,
+        content: newMessage
+      });
+
+      if (error) throw error;
+      
       setNewMessage("");
+      refetchMessages();
+      refetchConversations();
+    } catch (error: any) {
+      toast({
+        title: "Error sending message",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
+
+  const filteredConversations = conversations?.filter(conv => 
+    conv.participantName.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -173,111 +108,176 @@ export default function MessagesPage() {
               <Input 
                 placeholder="Search messages..." 
                 className="pl-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
           <div className="overflow-y-auto h-[calc(100%-4rem)]">
-            {mockConversations.map((conversation) => (
-              <div 
-                key={conversation.id}
-                onClick={() => setActiveConversation(conversation.id)}
-                className={`p-3 border-b cursor-pointer hover:bg-muted/50 transition-colors ${activeConversation === conversation.id ? 'bg-muted' : ''}`}
-              >
-                <div className="flex items-start gap-3">
-                  <Avatar>
-                    <AvatarImage src={conversation.participantImage} alt={conversation.participantName} />
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {conversation.participantName.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-baseline">
-                      <h3 className="font-medium truncate">{conversation.participantName}</h3>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDate(conversation.lastMessageTime)}
-                      </span>
+            {conversationsLoading ? (
+              <div className="space-y-2 p-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="flex-1">
+                      <Skeleton className="h-4 w-24 mb-2" />
+                      <Skeleton className="h-3 w-full" />
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {conversation.lastMessage}
-                    </p>
                   </div>
-                  {conversation.unreadCount > 0 && (
-                    <div className="bg-primary text-primary-foreground h-5 w-5 rounded-full flex items-center justify-center text-xs font-medium">
-                      {conversation.unreadCount}
-                    </div>
-                  )}
-                </div>
+                ))}
               </div>
-            ))}
+            ) : filteredConversations.length > 0 ? (
+              filteredConversations.map((conversation) => (
+                <div 
+                  key={conversation.participantId}
+                  onClick={() => setActiveConversation(conversation.participantId)}
+                  className={`p-3 border-b cursor-pointer hover:bg-muted/50 transition-colors ${activeConversation === conversation.participantId ? 'bg-muted' : ''}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <Avatar>
+                      <AvatarImage src={conversation.participantImage} alt={conversation.participantName} />
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {conversation.participantName.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-baseline">
+                        <h3 className="font-medium truncate">{conversation.participantName}</h3>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(conversation.lastMessageTime)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {conversation.lastMessage}
+                      </p>
+                    </div>
+                    {conversation.unreadCount > 0 && (
+                      <div className="bg-primary text-primary-foreground h-5 w-5 rounded-full flex items-center justify-center text-xs font-medium">
+                        {conversation.unreadCount}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-4 text-center text-muted-foreground">
+                {searchQuery ? "No matching conversations" : "No conversations yet"}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Messages area */}
         <div className="flex-1 flex flex-col">
-          {/* Conversation header */}
-          <div className="p-4 border-b flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar>
-                <AvatarFallback className="bg-primary/10 text-primary">
-                  {mockConversations[0].participantName.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h3 className="font-medium">{mockConversations[0].participantName}</h3>
-                <p className="text-xs text-muted-foreground">Active now</p>
-              </div>
-            </div>
-            <div>
-              <Button variant="ghost" size="sm">View Profile</Button>
-            </div>
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {mockMessages.map((message) => (
-              <div 
-                key={message.id} 
-                className={`flex ${message.senderId === "1" ? "justify-end" : ""}`}
-              >
-                <div className={`flex items-start gap-2 max-w-[70%] ${message.senderId === "1" ? "flex-row-reverse" : ""}`}>
-                  {message.senderId !== "1" && (
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="text-xs">
-                        {message.senderName.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
+          {activeConversation && conversations?.length > 0 ? (
+            <>
+              {/* Conversation header */}
+              <div className="p-4 border-b flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarImage 
+                      src={conversations.find(c => c.participantId === activeConversation)?.participantImage} 
+                      alt={conversations.find(c => c.participantId === activeConversation)?.participantName || "User"} 
+                    />
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {(conversations.find(c => c.participantId === activeConversation)?.participantName || "User").substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <div>
-                    <div 
-                      className={`p-3 rounded-lg ${
-                        message.senderId === "1" 
-                          ? "bg-primary text-primary-foreground" 
-                          : "bg-muted"
-                      }`}
-                    >
-                      <p className="text-sm">{message.content}</p>
-                    </div>
-                    <div className={`mt-1 text-xs text-muted-foreground ${message.senderId === "1" ? "text-right" : ""}`}>
-                      {formatTime(message.timestamp)}
-                    </div>
+                    <h3 className="font-medium">
+                      {conversations.find(c => c.participantId === activeConversation)?.participantName || "User"}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">Active now</p>
                   </div>
                 </div>
+                <div>
+                  <Button variant="ghost" size="sm">View Profile</Button>
+                </div>
               </div>
-            ))}
-          </div>
 
-          {/* Message input */}
-          <div className="p-4 border-t">
-            <form onSubmit={handleSendMessage} className="flex gap-2">
-              <Input 
-                placeholder="Type your message..." 
-                value={newMessage} 
-                onChange={(e) => setNewMessage(e.target.value)}
-                className="flex-1"
-              />
-              <Button type="submit">Send</Button>
-            </form>
-          </div>
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {messagesLoading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : ""}`}>
+                        <div className={`flex items-start gap-2 max-w-[70%] ${i % 2 === 0 ? "flex-row-reverse" : ""}`}>
+                          {i % 2 !== 0 && <Skeleton className="h-8 w-8 rounded-full" />}
+                          <div>
+                            <Skeleton className={`h-16 w-64 rounded-lg`} />
+                            <div className={`mt-1 ${i % 2 === 0 ? "text-right" : ""}`}>
+                              <Skeleton className="h-3 w-16 inline-block" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : messages && messages.length > 0 ? (
+                  messages.map((message) => (
+                    <div 
+                      key={message.id} 
+                      className={`flex ${message.sender_id === user?.id ? "justify-end" : ""}`}
+                    >
+                      <div className={`flex items-start gap-2 max-w-[70%] ${message.sender_id === user?.id ? "flex-row-reverse" : ""}`}>
+                        {message.sender_id !== user?.id && (
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="text-xs">
+                              {conversations.find(c => c.participantId === message.sender_id)?.participantName.substring(0, 2).toUpperCase() || "UN"}
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                        <div>
+                          <div 
+                            className={`p-3 rounded-lg ${
+                              message.sender_id === user?.id 
+                                ? "bg-primary text-primary-foreground" 
+                                : "bg-muted"
+                            }`}
+                          >
+                            <p className="text-sm">{message.content}</p>
+                          </div>
+                          <div className={`mt-1 text-xs text-muted-foreground ${message.sender_id === user?.id ? "text-right" : ""}`}>
+                            {formatTime(message.created_at)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <p className="text-muted-foreground">No messages yet.</p>
+                      <p className="text-sm text-muted-foreground">Send a message to start the conversation.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Message input */}
+              <div className="p-4 border-t">
+                <form onSubmit={handleSendMessage} className="flex gap-2">
+                  <Input 
+                    placeholder="Type your message..." 
+                    value={newMessage} 
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button type="submit" disabled={!newMessage.trim()}>Send</Button>
+                </form>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center p-6">
+                <h3 className="font-medium text-lg mb-2">No conversation selected</h3>
+                <p className="text-muted-foreground mb-4">Select a conversation from the sidebar or start a new one.</p>
+                <Button variant="outline" onClick={() => navigate("/partners")}>
+                  Find Partners
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </Layout>

@@ -1,26 +1,35 @@
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ProjectCard } from "@/components/project-card";
 import { PartnerCard } from "@/components/partner-card";
-import { mockProjects, mockOrganizations } from "@/data/mockData";
 import { Plus } from "lucide-react";
-import { UserRole } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/use-auth";
+import { useUserProjects, usePartnerships, useMessages } from "@/hooks/use-supabase-query";
+import { useNavigate } from "react-router-dom";
 
 export default function DashboardPage() {
-  const [role, setRole] = useState<UserRole>("partner");
-  
-  // In a real app, this would come from authentication context
-  useEffect(() => {
-    // Simulate role change for demo
-    const timer = setTimeout(() => {
-      setRole("partner");
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const { data: userProjects, isLoading: projectsLoading } = useUserProjects(user?.id);
+  const { data: partnerships, isLoading: partnershipsLoading } = usePartnerships(user?.id);
+  const { data: conversations, isLoading: messagesLoading } = useMessages(user?.id);
+  const [dashboardTab, setDashboardTab] = useState<string>(user?.role === "organizer" ? "my-projects" : "recommended");
+
+  // Get current counts
+  const projectsCount = userProjects?.length || 0;
+  const partnershipsCount = partnerships?.length || 0;
+  const messagesCount = conversations?.reduce((total, conv) => total + (conv.unreadCount || 0), 0) || 0;
+
+  // Redirect to login page if not authenticated
+  if (!loading && !user) {
+    navigate("/login");
+    return null;
+  }
 
   return (
     <Layout>
@@ -34,11 +43,15 @@ export default function DashboardPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Projects</CardTitle>
             <CardDescription>
-              {role === "organizer" ? "Your active projects" : "Projects you're involved in"}
+              {user?.role === "organizer" ? "Your active projects" : "Projects you're involved in"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{role === "organizer" ? 2 : 3}</div>
+            {projectsLoading ? (
+              <Skeleton className="h-8 w-8" />
+            ) : (
+              <div className="text-3xl font-bold">{projectsCount}</div>
+            )}
           </CardContent>
         </Card>
         
@@ -46,11 +59,15 @@ export default function DashboardPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Partners</CardTitle>
             <CardDescription>
-              {role === "organizer" ? "Organizations partnering with you" : "Your partnership applications"}
+              {user?.role === "organizer" ? "Organizations partnering with you" : "Your partnership applications"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{role === "organizer" ? 5 : 4}</div>
+            {partnershipsLoading ? (
+              <Skeleton className="h-8 w-8" />
+            ) : (
+              <div className="text-3xl font-bold">{partnershipsCount}</div>
+            )}
           </CardContent>
         </Card>
         
@@ -60,15 +77,19 @@ export default function DashboardPage() {
             <CardDescription>Unread messages requiring attention</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">7</div>
+            {messagesLoading ? (
+              <Skeleton className="h-8 w-8" />
+            ) : (
+              <div className="text-3xl font-bold">{messagesCount}</div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      <Tabs defaultValue={role === "organizer" ? "my-projects" : "recommended"} className="mb-8">
+      <Tabs value={dashboardTab} onValueChange={setDashboardTab} className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <TabsList>
-            {role === "organizer" ? (
+            {user?.role === "organizer" ? (
               <>
                 <TabsTrigger value="my-projects">My Projects</TabsTrigger>
                 <TabsTrigger value="interested-partners">Interested Partners</TabsTrigger>
@@ -81,50 +102,86 @@ export default function DashboardPage() {
             )}
           </TabsList>
 
-          {role === "organizer" && (
-            <Button className="gap-1">
+          {user?.role === "organizer" && (
+            <Button className="gap-1" onClick={() => navigate("/projects/new")}>
               <Plus className="h-4 w-4" />
               <span>New Project</span>
             </Button>
           )}
         </div>
 
-        {role === "organizer" ? (
+        {user?.role === "organizer" ? (
           <>
             <TabsContent value="my-projects" className="mt-0">
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {mockProjects.slice(0, 3).map((project) => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
-              </div>
+              {projectsLoading ? (
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-64 w-full" />
+                  ))}
+                </div>
+              ) : userProjects && userProjects.length > 0 ? (
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {userProjects.map((project) => (
+                    <ProjectCard key={project.id} project={project} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground mb-4">You haven't created any projects yet.</p>
+                  <Button onClick={() => navigate("/projects/new")}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Your First Project
+                  </Button>
+                </div>
+              )}
             </TabsContent>
             <TabsContent value="interested-partners" className="mt-0">
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {mockOrganizations.slice(0, 4).map((org) => (
-                  <PartnerCard 
-                    key={org.id} 
-                    organization={org} 
-                    skills={["Business Development", "Marketing", "Fundraising"]} 
-                  />
-                ))}
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No partners have shown interest yet.</p>
               </div>
             </TabsContent>
           </>
         ) : (
           <>
             <TabsContent value="recommended" className="mt-0">
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {mockProjects.slice(1, 5).map((project) => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
-              </div>
+              {projectsLoading ? (
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <Skeleton key={i} className="h-64 w-full" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {userProjects?.slice(0, 4).map((project) => (
+                    <ProjectCard key={project.id} project={project} />
+                  ))}
+                </div>
+              )}
             </TabsContent>
             <TabsContent value="applied" className="mt-0">
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {mockProjects.slice(0, 2).map((project) => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
-              </div>
+              {partnershipsLoading ? (
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {[1, 2].map((i) => (
+                    <Skeleton key={i} className="h-64 w-full" />
+                  ))}
+                </div>
+              ) : partnerships && partnerships.length > 0 ? (
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {partnerships.map((partnership) => (
+                    <ProjectCard
+                      key={partnership.id}
+                      project={partnership.project}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground mb-4">You haven't applied to any projects yet.</p>
+                  <Button variant="outline" onClick={() => navigate("/projects")}>
+                    Browse Projects
+                  </Button>
+                </div>
+              )}
             </TabsContent>
           </>
         )}
@@ -133,39 +190,35 @@ export default function DashboardPage() {
       <div className="mb-6">
         <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
         <div className="space-y-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-4">
-                <div className="h-2 w-2 rounded-full bg-primary"></div>
-                <div>
-                  <p className="text-sm"><span className="font-medium">Tech Innovators</span> applied to your <span className="font-medium">Clean Water Initiative</span> project</p>
-                  <p className="text-xs text-muted-foreground">2 hours ago</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-4">
-                <div className="h-2 w-2 rounded-full bg-primary"></div>
-                <div>
-                  <p className="text-sm"><span className="font-medium">Sarah Johnson</span> sent you a message about <span className="font-medium">EdTech for All</span></p>
-                  <p className="text-xs text-muted-foreground">Yesterday</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-4">
-                <div className="h-2 w-2 rounded-full bg-primary"></div>
-                <div>
-                  <p className="text-sm">Your application to <span className="font-medium">Health Data Analytics Platform</span> was viewed</p>
-                  <p className="text-xs text-muted-foreground">2 days ago</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {messagesLoading ? (
+            <>
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </>
+          ) : conversations && conversations.length > 0 ? (
+            conversations.slice(0, 3).map((conversation) => (
+              <Card key={conversation.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-4">
+                    <div className={`h-2 w-2 rounded-full ${conversation.unreadCount > 0 ? 'bg-primary' : 'bg-muted'}`}></div>
+                    <div>
+                      <p className="text-sm">
+                        <span className="font-medium">{conversation.participantName}</span> sent you a message
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(conversation.lastMessageTime).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">No recent activity to display.</p>
+            </div>
+          )}
         </div>
       </div>
     </Layout>
