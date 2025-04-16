@@ -28,6 +28,14 @@ export function useProjectApplications() {
     if (!userId || !projectId) return null;
     
     try {
+      // Ensure projectId is a valid UUID before making the request
+      const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId);
+      
+      if (!isValidUUID) {
+        console.log(`Invalid project ID format: ${projectId}`);
+        return null;
+      }
+      
       const { data, error } = await supabase
         .from("project_applications")
         .select("*")
@@ -58,6 +66,18 @@ export function useProjectApplications() {
       toast({
         title: "Error",
         description: "You must be logged in to apply for a project",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    // Ensure projectId is a valid UUID before making the request
+    const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId);
+    
+    if (!isValidUUID) {
+      toast({
+        title: "Invalid Project",
+        description: "Cannot apply to this project due to an invalid project ID",
         variant: "destructive",
       });
       return null;

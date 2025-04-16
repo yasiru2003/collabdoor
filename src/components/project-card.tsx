@@ -37,15 +37,22 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const isOwner = user && user.id === project.organizerId;
   
   // Select default partnership type to apply with (first one in the list)
-  const defaultPartnershipType = project.partnershipTypes[0] || "skilled";
+  const defaultPartnershipType = project.partnershipTypes && project.partnershipTypes.length > 0 
+    ? project.partnershipTypes[0] 
+    : "skilled";
 
   // Check if the user has already applied
   useEffect(() => {
     const checkApplication = async () => {
       if (user && project.id) {
-        const application = await checkApplicationStatus(project.id, user.id);
-        if (application) {
-          setApplicationStatus(application.status);
+        // Only check application status for projects with valid UUIDs
+        const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(project.id);
+        
+        if (isValidUUID) {
+          const application = await checkApplicationStatus(project.id, user.id);
+          if (application) {
+            setApplicationStatus(application.status);
+          }
         }
       }
     };
@@ -53,13 +60,24 @@ export function ProjectCard({ project }: ProjectCardProps) {
     if (user) {
       checkApplication();
     }
-  }, [user, project.id]);
+  }, [user, project.id, checkApplicationStatus]);
 
   // Handle apply button click
   const handleApply = async () => {
-    if (!user) return;
-    await applyToProject(project.id, user.id, defaultPartnershipType);
-    setApplicationStatus("pending");
+    if (!user || !project.id) return;
+    
+    // Only allow applying to projects with valid UUIDs
+    const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(project.id);
+    
+    if (!isValidUUID) {
+      console.error("Cannot apply to project with invalid ID format:", project.id);
+      return;
+    }
+    
+    const result = await applyToProject(project.id, user.id, defaultPartnershipType);
+    if (result) {
+      setApplicationStatus("pending");
+    }
   };
 
   // Render apply button based on conditions
@@ -132,9 +150,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
       </CardHeader>
       <CardContent className="flex-grow">
         <div className="flex flex-wrap gap-2 mb-4">
-          {project.partnershipTypes.map((type) => (
-            <Badge key={type} variant="outline" className={partnershipTypeColors[type]}>
-              {partnershipTypeLabels[type]}
+          {project.partnershipTypes && project.partnershipTypes.map((type) => (
+            <Badge key={type} variant="outline" className={partnershipTypeColors[type as keyof typeof partnershipTypeColors]}>
+              {partnershipTypeLabels[type as keyof typeof partnershipTypeLabels]}
             </Badge>
           ))}
         </div>
@@ -143,7 +161,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             <span>
-              {new Date(project.timeline.start).toLocaleDateString()} - {new Date(project.timeline.end).toLocaleDateString()}
+              {project.timeline && project.timeline.start ? new Date(project.timeline.start).toLocaleDateString() : "No start date"} - 
+              {project.timeline && project.timeline.end ? new Date(project.timeline.end).toLocaleDateString() : "No end date"}
             </span>
           </div>
           {project.location && (
@@ -162,10 +181,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
         <div className="flex items-center gap-2">
           <Avatar className="h-7 w-7">
             <AvatarFallback className="text-xs bg-muted">
-              {project.organizerName.substring(0, 2).toUpperCase()}
+              {project.organizerName ? project.organizerName.substring(0, 2).toUpperCase() : "??"}
             </AvatarFallback>
           </Avatar>
-          <span className="text-sm">{project.organizerName}</span>
+          <span className="text-sm">{project.organizerName || "Unknown"}</span>
         </div>
         {renderApplyButton()}
       </CardFooter>
