@@ -36,7 +36,8 @@ export function mapSupabaseOrgToOrganization(supabaseOrg: any): Organization {
     industry: supabaseOrg.industry,
     location: supabaseOrg.location,
     size: supabaseOrg.size,
-    foundedYear: supabaseOrg.founded_year
+    foundedYear: supabaseOrg.founded_year,
+    owner_id: supabaseOrg.owner_id
   };
 }
 

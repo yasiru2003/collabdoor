@@ -153,7 +153,7 @@ export function ProjectForm() {
         required_skills: values.requiredSkills,
         organizer_id: user.id,
         organization_id: values.organizationId || null,
-        status: "published",
+        status: "published" as "draft" | "published" | "in-progress" | "completed",
       };
       
       const { data, error } = await supabase.from("projects").insert(projectData).select();
