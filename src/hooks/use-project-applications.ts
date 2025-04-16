@@ -1,9 +1,9 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { ProjectPhase } from "@/types";
 
 export type ApplicationStatus = "pending" | "approved" | "rejected";
 
@@ -204,7 +204,6 @@ export function useProjectApplications() {
     }
   };
 
-  // Update application status (for organizers)
   const updateApplicationStatus = async (
     applicationId: string, 
     status: ApplicationStatus
@@ -213,6 +212,19 @@ export function useProjectApplications() {
     
     setIsLoading(true);
     try {
+      // First, get the application details
+      const { data: applicationData, error: fetchError } = await supabase
+        .from("project_applications")
+        .select("project_id, partnership_type")
+        .eq("id", applicationId)
+        .single();
+
+      if (fetchError) {
+        console.error("Error fetching application details:", fetchError);
+        throw fetchError;
+      }
+
+      // Update the application status
       const { data, error } = await supabase
         .from("project_applications")
         .update({ status })
@@ -225,12 +237,20 @@ export function useProjectApplications() {
         throw error;
       }
 
+      // If the application is approved, create initial project phases
+      if (status === "approved") {
+        await createInitialProjectPhases(applicationData.project_id, applicationData.partnership_type);
+      }
+
       // Invalidate relevant queries
       queryClient.invalidateQueries({
         queryKey: ["projectApplications"],
       });
       queryClient.invalidateQueries({
         queryKey: ["userApplications"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["projectPhases", applicationData.project_id],
       });
 
       sonnerToast.success("Application updated", {
@@ -247,6 +267,105 @@ export function useProjectApplications() {
       return null;
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // New function to create initial project phases based on partnership type
+  const createInitialProjectPhases = async (projectId: string, partnershipType: string) => {
+    const defaultPhases: Omit<ProjectPhase, 'id'>[] = [];
+
+    switch (partnershipType) {
+      case 'skilled':
+        defaultPhases.push(
+          {
+            title: 'Project Kickoff',
+            description: 'Initial meeting and project alignment',
+            status: 'not-started',
+            order: 0,
+          },
+          {
+            title: 'Skills Assessment',
+            description: 'Evaluate and match partner skills with project needs',
+            status: 'not-started',
+            order: 1,
+          },
+          {
+            title: 'Collaboration',
+            description: 'Active collaboration and skill deployment',
+            status: 'not-started',
+            order: 2,
+          },
+          {
+            title: 'Project Completion',
+            description: 'Final deliverables and project wrap-up',
+            status: 'not-started',
+            order: 3,
+          }
+        );
+        break;
+      case 'knowledge':
+        defaultPhases.push(
+          {
+            title: 'Knowledge Transfer Initiation',
+            description: 'Establish knowledge sharing framework',
+            status: 'not-started',
+            order: 0,
+          },
+          {
+            title: 'Expert Consultation',
+            description: 'Collaborative knowledge exchange sessions',
+            status: 'not-started',
+            order: 1,
+          },
+          {
+            title: 'Implementation',
+            description: 'Apply shared knowledge to project goals',
+            status: 'not-started',
+            order: 2,
+          },
+          {
+            title: 'Review and Insights',
+            description: 'Evaluate knowledge impact and lessons learned',
+            status: 'not-started',
+            order: 3,
+          }
+        );
+        break;
+      // Add more partnership type specific phases as needed
+      default:
+        defaultPhases.push(
+          {
+            title: 'Project Initiation',
+            description: 'Initial project setup and planning',
+            status: 'not-started',
+            order: 0,
+          },
+          {
+            title: 'Project Execution',
+            description: 'Active project work and collaboration',
+            status: 'not-started',
+            order: 1,
+          },
+          {
+            title: 'Project Closing',
+            description: 'Final project review and closure',
+            status: 'not-started',
+            order: 2,
+          }
+        );
+    }
+
+    // Insert the default phases for the project
+    for (const phase of defaultPhases) {
+      await supabase
+        .from("project_phases")
+        .insert({
+          project_id: projectId,
+          title: phase.title,
+          description: phase.description,
+          status: phase.status,
+          order: phase.order,
+        });
     }
   };
 
