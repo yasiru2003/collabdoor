@@ -21,6 +21,7 @@ export interface Organization {
   location?: string;
   size?: string;
   foundedYear?: number;
+  owner_id: string; // Add owner_id to fix TypeScript errors
 }
 
 export type PartnershipType = 'monetary' | 'knowledge' | 'skilled' | 'volunteering';

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { PartnershipType } from "@/types";
+import { PartnershipType, Organization } from "@/types";
 
 const formSchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters" }),
@@ -44,6 +44,7 @@ const formSchema = z.object({
   endDate: z.date(),
   partnershipTypes: z.array(z.string()).min(1, { message: "Select at least one partnership type" }),
   requiredSkills: z.array(z.string()).optional(),
+  organizationId: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -53,6 +54,8 @@ export function ProjectForm() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newSkill, setNewSkill] = useState("");
+  const [userOrganizations, setUserOrganizations] = useState<Organization[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -65,8 +68,34 @@ export function ProjectForm() {
       endDate: new Date(new Date().setMonth(new Date().getMonth() + 3)),
       partnershipTypes: [],
       requiredSkills: [],
+      organizationId: "",
     },
   });
+  
+  // Fetch user's organizations
+  useEffect(() => {
+    const fetchOrganizations = async () => {
+      if (!user) return;
+      
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from("organizations")
+          .select("*")
+          .eq("owner_id", user.id);
+          
+        if (error) throw error;
+        
+        setUserOrganizations(data || []);
+      } catch (error) {
+        console.error("Error fetching organizations:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchOrganizations();
+  }, [user]);
   
   const partnershipTypes: { value: PartnershipType; label: string }[] = [
     { value: "monetary", label: "Monetary Support" },
@@ -113,7 +142,7 @@ export function ProjectForm() {
     setIsSubmitting(true);
     
     try {
-      const { data, error } = await supabase.from("projects").insert({
+      const projectData = {
         title: values.title,
         description: values.description,
         category: values.category,
@@ -123,8 +152,11 @@ export function ProjectForm() {
         partnership_types: values.partnershipTypes as PartnershipType[],
         required_skills: values.requiredSkills,
         organizer_id: user.id,
+        organization_id: values.organizationId || null,
         status: "published",
-      }).select();
+      };
+      
+      const { data, error } = await supabase.from("projects").insert(projectData).select();
       
       if (error) throw error;
       
@@ -234,6 +266,41 @@ export function ProjectForm() {
                 )}
               />
             </div>
+            
+            {/* Organization selection */}
+            {userOrganizations.length > 0 && (
+              <FormField
+                control={form.control}
+                name="organizationId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Publish as Organization</FormLabel>
+                    <FormDescription>
+                      Select an organization to publish this project under
+                    </FormDescription>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value || ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select an organization (optional)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">Personal Project</SelectItem>
+                        {userOrganizations.map((org) => (
+                          <SelectItem key={org.id} value={org.id}>
+                            {org.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
