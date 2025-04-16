@@ -43,22 +43,31 @@ export default function FeedPage() {
             profiles!inner(name, profile_image),
             organizations(name, logo),
             feed_likes(id, user_id),
-            feed_comments(id, content, created_at, user_id, profiles!inner(name, profile_image))
+            feed_comments(id, content, created_at, user_id, 
+              profiles!inner(name, profile_image)
+            )
           `)
           .order("created_at", { ascending: false });
         
+        // Add filtering for "My Organizations" tab
         if (activeTab === "following") {
-          // Get organizations the user is a member of
-          const { data: memberships } = await supabase
+          // Fetch user's organization memberships
+          const { data: memberships, error: membershipError } = await supabase
             .from("organization_members")
             .select("organization_id")
             .eq("user_id", user.id);
           
-          if (memberships && memberships.length > 0) {
+          if (membershipError) {
+            console.error("Error fetching memberships:", membershipError);
+            return [];
+          }
+          
+          if (memberships.length > 0) {
             const orgIds = memberships.map(m => m.organization_id);
             query = query.in("organization_id", orgIds);
           } else {
-            return []; // User doesn't follow any organizations
+            // User is not a member of any organizations
+            return [];
           }
         }
         
