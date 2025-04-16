@@ -1,46 +1,64 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bookmark, CalendarIcon, MapPin, Users, Building } from "lucide-react";
-import { Button } from "@/components/ui/button";
+
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Edit, 
+  ChevronDown, 
+  Building2, 
+  CalendarIcon, 
+  MapPin, 
+  Tag,
+  BookmarkPlus,
+  BookmarkCheck,
+  MessageSquare,
+  HandHeart,
+  Brain,
+  Briefcase,
+  Users,
+  CornerDownRight,
+  School
+} from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Project, PartnershipType } from "@/types";
+import { Textarea } from "@/components/ui/textarea";
+import { 
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Project, PartnershipType } from "@/types";
-import { useAuth } from "@/hooks/use-auth";
-import { format } from "date-fns";
-import { supabase } from "@/integrations/supabase/client";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 
-export interface ProjectHeaderProps {
+interface ProjectHeaderProps {
   project: Project;
   isOwner: boolean;
   canUpdateProgress: boolean;
   applicationStatus: string | null;
+  applicationLoading: boolean;
   saved: boolean;
   setSaved: (saved: boolean) => void;
   handleApply: () => void;
   handleContact: () => void;
-  applicationLoading: boolean;
   partnershipType: PartnershipType;
   setPartnershipType: (type: PartnershipType) => void;
   message: string;
   setMessage: (message: string) => void;
   applicationOpen: boolean;
   setApplicationOpen: (open: boolean) => void;
+  userOrganizations?: any[];
+  selectedOrganizationId: string | null;
+  setSelectedOrganizationId: (id: string | null) => void;
 }
 
 export function ProjectHeader({
@@ -48,279 +66,272 @@ export function ProjectHeader({
   isOwner,
   canUpdateProgress,
   applicationStatus,
+  applicationLoading,
   saved,
   setSaved,
   handleApply,
   handleContact,
-  applicationLoading,
   partnershipType,
   setPartnershipType,
   message,
   setMessage,
   applicationOpen,
   setApplicationOpen,
+  userOrganizations = [],
+  selectedOrganizationId,
+  setSelectedOrganizationId
 }: ProjectHeaderProps) {
-  const { user } = useAuth();
-  const [userOrganizations, setUserOrganizations] = useState<{id: string, name: string}[]>([]);
-  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const [isApplicationDialogOpen, setIsApplicationDialogOpen] = useState(false);
   
-  useEffect(() => {
-    const fetchUserOrganizations = async () => {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from("organizations")
-          .select("id, name")
-          .eq("owner_id", user.id);
-          
-        if (error) throw error;
-        
-        setUserOrganizations(data || []);
-      } catch (error) {
-        console.error("Error fetching user organizations:", error);
-      }
-    };
-    
-    fetchUserOrganizations();
-  }, [user]);
-
-  const handleSaveProject = () => {
-    localStorage.setItem(`saved_${project.id}`, (!saved).toString());
+  const handleSave = () => {
+    localStorage.setItem(`saved_${project.id}`, saved ? "false" : "true");
     setSaved(!saved);
   };
   
-  const handleApplicationSubmit = () => {
-    if (handleApply) {
-      handleApply();
+  const partnershipIcons = {
+    "monetary": <HandHeart className="h-5 w-5 mr-2" />,
+    "knowledge": <Brain className="h-5 w-5 mr-2" />,
+    "skilled": <Briefcase className="h-5 w-5 mr-2" />,
+    "volunteering": <Users className="h-5 w-5 mr-2" />
+  };
+  
+  const partnershipLabels = {
+    "monetary": "Financial Support",
+    "knowledge": "Knowledge/Expertise",
+    "skilled": "Skilled Work",
+    "volunteering": "Volunteer Work"
+  };
+  
+  const partnershipDescriptions = {
+    "monetary": "Provide financial resources to support the project",
+    "knowledge": "Contribute with expertise, consultation, or mentoring",
+    "skilled": "Offer professional services or specialized skills",
+    "volunteering": "Participate with your time and effort"
+  };
+  
+  const getStatusBadgeColor = () => {
+    switch (project.status) {
+      case 'draft': return 'bg-slate-500';
+      case 'published': return 'bg-green-500';
+      case 'in-progress': return 'bg-blue-500';
+      case 'completed': return 'bg-purple-500';
+      default: return 'bg-slate-500';
     }
   };
-
-  const openApplicationDialog = () => {
-    if (!user) {
-      navigate('/login', { state: { returnTo: `/projects/${project.id}` } });
-      return;
-    }
-    
-    setApplicationOpen(true);
+  
+  const getApplicationButtonText = () => {
+    if (applicationStatus === "pending") return "Application Pending";
+    if (applicationStatus === "approved") return "Application Approved";
+    if (applicationStatus === "rejected") return "Application Rejected";
+    return "Apply to this Project";
   };
-
-  // Format dates for display
-  const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return "";
-    return format(new Date(dateString), "MMM yyyy");
+  
+  const getApplicationButtonVariant = () => {
+    if (applicationStatus === "pending") return "outline";
+    if (applicationStatus === "approved") return "ghost";
+    if (applicationStatus === "rejected") return "ghost";
+    return "default";
   };
-
-  const startDate = project.timeline?.start ? formatDate(project.timeline.start) : "";
-  const endDate = project.timeline?.end ? formatDate(project.timeline.end) : "";
+  
+  const isApplicationEnabled = project.applicationsEnabled !== false && project.status === 'published';
   
   return (
     <div className="mb-8">
-      <div className="relative overflow-hidden rounded-lg">
-        {/* Background image or color - reduced height */}
-        <div className="h-24 md:h-32 bg-gradient-to-r from-indigo-600 to-blue-500"></div>
-        
-        {/* Project info overlay */}
-        <div className="relative px-4 pb-4 pt-0 sm:px-6 -mt-16">
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            {/* Project image */}
-            <div className="flex-shrink-0 bg-white p-1 rounded-lg shadow-lg">
-              <Avatar className="h-24 w-24 rounded-lg border-2 border-white bg-white">
-                <AvatarImage src={project.image} alt={project.title} />
-                <AvatarFallback className="bg-muted text-lg font-bold">
-                  {project.title.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-            
-            {/* Project details */}
-            <div className="flex-1">
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground mt-2">
-                {project.title}
-              </h1>
-              
-              <div className="mt-2 flex flex-wrap items-center gap-4">
-                {project.organizationName && (
-                  <div className="flex items-center gap-1 text-sm font-medium">
-                    <Building className="h-3.5 w-3.5" />
-                    <span>{project.organizationName}</span>
-                  </div>
-                )}
-                
-                {project.location && (
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <MapPin className="h-3.5 w-3.5" />
-                    <span>{project.location}</span>
-                  </div>
-                )}
-                
-                {project.timeline?.start && (
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <CalendarIcon className="h-3.5 w-3.5" />
-                    <span>
-                      {startDate}{endDate && ` - ${endDate}`}
-                    </span>
-                  </div>
-                )}
-                
-                <Badge variant={
-                  project.status === "published" ? "outline" :
-                  project.status === "in-progress" ? "secondary" :
-                  project.status === "completed" ? "success" : "default"
-                }>
-                  {project.status === "published" ? "Open" :
-                   project.status === "in-progress" ? "In Progress" :
-                   project.status === "completed" ? "Completed" : "Draft"}
-                </Badge>
-              </div>
-              
-              <div className="mt-2 flex flex-wrap gap-1">
-                {project.partnershipTypes.map((type) => (
-                  <Badge key={type} variant="secondary" className="capitalize">
-                    {type} partnership
-                  </Badge>
-                ))}
-              </div>
-            </div>
-            
-            {/* Action buttons - Fixed position and styling */}
-            <div className="flex md:flex-col gap-2 mt-4 md:mt-0 md:min-w-36">
-              {!isOwner && (
-                <div className="flex md:flex-col gap-2 w-full">
-                  {applicationStatus === null && project.status === "published" && (
-                    <Button 
-                      onClick={openApplicationDialog}
-                      disabled={applicationLoading || !user}
-                      className="w-full"
-                      size="lg"
-                    >
-                      Apply to Join
-                    </Button>
-                  )}
-                  
-                  {applicationStatus === "pending" && (
-                    <Button disabled className="w-full">
-                      Application Pending
-                    </Button>
-                  )}
-                  
-                  {applicationStatus === "approved" && (
-                    <Button disabled className="w-full bg-green-600 hover:bg-green-700">
-                      Approved Partner
-                    </Button>
-                  )}
-                  
-                  {applicationStatus === "rejected" && (
-                    <Button disabled className="w-full bg-red-600 hover:bg-red-700">
-                      Application Rejected
-                    </Button>
-                  )}
-                  
-                  <div className="flex gap-2 w-full">
-                    <Button 
-                      onClick={handleSaveProject}
-                      variant={saved ? "default" : "outline"}
-                      size="icon"
-                      className="flex-grow-0"
-                    >
-                      <Bookmark className={saved ? "fill-white" : ""} />
-                    </Button>
-                    
-                    <Button 
-                      onClick={handleContact} 
-                      variant="outline"
-                      disabled={!user}
-                      className="flex-grow"
-                    >
-                      Contact Organizer
-                    </Button>
-                  </div>
-                </div>
-              )}
-              
-              {isOwner && (
-                <div className="flex gap-2 w-full">
-                  <Button variant="outline" className="w-full">
-                    Edit Project
-                  </Button>
-                </div>
-              )}
-            </div>
+      <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-3xl font-bold">{project.title}</h1>
+            <Badge className={getStatusBadgeColor()}>
+              {project.status === 'in-progress' ? 'In Progress' : 
+               project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+            </Badge>
           </div>
+          
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-muted-foreground">
+            {project.organizationName && (
+              <div className="flex items-center">
+                <Building2 className="h-4 w-4 mr-1" />
+                <span>{project.organizationName}</span>
+              </div>
+            )}
+            
+            {project.location && (
+              <div className="flex items-center">
+                <MapPin className="h-4 w-4 mr-1" />
+                <span>{project.location}</span>
+              </div>
+            )}
+            
+            {project.category && (
+              <div className="flex items-center">
+                <Tag className="h-4 w-4 mr-1" />
+                <span>{project.category}</span>
+              </div>
+            )}
+            
+            {project.timeline.start && (
+              <div className="flex items-center">
+                <CalendarIcon className="h-4 w-4 mr-1" />
+                <span>
+                  {new Date(project.timeline.start).toLocaleDateString()}
+                  {project.timeline.end && ` - ${new Date(project.timeline.end).toLocaleDateString()}`}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      
+        <div className="flex flex-wrap gap-2">
+          {isOwner && (
+            <Button asChild variant="outline">
+              <Link to={`/projects/${project.id}/edit`}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Project
+              </Link>
+            </Button>
+          )}
+          
+          {!isOwner && (
+            <>
+              <Button 
+                variant={saved ? "outline" : "ghost"} 
+                size="icon"
+                onClick={handleSave}
+              >
+                {saved ? 
+                  <BookmarkCheck className="h-5 w-5 text-primary" /> : 
+                  <BookmarkPlus className="h-5 w-5" />
+                }
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={handleContact}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Contact
+              </Button>
+              
+              {isApplicationEnabled && !isOwner && !canUpdateProgress && (
+                <Button 
+                  onClick={() => setApplicationOpen(true)}
+                  disabled={applicationLoading || applicationStatus === "pending" || applicationStatus === "approved"}
+                  variant={getApplicationButtonVariant()}
+                >
+                  {getApplicationButtonText()}
+                </Button>
+              )}
+            </>
+          )}
         </div>
       </div>
       
-      {/* Application Dialog */}
+      {project.partnershipTypes && project.partnershipTypes.length > 0 && (
+        <div className="mb-4">
+          <h3 className="text-sm font-medium mb-2">Partnership Types Needed:</h3>
+          <div className="flex flex-wrap gap-2">
+            {project.partnershipTypes.map((type) => (
+              <Badge key={type} variant="secondary" className="flex items-center">
+                {partnershipIcons[type]}
+                {partnershipLabels[type as keyof typeof partnershipLabels]}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+      
       <Dialog open={applicationOpen} onOpenChange={setApplicationOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
-            <DialogTitle>Apply to Join Project</DialogTitle>
+            <DialogTitle>Apply to Project</DialogTitle>
             <DialogDescription>
-              Apply to collaborate on "{project.title}". Provide details about how you can contribute.
+              Submit an application to partner on the project "{project.title}". The project organizer will review your application.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Choose partnership type:</h4>
-              <Select
-                value={partnershipType}
-                onValueChange={(value) => setPartnershipType(value as PartnershipType)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select partnership type" />
-                </SelectTrigger>
-                <SelectContent>
+          <div className="space-y-6 py-4">
+            {/* Partnership type selection */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium mb-3">How do you want to contribute?</h3>
+                <RadioGroup 
+                  value={partnershipType} 
+                  onValueChange={(value) => setPartnershipType(value as PartnershipType)}
+                  className="space-y-3"
+                >
                   {project.partnershipTypes.map((type) => (
-                    <SelectItem key={type} value={type} className="capitalize">
-                      {type} partnership
-                    </SelectItem>
+                    <div key={type} className="flex items-start space-x-2">
+                      <RadioGroupItem value={type} id={type} className="mt-1" />
+                      <div className="grid gap-1.5">
+                        <Label htmlFor={type} className="font-medium flex items-center">
+                          {partnershipIcons[type]}
+                          {partnershipLabels[type as keyof typeof partnershipLabels]}
+                        </Label>
+                        <p className="text-sm text-muted-foreground pl-7">
+                          {partnershipDescriptions[type as keyof typeof partnershipDescriptions]}
+                        </p>
+                      </div>
+                    </div>
                   ))}
-                </SelectContent>
-              </Select>
+                </RadioGroup>
+              </div>
             </div>
             
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Apply from organization (optional):</h4>
-              <Select
-                value={selectedOrganizationId || "individual"}
-                onValueChange={setSelectedOrganizationId}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select organization" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="individual">Apply as individual</SelectItem>
-                  {userOrganizations.map((org) => (
-                    <SelectItem key={org.id} value={org.id}>
-                      {org.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Organization selection */}
+            {userOrganizations && userOrganizations.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="organization" className="text-sm font-medium">
+                  Apply as individual or organization?
+                </Label>
+                <Select 
+                  value={selectedOrganizationId || "individual"} 
+                  onValueChange={(value) => setSelectedOrganizationId(value === "individual" ? null : value)}
+                >
+                  <SelectTrigger id="organization">
+                    <SelectValue placeholder="Select how you want to apply" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="individual">As an Individual</SelectItem>
+                    {userOrganizations.map((org) => (
+                      <SelectItem key={org.organizations.id} value={org.organizations.id}>
+                        {org.organizations.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Applying as an organization may increase your chances of acceptance
+                </p>
+              </div>
+            )}
             
+            {/* Message */}
             <div className="space-y-2">
-              <h4 className="text-sm font-medium">Message (optional):</h4>
+              <Label htmlFor="message" className="text-sm font-medium">
+                Message to the project organizer
+              </Label>
               <Textarea
+                id="message"
+                placeholder="Introduce yourself and explain why you want to partner on this project..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Describe how you or your organization can contribute to this project..."
-                className="min-h-[100px]"
+                className="min-h-24"
               />
             </div>
           </div>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setApplicationOpen(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setApplicationOpen(false)}
+            >
               Cancel
             </Button>
             <Button 
-              onClick={handleApplicationSubmit} 
-              disabled={applicationLoading || !partnershipType}
+              onClick={handleApply}
+              disabled={applicationLoading}
             >
-              {applicationLoading ? "Submitting..." : "Submit Application"}
+              {applicationLoading ? "Sending..." : "Submit Application"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Notification } from "@/hooks/use-notifications";
 import { formatDistanceToNow } from "date-fns";
+import { Bell, Check, UserCheck, UserPlus, MessageSquare } from "lucide-react";
 
 interface NotificationsListProps {
   notifications: Notification[];
@@ -33,6 +34,13 @@ export function NotificationsList({
     }
   };
 
+  const getNotificationIcon = (title: string) => {
+    if (title.includes("Join Request")) return <UserPlus className="h-5 w-5 text-blue-500" />;
+    if (title.includes("Approved")) return <Check className="h-5 w-5 text-green-500" />;
+    if (title.includes("message")) return <MessageSquare className="h-5 w-5 text-indigo-500" />;
+    return <Bell className="h-5 w-5 text-primary" />;
+  };
+
   if (loading) {
     return (
       <div className="p-4 text-center">
@@ -58,7 +66,10 @@ export function NotificationsList({
           onClick={() => handleNotificationClick(notification)}
         >
           <div className="flex justify-between items-start mb-1">
-            <h4 className="font-medium text-sm">{notification.title}</h4>
+            <div className="flex items-start gap-2">
+              {getNotificationIcon(notification.title)}
+              <h4 className="font-medium text-sm">{notification.title}</h4>
+            </div>
             {!notification.read && (
               <Button 
                 variant="ghost" 
@@ -73,8 +84,8 @@ export function NotificationsList({
               </Button>
             )}
           </div>
-          <p className="text-muted-foreground text-sm mb-1">{notification.message}</p>
-          <span className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-sm mb-1 pl-7">{notification.message}</p>
+          <span className="text-xs text-muted-foreground pl-7">
             {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
           </span>
         </div>

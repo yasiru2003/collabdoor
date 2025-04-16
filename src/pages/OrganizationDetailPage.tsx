@@ -1,10 +1,11 @@
+
 import React, { useState } from "react";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,11 +15,16 @@ import { Building, Edit, Globe, MapPin, Users } from "lucide-react";
 import { Organization } from "@/types";
 import { OrganizationReviews } from "@/components/organization/OrganizationReviews";
 import { OrganizationProjects } from "@/components/organization/OrganizationProjects";
+import { OrganizationJoinRequest } from "@/components/organization/OrganizationJoinRequest";
 
 export default function OrganizationDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  // Track join request status
+  const [joinRequestStatus, setJoinRequestStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none');
   
   const {
     data: organization,
@@ -41,6 +47,49 @@ export default function OrganizationDetailPage() {
     enabled: !!id
   });
   
+  // Check if user has already requested to join
+  const { data: joinRequest } = useQuery({
+    queryKey: ["organization-join-request", id, user?.id],
+    queryFn: async () => {
+      if (!id || !user) return null;
+      
+      const { data, error } = await supabase
+        .from("organization_join_requests")
+        .select("*")
+        .eq("organization_id", id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+        
+      if (error) throw error;
+      
+      if (data) {
+        setJoinRequestStatus(data.status);
+      }
+      
+      return data;
+    },
+    enabled: !!id && !!user
+  });
+  
+  // Check if user is already a member
+  const { data: isMember } = useQuery({
+    queryKey: ["organization-membership", id, user?.id],
+    queryFn: async () => {
+      if (!id || !user) return false;
+      
+      const { data, error } = await supabase
+        .from("organization_members")
+        .select("*")
+        .eq("organization_id", id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+        
+      if (error) throw error;
+      return !!data;
+    },
+    enabled: !!id && !!user
+  });
+  
   const {
     data: members,
     isLoading: isLoadingMembers
@@ -49,12 +98,13 @@ export default function OrganizationDetailPage() {
     queryFn: async () => {
       if (!id) return [];
       
-      // This is just a placeholder - you would need to implement a proper members table
-      // and relationship in Supabase for a real implementation
       const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", organization?.owner_id)
+        .from("organization_members")
+        .select(`
+          *,
+          profiles!organization_members_user_id_fkey(*)
+        `)
+        .eq("organization_id", id)
         .limit(10);
         
       if (error) throw error;
@@ -132,12 +182,24 @@ export default function OrganizationDetailPage() {
             </div>
           </div>
           
-          {isOwner && (
-            <Button onClick={() => navigate(`/organizations/${id}/edit`)}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Organization
-            </Button>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {isOwner ? (
+              <Button onClick={() => navigate(`/organizations/${id}/edit`)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Organization
+              </Button>
+            ) : (
+              !isMember && !isOwner && (
+                <OrganizationJoinRequest 
+                  organizationId={id || ''}
+                  organizationName={organization.name}
+                  ownerId={organization.owner_id}
+                  status={joinRequestStatus}
+                  onStatusChange={setJoinRequestStatus}
+                />
+              )
+            )}
+          </div>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -221,14 +283,14 @@ export default function OrganizationDetailPage() {
                         {members.map((member: any) => (
                           <div key={member.id} className="flex items-center gap-3">
                             <Avatar>
-                              <AvatarImage src={member.profile_image || ""} />
+                              <AvatarImage src={member.profiles?.profile_image || ""} />
                               <AvatarFallback>
-                                {member.name?.substring(0, 2).toUpperCase() || "U"}
+                                {member.profiles?.name?.substring(0, 2).toUpperCase() || "U"}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-medium">{member.name || "Unknown User"}</p>
-                              <p className="text-sm text-muted-foreground">{member.email}</p>
+                              <p className="font-medium">{member.profiles?.name || "Unknown User"}</p>
+                              <p className="text-sm text-muted-foreground">{member.profiles?.email}</p>
                             </div>
                           </div>
                         ))}

@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -31,6 +32,7 @@ export default function ProjectDetailPage() {
     applyToProject, 
     isLoading: applicationLoading,
     updateApplicationStatus,
+    userOrganizations
   } = useProjectApps();
   const { data: projectApplications } = useProjectApplications(id);
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
@@ -250,6 +252,9 @@ export default function ProjectDetailPage() {
           setMessage={setMessage}
           applicationOpen={applicationOpen}
           setApplicationOpen={setApplicationOpen}
+          userOrganizations={userOrganizations}
+          selectedOrganizationId={selectedOrganizationId}
+          setSelectedOrganizationId={setSelectedOrganizationId}
         />
 
         <Tabs defaultValue={defaultTab} onValueChange={(value) => setSearchParams({ tab: value })}>
