@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +17,8 @@ export interface ProjectApplication {
   message?: string;
   created_at: string;
   updated_at: string;
+  organization_id?: string;
+  organization_name?: string;
   profiles?: {
     name: string;
     email: string;
@@ -65,7 +68,8 @@ export function useProjectApplications() {
     projectId: string, 
     userId: string, 
     partnershipType: string,
-    message: string = ""
+    message: string = "",
+    organizationId: string | null = null
   ) => {
     if (!userId || !projectId) {
       toast({
@@ -101,6 +105,22 @@ export function useProjectApplications() {
         return existingApplication;
       }
 
+      // If organization is selected, get the organization name
+      let organizationName = null;
+      if (organizationId) {
+        const { data: orgData, error: orgError } = await supabase
+          .from("organizations")
+          .select("name")
+          .eq("id", organizationId)
+          .single();
+        
+        if (orgError) {
+          console.error("Error fetching organization name:", orgError);
+        } else if (orgData) {
+          organizationName = orgData.name;
+        }
+      }
+
       // Create new application
       const { data, error } = await supabase
         .from("project_applications")
@@ -109,6 +129,8 @@ export function useProjectApplications() {
           user_id: userId,
           partnership_type: partnershipType,
           message: message,
+          organization_id: organizationId,
+          organization_name: organizationName
         })
         .select()
         .single();

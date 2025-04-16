@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -42,6 +43,7 @@ export default function ProjectDetailPage() {
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
   const { data: phases } = useProjectPhases(id);
   const navigate = useNavigate();
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
   
   // Get default tab from URL or set to "overview"
   const defaultTab = searchParams.get("tab") || "overview";
@@ -118,11 +120,12 @@ export default function ProjectDetailPage() {
   const handleApply = async () => {
     if (!user || !id) return;
     
-    const result = await applyToProject(id, user.id, partnershipType, message);
+    const result = await applyToProject(id, user.id, partnershipType, message, selectedOrganizationId);
     if (result) {
       setApplicationStatus("pending");
       setApplicationOpen(false);
       setMessage("");
+      setSelectedOrganizationId(null);
     }
   };
 

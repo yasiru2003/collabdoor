@@ -90,6 +90,8 @@ export interface ApplicationWithProfile {
   status: "pending" | "approved" | "rejected";
   created_at: string;
   updated_at: string;
+  organization_id?: string;
+  organization_name?: string;
   profile?: {
     name: string;
     email: string;

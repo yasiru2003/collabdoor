@@ -1,136 +1,189 @@
 
-import { format } from "date-fns";
-import { ApplicationWithProfile } from "@/types";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Check, X, Mail } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { formatDistanceToNow } from "date-fns";
+import { MessageSquare, Check, X } from "lucide-react";
+import { ApplicationWithProfile } from "@/types";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ApplicationsTableProps {
   applications: ApplicationWithProfile[] | undefined;
-  handleUpdateApplicationStatus: (applicationId: string, status: "approved" | "rejected") => Promise<void>;
+  handleUpdateApplicationStatus: (
+    applicationId: string,
+    status: "approved" | "rejected"
+  ) => Promise<void>;
   handleMessageApplicant: (applicantId: string, applicantName: string) => void;
 }
 
 export function ApplicationsTable({
   applications,
   handleUpdateApplicationStatus,
-  handleMessageApplicant
+  handleMessageApplicant,
 }: ApplicationsTableProps) {
   if (!applications || applications.length === 0) {
-    return null;
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Applications</CardTitle>
+          <CardDescription>Manage partner applications for your project</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-6">
+            <h3 className="text-lg font-medium">No Applications Yet</h3>
+            <p className="text-muted-foreground mt-1">
+              When partners apply to join your project, their applications will appear here.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
-    <Card className="mt-6">
+    <Card>
       <CardHeader>
-        <CardTitle>Partnership Applications</CardTitle>
-        <CardDescription>Review and manage applications to partner on this project</CardDescription>
+        <CardTitle>Applications</CardTitle>
+        <CardDescription>
+          {applications.length} partner{applications.length > 1 ? "s" : ""} have applied to join your project
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Applicant</TableHead>
-              <TableHead>Partnership Type</TableHead>
-              <TableHead>Date Applied</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {applications.map((application) => {
-              // Get the profile data safely, checking both profile and profiles fields
-              const profileData = application.profile || application.profiles;
-              
-              // Extract profile data with safe access
-              const profileImage = profileData?.profile_image || "";
-              const profileName = profileData?.name || "Unknown";
-              const profileEmail = profileData?.email || "";
-              const applicantId = application.user_id;
-              
-              // Only calculate initials if we have a valid name
-              const initials = profileName !== "Unknown" 
-                ? profileName.substring(0, 2).toUpperCase() 
-                : "??";
-
-              return (
-                <TableRow key={application.id}>
-                  <TableCell className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={profileImage} />
-                      <AvatarFallback>{initials}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-medium">{profileName}</div>
-                      <div className="text-xs text-muted-foreground">{profileEmail}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {application.partnership_type.charAt(0).toUpperCase() + application.partnership_type.slice(1)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(application.created_at), "MMM d, yyyy")}
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant={
-                        application.status === "approved" ? "success" : 
-                        application.status === "rejected" ? "destructive" : 
-                        "secondary"
-                      }
-                    >
-                      {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {application.status === "pending" && (
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="h-8 text-green-700 hover:bg-green-100"
-                          onClick={() => handleUpdateApplicationStatus(application.id, "approved")}
-                        >
-                          <Check className="h-4 w-4 mr-1" /> Approve
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="h-8 text-red-700 hover:bg-red-100"
-                          onClick={() => handleUpdateApplicationStatus(application.id, "rejected")}
-                        >
-                          <X className="h-4 w-4 mr-1" /> Reject
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="h-8"
-                          onClick={() => handleMessageApplicant(applicantId, profileName)}
-                        >
-                          <Mail className="h-4 w-4 mr-1" /> Contact
-                        </Button>
+        <ScrollArea className="h-[500px] pr-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Partner</TableHead>
+                <TableHead>Partnership Type</TableHead>
+                <TableHead>Organization</TableHead>
+                <TableHead>Application Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {applications.map((application) => {
+                const profileData = application.profile || application.profiles;
+                return (
+                  <TableRow key={application.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={profileData?.profile_image || undefined} />
+                          <AvatarFallback>
+                            {profileData?.name?.substring(0, 2).toUpperCase() || "UN"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium">{profileData?.name || "Unknown"}</div>
+                          <div className="text-sm text-muted-foreground">{profileData?.email || "No email"}</div>
+                        </div>
                       </div>
-                    )}
-                    {application.status !== "pending" && (
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleMessageApplicant(applicantId, profileName)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="capitalize">
+                        {application.partnership_type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {application.organization_name ? (
+                        <span>{application.organization_name}</span>
+                      ) : (
+                        <span className="text-muted-foreground">Individual</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {formatDistanceToNow(new Date(application.created_at), { addSuffix: true })}
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={
+                          application.status === "approved" ? "success" :
+                          application.status === "rejected" ? "destructive" :
+                          "outline"
+                        }
                       >
-                        <Mail className="h-4 w-4 mr-1" /> Contact
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                        {application.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        {application.status === "pending" && (
+                          <>
+                            <Button
+                              size="icon"
+                              variant="outline"
+                              onClick={() => handleMessageApplicant(
+                                application.user_id, 
+                                profileData?.name || "Applicant"
+                              )}
+                              title="Message applicant"
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="icon"
+                              variant="outline"
+                              className="text-green-500 hover:text-green-700"
+                              onClick={() => handleUpdateApplicationStatus(
+                                application.id, 
+                                "approved"
+                              )}
+                              title="Approve application"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="icon"
+                              variant="outline"
+                              className="text-red-500 hover:text-red-700"
+                              onClick={() => handleUpdateApplicationStatus(
+                                application.id, 
+                                "rejected"
+                              )}
+                              title="Reject application"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                        {application.status !== "pending" && (
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            onClick={() => handleMessageApplicant(
+                              application.user_id,
+                              profileData?.name || "Applicant"
+                            )}
+                            title="Message applicant"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </ScrollArea>
       </CardContent>
     </Card>
   );

@@ -1,39 +1,39 @@
-import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
+
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Bookmark, CalendarIcon, MapPin, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
-  Star, 
-  StarOff, 
-  UserIcon, 
-  Building2Icon, 
-  TagIcon, 
-  MapPinIcon, 
-  InfoIcon, 
-  BarChart2,
-  Mail,
-  Check,
-  CheckCircle,
-  Pause,
-  Play,
-} from "lucide-react";
-import { Project, PartnershipType } from "@/types";
-import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Project, PartnershipType } from "@/types";
+import { useAuth } from "@/hooks/use-auth";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 
-interface ProjectHeaderProps {
+export interface ProjectHeaderProps {
   project: Project;
   isOwner: boolean;
   canUpdateProgress: boolean;
   applicationStatus: string | null;
   saved: boolean;
   setSaved: (saved: boolean) => void;
-  handleApply: () => Promise<void>;
+  handleApply: () => void;
   handleContact: () => void;
   applicationLoading: boolean;
   partnershipType: PartnershipType;
@@ -59,199 +59,237 @@ export function ProjectHeader({
   message,
   setMessage,
   applicationOpen,
-  setApplicationOpen
+  setApplicationOpen,
 }: ProjectHeaderProps) {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isUpdatingApplications, setIsUpdatingApplications] = useState(false);
+  const { user } = useAuth();
+  const [userOrganizations, setUserOrganizations] = useState<{id: string, name: string}[]>([]);
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
   
-  // Determine if applications are currently enabled
-  const applicationsEnabled = project.applicationsEnabled !== false;
-  
-  // Determine if we should show the completed badge
-  const showCompletedBadge = project.status === "completed";
-  
-  // Check if project has organization
-  const hasOrganization = !!project.organizationId && !!project.organizationName;
-
-  const navigateToOrganization = () => {
-    if (project?.organizationId) {
-      navigate(`/organizations/${project.organizationId}`);
-    }
-  };
+  useEffect(() => {
+    const fetchUserOrganizations = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from("organizations")
+          .select("id, name")
+          .eq("owner_id", user.id);
+          
+        if (error) throw error;
+        
+        setUserOrganizations(data || []);
+      } catch (error) {
+        console.error("Error fetching user organizations:", error);
+      }
+    };
+    
+    fetchUserOrganizations();
+  }, [user]);
 
   const handleSaveProject = () => {
-    const newSaved = !saved;
-    setSaved(newSaved);
-    localStorage.setItem(`saved_${project.id}`, newSaved.toString());
-
-    toast({
-      title: newSaved ? "Project saved" : "Project removed from saved",
-      description: newSaved
-        ? "This project has been added to your saved list."
-        : "This project has been removed from your saved list.",
-    });
+    localStorage.setItem(`saved_${project.id}`, (!saved).toString());
+    setSaved(!saved);
   };
   
-  // Toggle applications enabled/disabled
-  const toggleApplications = async () => {
-    if (!isOwner || !project.id) return;
-    
-    setIsUpdatingApplications(true);
-    try {
-      // Update the project in Supabase
-      const { error } = await supabase
-        .from('projects')
-        .update({ applications_enabled: !applicationsEnabled })
-        .eq('id', project.id);
-        
-      if (error) throw error;
-      
-      // Show success toast
-      toast({
-        title: applicationsEnabled ? "Applications paused" : "Applications enabled",
-        description: applicationsEnabled 
-          ? "New applications for this project have been paused." 
-          : "Applications for this project have been re-enabled.",
-      });
-      
-      // Refresh the page to reflect the changes
-      window.location.reload();
-    } catch (error) {
-      console.error('Error toggling applications:', error);
-      toast({
-        title: "Update failed",
-        description: "There was an error updating the application status.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUpdatingApplications(false);
+  const handleApplicationSubmit = () => {
+    // Pass the selected organization to the parent component
+    if (handleApply) {
+      // We'll modify the parent component to accept the organization ID
+      handleApply();
     }
   };
 
-  const renderApplyButton = () => {
-    if (isOwner) {
-      return (
-        <div className="flex gap-2">
-          <Button 
-            size="sm" 
-            variant={applicationsEnabled ? "outline" : "default"}
-            onClick={toggleApplications}
-            disabled={isUpdatingApplications}
-            className={applicationsEnabled ? "" : "bg-yellow-600 hover:bg-yellow-700"}
-          >
-            {isUpdatingApplications ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-            ) : applicationsEnabled ? (
-              <Pause className="h-4 w-4 mr-1" />
-            ) : (
-              <Play className="h-4 w-4 mr-1" />
-            )}
-            {applicationsEnabled ? "Pause Applications" : "Enable Applications"}
-          </Button>
-          <Button size="sm" className="flex items-center gap-1">
-            <Mail className="h-4 w-4" /> Contact
-          </Button>
+  return (
+    <div className="mb-8">
+      <div className="relative overflow-hidden rounded-lg">
+        {/* Background image or color */}
+        <div className="h-32 md:h-48 bg-gradient-to-r from-blue-600 to-indigo-700"></div>
+        
+        {/* Project info overlay */}
+        <div className="relative px-4 pb-4 pt-0 sm:px-6 -mt-20">
+          <div className="flex flex-col md:flex-row md:items-end gap-4">
+            {/* Project image */}
+            <div className="flex-shrink-0">
+              <Avatar className="h-24 w-24 md:h-32 md:w-32 rounded-lg border-4 border-white bg-white shadow-lg">
+                <AvatarImage src={project.image} alt={project.title} />
+                <AvatarFallback className="bg-muted">
+                  {project.title.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+            
+            {/* Project details */}
+            <div className="flex-1">
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+                {project.title}
+              </h1>
+              
+              <div className="mt-2 flex flex-wrap items-center gap-4">
+                {project.organizationName && (
+                  <div className="text-sm text-muted-foreground">
+                    By {project.organizationName}
+                  </div>
+                )}
+                
+                {project.location && (
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5" />
+                    <span>{project.location}</span>
+                  </div>
+                )}
+                
+                {project.timeline?.start && (
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <CalendarIcon className="h-3.5 w-3.5" />
+                    <span>
+                      {format(new Date(project.timeline.start), "MMM yyyy")}
+                      {project.timeline.end && 
+                        ` - ${format(new Date(project.timeline.end), "MMM yyyy")}`}
+                    </span>
+                  </div>
+                )}
+                
+                <Badge variant={
+                  project.status === "published" ? "outline" :
+                  project.status === "in-progress" ? "secondary" :
+                  project.status === "completed" ? "success" : "default"
+                }>
+                  {project.status === "published" ? "Open" :
+                   project.status === "in-progress" ? "In Progress" :
+                   project.status === "completed" ? "Completed" : "Draft"}
+                </Badge>
+              </div>
+              
+              <div className="mt-2 flex flex-wrap gap-1">
+                {project.partnershipTypes.map((type) => (
+                  <Badge key={type} variant="secondary" className="capitalize">
+                    {type} partnership
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            
+            {/* Action buttons */}
+            <div className="flex flex-col gap-2 mt-4 md:mt-0">
+              {!isOwner && (
+                <div className="flex gap-2">
+                  {applicationStatus === null && project.status === "published" && (
+                    <Button 
+                      onClick={() => setApplicationOpen(true)}
+                      disabled={applicationLoading || !user}
+                      className="w-full"
+                    >
+                      Apply to Join
+                    </Button>
+                  )}
+                  
+                  {applicationStatus === "pending" && (
+                    <Button disabled className="w-full">
+                      Application Pending
+                    </Button>
+                  )}
+                  
+                  {applicationStatus === "approved" && (
+                    <Button disabled className="w-full bg-green-600 hover:bg-green-700">
+                      Approved Partner
+                    </Button>
+                  )}
+                  
+                  {applicationStatus === "rejected" && (
+                    <Button disabled className="w-full bg-red-600 hover:bg-red-700">
+                      Application Rejected
+                    </Button>
+                  )}
+                  
+                  <Button 
+                    onClick={handleSaveProject}
+                    variant={saved ? "default" : "outline"}
+                    size="icon"
+                  >
+                    <Bookmark className={saved ? "fill-white" : ""} />
+                  </Button>
+                </div>
+              )}
+              
+              {!isOwner && (
+                <Button 
+                  onClick={handleContact} 
+                  variant="outline"
+                  disabled={!user}
+                >
+                  Contact Organizer
+                </Button>
+              )}
+              
+              {isOwner && (
+                <div className="flex gap-2">
+                  <Button variant="outline" className="w-full">
+                    Edit Project
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      );
-    }
-    
-    // Don't show apply button for completed projects
-    if (showCompletedBadge) {
-      return (
-        <Button variant="outline" size="sm" disabled className="bg-green-50 text-green-700 flex items-center gap-1">
-          <CheckCircle className="h-4 w-4" /> Completed
-        </Button>
-      );
-    }
-    
-    // Show "Applications Paused" for projects where applications are disabled
-    if (!applicationsEnabled && !applicationStatus) {
-      return (
-        <Button variant="outline" size="sm" disabled className="bg-yellow-50 text-yellow-700 flex items-center gap-1">
-          <Pause className="h-4 w-4" /> Applications Paused
-        </Button>
-      );
-    }
-    
-    if (applicationStatus === "pending") {
-      return (
-        <Button variant="outline" size="sm" disabled className="flex items-center gap-1">
-          <Check className="h-4 w-4" /> Applied
-        </Button>
-      );
-    }
-    
-    if (applicationStatus === "approved") {
-      return (
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleContact}
-          className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 flex items-center gap-1"
-        >
-          <Mail className="h-4 w-4 mr-1" /> Contact
-        </Button>
-      );
-    }
-    
-    if (applicationStatus === "rejected") {
-      return (
-        <Button 
-          variant="outline" 
-          size="sm" 
-          disabled 
-          className="bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800 flex items-center gap-1"
-        >
-          Application Rejected
-        </Button>
-      );
-    }
-    
-    return (
+      </div>
+      
+      {/* Application Dialog */}
       <Dialog open={applicationOpen} onOpenChange={setApplicationOpen}>
-        <DialogTrigger asChild>
-          <Button size="sm" className="flex items-center gap-1">
-            <Mail className="h-4 w-4" /> Apply
-          </Button>
-        </DialogTrigger>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Apply for Partnership</DialogTitle>
+            <DialogTitle>Apply to Join Project</DialogTitle>
             <DialogDescription>
-              Submit your application to partner on this project. The organizer will review your request.
+              Apply to collaborate on "{project.title}". Provide details about how you can contribute.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="partnership-type">Partnership Type</Label>
-              <Select 
-                value={partnershipType} 
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Choose partnership type:</h4>
+              <Select
+                value={partnershipType}
                 onValueChange={(value) => setPartnershipType(value as PartnershipType)}
               >
-                <SelectTrigger id="partnership-type">
-                  <SelectValue placeholder="Select type of partnership" />
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select partnership type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {project?.partnershipTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                  {project.partnershipTypes.map((type) => (
+                    <SelectItem key={type} value={type} className="capitalize">
+                      {type} partnership
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             
-            <div className="grid gap-2">
-              <Label htmlFor="message">Message (Optional)</Label>
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Apply from organization (optional):</h4>
+              <Select
+                value={selectedOrganizationId || ""}
+                onValueChange={setSelectedOrganizationId}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Apply as individual" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Apply as individual</SelectItem>
+                  {userOrganizations.map((org) => (
+                    <SelectItem key={org.id} value={org.id}>
+                      {org.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Message (optional):</h4>
               <Textarea
-                id="message"
-                placeholder="Describe how you'd like to contribute to this project..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                rows={4}
+                placeholder="Describe how you or your organization can contribute to this project..."
+                className="min-h-[100px]"
               />
             </div>
           </div>
@@ -260,93 +298,15 @@ export function ProjectHeader({
             <Button variant="outline" onClick={() => setApplicationOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleApply} disabled={applicationLoading}>
-              {applicationLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
-              Submit Application
+            <Button 
+              onClick={handleApplicationSubmit} 
+              disabled={applicationLoading || !partnershipType}
+            >
+              {applicationLoading ? "Submitting..." : "Submit Application"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    );
-  };
-
-  return (
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
-      <div>
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">{project.title}</h1>
-          {showCompletedBadge && (
-            <Badge className="bg-green-100 text-green-800 flex items-center gap-1">
-              <CheckCircle className="h-3 w-3" /> Completed
-            </Badge>
-          )}
-        </div>
-        <div className="flex items-center gap-3 mt-1 text-muted-foreground">
-          {hasOrganization ? (
-            <div className="flex items-center gap-1">
-              <Building2Icon className="h-4 w-4" />
-              <Button 
-                variant="link" 
-                onClick={navigateToOrganization} 
-                className="h-auto p-0 text-sm text-muted-foreground hover:text-primary"
-              >
-                {project.organizationName} (by {project.organizerName})
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1">
-              <UserIcon className="h-4 w-4" />
-              <span className="text-sm">{project.organizerName}</span>
-            </div>
-          )}
-          {project.category && (
-            <div className="flex items-center gap-1">
-              <TagIcon className="h-4 w-4" />
-              <span className="text-sm">{project.category}</span>
-            </div>
-          )}
-          {project.location && (
-            <div className="flex items-center gap-1">
-              <MapPinIcon className="h-4 w-4" />
-              <span className="text-sm">{project.location}</span>
-            </div>
-          )}
-          <div className="flex items-center gap-1">
-            <InfoIcon className="h-4 w-4" />
-            <span className="text-sm capitalize">{project.status}</span>
-          </div>
-        </div>
-      </div>
-      
-      <div className="flex gap-2 self-end md:self-auto">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleSaveProject}
-          className="flex items-center gap-1"
-        >
-          {saved ? (
-            <>
-              <StarOff className="h-4 w-4" /> Unsave
-            </>
-          ) : (
-            <>
-              <Star className="h-4 w-4" /> Save
-            </>
-          )}
-        </Button>
-        {canUpdateProgress && (
-          <Button
-            variant="progress"
-            size="sm"
-            onClick={() => setSearchParams({ tab: "progress" })}
-            className="flex items-center gap-1"
-          >
-            <BarChart2 className="h-4 w-4" /> Track Progress
-          </Button>
-        )}
-        {renderApplyButton()}
-      </div>
     </div>
   );
 }
