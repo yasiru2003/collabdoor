@@ -95,7 +95,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
           </SidebarLink>
         </div>
 
-        <div className="absolute bottom-8 left-0 right-0 px-4">
+        <div className="mt-auto px-3 pb-4">
           <SidebarLink to="/settings" icon={Settings}>
             Settings
           </SidebarLink>
