@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserProjects, usePartnerships, useMessages } from "@/hooks/use-supabase-query";
 import { useNavigate } from "react-router-dom";
+import { mapSupabaseProjectToProject } from "@/utils/data-mappers";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -167,12 +168,19 @@ export default function DashboardPage() {
                 </div>
               ) : partnerships && partnerships.length > 0 ? (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {partnerships.map((partnership) => (
-                    <ProjectCard
-                      key={partnership.id}
-                      project={partnership.project}
-                    />
-                  ))}
+                  {partnerships.map((partnership) => {
+                    // Make sure we properly map the project data to our Project type
+                    const mappedProject = partnership.project 
+                      ? mapSupabaseProjectToProject(partnership.project)
+                      : null;
+                    
+                    return mappedProject ? (
+                      <ProjectCard
+                        key={partnership.id}
+                        project={mappedProject}
+                      />
+                    ) : null;
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-12">

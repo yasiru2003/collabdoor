@@ -53,7 +53,7 @@ export default function ProjectDetailPage() {
 
     try {
       // In a real app, you would open a modal to select partnership type
-      const partnershipType = project?.partnership_types?.[0] || "skilled";
+      const partnershipType = project?.partnershipTypes?.[0] || "skilled";
 
       const { error } = await supabase.from("partnerships").insert({
         project_id: id,
@@ -160,7 +160,7 @@ export default function ProjectDetailPage() {
 
           <div className="flex flex-wrap gap-2 mb-4">
             {project?.category && <Badge variant="secondary">{project.category}</Badge>}
-            {project?.partnership_types?.map((type) => (
+            {project?.partnershipTypes?.map((type) => (
               <Badge key={type} variant="outline" className={partnershipTypeColors[type]}>
                 {partnershipTypeLabels[type]}
               </Badge>
@@ -176,7 +176,7 @@ export default function ProjectDetailPage() {
               </AvatarFallback>
             </Avatar>
             <span className="text-sm">
-              Organized by <span className="font-semibold">{project?.organizer_id}</span>
+              Organized by <span className="font-semibold">{project?.organizerName}</span>
             </span>
           </div>
 
@@ -185,11 +185,11 @@ export default function ProjectDetailPage() {
             <p className="mb-4">{project?.description}</p>
           </div>
 
-          {project?.partnership_types && project.partnership_types.length > 0 && (
+          {project?.partnershipTypes && project.partnershipTypes.length > 0 && (
             <div className="mb-8">
               <h2 className="text-xl font-bold mb-4">What We're Looking For</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {project.partnership_types.includes("monetary") && (
+                {project.partnershipTypes.includes("monetary") && (
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg">💰 Monetary Support</CardTitle>
@@ -202,7 +202,7 @@ export default function ProjectDetailPage() {
                   </Card>
                 )}
                 
-                {project.partnership_types.includes("knowledge") && (
+                {project.partnershipTypes.includes("knowledge") && (
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg">📚 Knowledge Sharing</CardTitle>
@@ -215,7 +215,7 @@ export default function ProjectDetailPage() {
                   </Card>
                 )}
                 
-                {project.partnership_types.includes("skilled") && (
+                {project.partnershipTypes.includes("skilled") && (
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg">🧠 Skilled Contribution</CardTitle>
@@ -228,7 +228,7 @@ export default function ProjectDetailPage() {
                   </Card>
                 )}
                 
-                {project.partnership_types.includes("volunteering") && (
+                {project.partnershipTypes.includes("volunteering") && (
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg">🤝 Volunteering</CardTitle>
@@ -244,11 +244,11 @@ export default function ProjectDetailPage() {
             </div>
           )}
 
-          {project?.required_skills && project.required_skills.length > 0 && (
+          {project?.requiredSkills && project.requiredSkills.length > 0 && (
             <div className="mb-8">
               <h2 className="text-xl font-bold mb-4">Required Skills</h2>
               <div className="flex flex-wrap gap-2">
-                {project.required_skills.map((skill) => (
+                {project.requiredSkills.map((skill) => (
                   <Badge key={skill} variant="secondary">
                     {skill}
                   </Badge>
@@ -269,14 +269,14 @@ export default function ProjectDetailPage() {
               </Button>
               
               <div className="pt-4 space-y-3">
-                {(project?.start_date || project?.end_date) && (
+                {project && (project.timeline.start || project.timeline.end) && (
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <p className="font-medium">Timeline</p>
                       <p className="text-muted-foreground">
-                        {project.start_date ? new Date(project.start_date).toLocaleDateString() : 'TBD'} 
-                        {project.end_date ? ` - ${new Date(project.end_date).toLocaleDateString()}` : ''}
+                        {project.timeline.start ? new Date(project.timeline.start).toLocaleDateString() : 'TBD'} 
+                        {project.timeline.end ? ` - ${new Date(project.timeline.end).toLocaleDateString()}` : ''}
                       </p>
                     </div>
                   </div>
@@ -296,7 +296,7 @@ export default function ProjectDetailPage() {
                   <Building className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="font-medium">Organization</p>
-                    <p className="text-muted-foreground">{project?.organization_id || project?.organizer_id}</p>
+                    <p className="text-muted-foreground">{project?.organization_id || project?.organizerId}</p>
                   </div>
                 </div>
                 
@@ -312,7 +312,7 @@ export default function ProjectDetailPage() {
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="font-medium">Posted</p>
-                    <p className="text-muted-foreground">{new Date(project?.created_at).toLocaleDateString()}</p>
+                    <p className="text-muted-foreground">{project?.createdAt ? new Date(project.createdAt).toLocaleDateString() : ''}</p>
                   </div>
                 </div>
               </div>

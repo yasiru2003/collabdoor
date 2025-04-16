@@ -254,6 +254,13 @@ export default function ProfilePage() {
     });
   };
 
+  const handleProfileImageUpdate = (url: string) => {
+    setProfile({
+      ...profile,
+      profileImage: url
+    });
+  };
+
   return (
     <Layout>
       <ProfileHeader 
@@ -273,6 +280,7 @@ export default function ProfilePage() {
         onNameChange={(value) => setProfile({...profile, name: value})}
         onBioChange={(value) => setProfile({...profile, bio: value})}
         onProfileImageRemove={handleRemoveProfileImage}
+        onProfileImageUpdate={handleProfileImageUpdate} // Add the missing prop
         onNewSkillChange={setNewSkill}
         onAddSkill={handleAddSkill}
         onRemoveSkill={handleRemoveSkill}
