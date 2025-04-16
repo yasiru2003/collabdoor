@@ -18,8 +18,10 @@ export function Layout({ children }: LayoutProps) {
       <Header />
       <div className="flex flex-1">
         {!isMobile && <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />}
-        <main className="flex-1 p-4 md:p-8 bg-muted/30 pb-20 md:pb-8">
-          {children}
+        <main className="flex-1 bg-muted/30 pb-20 md:pb-8 overflow-x-hidden">
+          <div className="container mx-auto px-4 py-4 md:py-8">
+            {children}
+          </div>
         </main>
       </div>
       {isMobile && <BottomNav />}
