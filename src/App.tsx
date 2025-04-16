@@ -19,6 +19,9 @@ import ProfilePage from "./pages/ProfilePage";
 import MessagesPage from "./pages/MessagesPage";
 import SettingsPage from "./pages/SettingsPage";
 import OrganizationsPage from "./pages/OrganizationsPage";
+import CreateOrganizationPage from "./pages/CreateOrganizationPage";
+import OrganizationDetailPage from "./pages/OrganizationDetailPage";
+import EditOrganizationPage from "./pages/EditOrganizationPage";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +46,9 @@ const App = () => (
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/organizations" element={<OrganizationsPage />} />
+            <Route path="/organizations/new" element={<CreateOrganizationPage />} />
+            <Route path="/organizations/:id" element={<OrganizationDetailPage />} />
+            <Route path="/organizations/:id/edit" element={<EditOrganizationPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
