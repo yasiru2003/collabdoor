@@ -280,7 +280,7 @@ export function ProjectForm() {
                     </FormDescription>
                     <Select 
                       onValueChange={field.onChange} 
-                      value={field.value || ""}
+                      value={field.value || "none"}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -288,7 +288,7 @@ export function ProjectForm() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Personal Project</SelectItem>
+                        <SelectItem value="none">Personal Project</SelectItem>
                         {userOrganizations.map((org) => (
                           <SelectItem key={org.id} value={org.id}>
                             {org.name}
