@@ -236,7 +236,7 @@ const DashboardPage = () => {
               </div>
             ) : projects.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2">
-                
+                {projects.map((project) => (
                   <Card key={project.id} className="overflow-hidden">
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
@@ -273,7 +273,7 @@ const DashboardPage = () => {
                       </Button>
                     </CardFooter>
                   </Card>
-                
+                ))}
               </div>
             ) : (
               <Card className="bg-muted/50">

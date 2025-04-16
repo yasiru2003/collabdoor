@@ -14,7 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Project, PartnershipType } from "@/types";
-import { useProject, useProjectApplications } from "@/hooks/use-projects-query";
+import { useProject } from "@/hooks/use-projects-query";
+import { useProjectApplications } from "@/hooks/use-applications-query";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -370,7 +371,7 @@ export default function ProjectDetailPage() {
     );
   };
 
-// Let's focus on fixing the applications table section with proper null checks
+// Let's focus on fixing the applications table section with proper null checks and TypeScript type safety
 const renderApplicationsTable = () => {
   if (!isOwner || !projectApplications || projectApplications.length === 0) {
     return null;
@@ -397,13 +398,21 @@ const renderApplicationsTable = () => {
             {projectApplications.map((application) => {
               console.log("Rendering application:", application);
               
-              // Type assertion for profiles data
-              const profiles = application.profiles || {};
+              // Define a type for the profiles property to address TypeScript errors
+              type ProfileData = {
+                id?: string;
+                name?: string;
+                email?: string;
+                profile_image?: string;
+              };
               
-              // Extract profile data with safe fallbacks
-              const profileImage = typeof profiles === 'object' && profiles.profile_image ? profiles.profile_image : "";
-              const profileName = typeof profiles === 'object' && profiles.name ? profiles.name : "Unknown";
-              const profileEmail = typeof profiles === 'object' && profiles.email ? profiles.email : "";
+              // Type assertion with safe fallback
+              const profiles = (application.profiles || {}) as ProfileData;
+              
+              // Extract profile data with safe access
+              const profileImage = profiles.profile_image || "";
+              const profileName = profiles.name || "Unknown";
+              const profileEmail = profiles.email || "";
               
               // Only calculate initials if we have a valid name
               const initials = profileName !== "Unknown" 
