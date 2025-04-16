@@ -1,4 +1,3 @@
-
 import { Organization, Project, User } from "@/types";
 
 export const mockUsers: User[] = [
@@ -30,6 +29,7 @@ export const mockOrganizations: Organization[] = [
     size: "50-100 employees",
     foundedYear: 2015,
     website: "https://example.com",
+    owner_id: "1", // Add owner_id matching a user from mockUsers
   },
   {
     id: "2",
@@ -40,6 +40,7 @@ export const mockOrganizations: Organization[] = [
     size: "20-50 employees",
     foundedYear: 2010,
     website: "https://example.com",
+    owner_id: "2", // Add owner_id matching a user from mockUsers
   },
   {
     id: "3",
@@ -50,6 +51,7 @@ export const mockOrganizations: Organization[] = [
     size: "100-250 employees",
     foundedYear: 2008,
     website: "https://example.com",
+    owner_id: "1", // Add owner_id matching a user from mockUsers
   },
   {
     id: "4",
@@ -60,6 +62,7 @@ export const mockOrganizations: Organization[] = [
     size: "50-100 employees",
     foundedYear: 2012,
     website: "https://example.com",
+    owner_id: "2", // Add owner_id matching a user from mockUsers
   },
   {
     id: "5",
@@ -70,6 +73,7 @@ export const mockOrganizations: Organization[] = [
     size: "10-20 employees",
     foundedYear: 2017,
     website: "https://example.com",
+    owner_id: "1", // Add owner_id matching a user from mockUsers
   },
   {
     id: "6",
@@ -80,6 +84,7 @@ export const mockOrganizations: Organization[] = [
     size: "20-50 employees",
     foundedYear: 2014,
     website: "https://example.com",
+    owner_id: "2", // Add owner_id matching a user from mockUsers
   },
 ];
 
