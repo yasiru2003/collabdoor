@@ -27,3 +27,20 @@ export function mapSupabaseProjectToProject(supabaseProject: any): Project {
     proposalFilePath: supabaseProject.proposal_file_path,
   };
 }
+
+export function mapSupabaseOrgToOrganization(supabaseOrg: any): Organization {
+  return {
+    id: supabaseOrg.id,
+    name: supabaseOrg.name,
+    description: supabaseOrg.description,
+    industry: supabaseOrg.industry,
+    location: supabaseOrg.location,
+    size: supabaseOrg.size,
+    foundedYear: supabaseOrg.founded_year,
+    website: supabaseOrg.website,
+    logo: supabaseOrg.logo,
+    createdAt: supabaseOrg.created_at,
+    updatedAt: supabaseOrg.updated_at,
+    owner_id: supabaseOrg.owner_id
+  };
+}
