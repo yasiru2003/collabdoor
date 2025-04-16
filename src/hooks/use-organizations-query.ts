@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
 import { handleSupabaseError } from "./use-supabase-utils";
+import { PartnershipType } from "@/types";
 
 /**
  * Hook to fetch all partners/organizations
@@ -69,7 +70,8 @@ export function usePartnerships(userId: string | undefined) {
         partner_id: app.user_id,
         project_id: app.project_id,
         organization_id: app.organization_id,
-        partnership_type: app.partnership_type,
+        // Cast partnership_type to the correct enum type
+        partnership_type: app.partnership_type as PartnershipType,
         status: app.status === 'pending' ? 'pending' : (app.status === 'approved' ? 'active' : 'rejected'),
         created_at: app.created_at,
         updated_at: app.updated_at,
