@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Heart, MessageSquare, AtSign, Building, Send, Share, MapPin, Tag } from "lucide-react";
+import { Heart, MessageSquare, Send, Share, MapPin, Tag } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { FeedPost as FeedPostType } from "./types";
 
@@ -114,7 +114,7 @@ export function FeedPost({ post, currentUser }: FeedPostProps) {
     : "";
   
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader className="pb-2">
         <div className="flex justify-between">
           <div className="flex items-center space-x-3">
@@ -131,7 +131,6 @@ export function FeedPost({ post, currentUser }: FeedPostProps) {
                 {post.organizations && (
                   <>
                     <span className="mx-1">•</span>
-                    <Building className="h-3 w-3 mr-1" />
                     <span>{post.organizations.name}</span>
                   </>
                 )}

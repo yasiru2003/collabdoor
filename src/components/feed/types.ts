@@ -28,6 +28,11 @@ export interface FeedPost {
   organization_id?: string;
   image_url?: string;
   tagged_organizations?: string[];
+  taggedOrganizationsDetails?: {
+    id: string;
+    name: string;
+    logo?: string;
+  }[];
   organizations?: {
     name: string;
     logo?: string;

@@ -1,23 +1,19 @@
 
-import React, { useState, useEffect } from "react";
-import { Layout } from "@/components/layout";
-import { useAuth } from "@/hooks/use-auth";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useState } from "react";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Layout } from "@/components/layout";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  Heart, MessageSquare, Share, Send, Users, 
-  AtSign, User, Building, MapPin, Loader2
+  Users, MessageSquare, Loader2 
 } from "lucide-react";
 import { FeedPost } from "@/components/feed/FeedPost";
 import { CreatePostForm } from "@/components/feed/CreatePostForm";
-import { Separator } from "@/components/ui/separator";
 import { FeedPost as FeedPostType } from "./types";
 
 export default function FeedPage() {
@@ -237,7 +233,7 @@ export default function FeedPage() {
           {/* Left sidebar - hidden on mobile, shown on tablet and above */}
           <div className="hidden md:block md:col-span-1">
             <Card>
-              <CardHeader className="pb-2">
+              <CardHeader>
                 <div className="flex items-center gap-3">
                   <Avatar className="h-14 w-14">
                     <AvatarImage src={user?.user_metadata?.profile_image || ""} />
@@ -248,7 +244,6 @@ export default function FeedPage() {
                   <div>
                     <h2 className="text-xl font-semibold">{user?.user_metadata?.name || user?.email}</h2>
                     <p className="text-sm text-muted-foreground">
-                      <User className="h-3 w-3 inline mr-1" />
                       {user?.email}
                     </p>
                   </div>
@@ -256,10 +251,7 @@ export default function FeedPage() {
               </CardHeader>
               <CardContent>
                 <div className="mt-4">
-                  <h3 className="font-medium mb-2 flex items-center">
-                    <Building className="h-4 w-4 mr-2" /> 
-                    My Organizations
-                  </h3>
+                  <h3 className="font-medium mb-2">My Organizations</h3>
                   {orgsLoading ? (
                     <p className="text-sm">Loading organizations...</p>
                   ) : userOrganizations && userOrganizations.length > 0 ? (
