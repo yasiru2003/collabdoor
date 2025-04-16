@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -161,10 +160,6 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleUpdateApplicationStatus = async (applicationId: string, status: "approved" | "rejected") => {
-    await updateApplicationStatus(applicationId, status);
-  };
-
   const renderApplyButton = () => {
     if (isOwner) {
       return (
@@ -269,14 +264,14 @@ export default function ProjectDetailPage() {
     );
   };
 
-  const renderPartnershipTypes = () => {
-    const partnershipLabels: Record<PartnershipType, string> = {
-      monetary: "Financial Support",
-      knowledge: "Knowledge Sharing",
-      skilled: "Skilled Professionals",
-      volunteering: "Volunteer Support",
-    };
+  const partnershipLabels: Record<PartnershipType, string> = {
+    monetary: "Financial Support",
+    knowledge: "Knowledge Sharing",
+    skilled: "Skilled Professionals",
+    volunteering: "Volunteer Support",
+  };
 
+  const renderPartnershipTypes = () => {
     return (
       <div className="space-y-1 mt-3">
         <h3 className="text-sm font-medium text-foreground">
@@ -303,37 +298,37 @@ export default function ProjectDetailPage() {
     );
   };
 
-  const renderPartnershipCards = () => {
-    const partnershipInfo: Record<
-      PartnershipType,
-      { title: string; description: string; icon: React.ReactNode }
-    > = {
-      monetary: {
-        title: "Financial Support",
-        description:
-          "Contribute financially to help fund this project's activities and resources.",
-        icon: <TagIcon className="h-5 w-5" />,
-      },
-      knowledge: {
-        title: "Knowledge Sharing",
-        description:
-          "Share expertise, guidance, and insights to help this project succeed.",
-        icon: <StickyNoteIcon className="h-5 w-5" />,
-      },
-      skilled: {
-        title: "Skilled Professionals",
-        description:
-          "Provide professional services or skilled team members to support specific needs.",
-        icon: <BriefcaseIcon className="h-5 w-5" />,
-      },
-      volunteering: {
-        title: "Volunteer Support",
-        description:
-          "Offer volunteer time and general assistance to help with project activities.",
-        icon: <Users2Icon className="h-5 w-5" />,
-      },
-    };
+  const partnershipInfo: Record<
+    PartnershipType,
+    { title: string; description: string; icon: React.ReactNode }
+  > = {
+    monetary: {
+      title: "Financial Support",
+      description:
+        "Contribute financially to help fund this project's activities and resources.",
+      icon: <TagIcon className="h-5 w-5" />,
+    },
+    knowledge: {
+      title: "Knowledge Sharing",
+      description:
+        "Share expertise, guidance, and insights to help this project succeed.",
+      icon: <StickyNoteIcon className="h-5 w-5" />,
+    },
+    skilled: {
+      title: "Skilled Professionals",
+      description:
+        "Provide professional services or skilled team members to support specific needs.",
+      icon: <BriefcaseIcon className="h-5 w-5" />,
+    },
+    volunteering: {
+      title: "Volunteer Support",
+      description:
+        "Offer volunteer time and general assistance to help with project activities.",
+      icon: <Users2Icon className="h-5 w-5" />,
+    },
+  };
 
+  const renderPartnershipCards = () => {
     return (
       <div className="grid gap-4 mt-6 sm:grid-cols-2">
         {project && project.partnershipTypes && project.partnershipTypes.map((type) => (
