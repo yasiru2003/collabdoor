@@ -46,7 +46,7 @@ const SidebarLink = ({
 
 export function Sidebar({ open, setOpen }: SidebarProps) {
   const { user } = useAuth();
-  const isAdmin = user?.email === "yasirubandaraprivate@gmail.com";
+  const isAdmin = user?.role === 'admin';
   
   return (
     <>

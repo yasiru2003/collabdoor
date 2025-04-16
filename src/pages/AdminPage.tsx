@@ -15,14 +15,14 @@ export default function AdminPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   
-  // Only allow yasirubandaraprivate@gmail.com to access admin page
-  const isAuthorized = user?.email === "yasirubandaraprivate@gmail.com";
+  // Check if user has admin role
+  const isAdmin = user?.role === 'admin';
   
   if (!user) {
     return <Navigate to="/login" replace />;
   }
   
-  if (!isAuthorized) {
+  if (!isAdmin) {
     return (
       <Layout>
         <div className="container mx-auto py-6">
