@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Layout } from "@/components/layout";
@@ -12,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { ApplicationStatus, useProjectApplications } from "@/hooks/use-project-applications";
 import { useUserProjects, useUserApplications } from "@/hooks/use-supabase-query";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -20,6 +22,7 @@ const DashboardPage = () => {
   const { updateApplicationStatus } = useProjectApplications();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   // Use the hooks to fetch data
   const { data: projects = [], isLoading: projectsLoading } = useUserProjects(user?.id);
@@ -174,15 +177,15 @@ const DashboardPage = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto py-6 space-y-8">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h1>
         </div>
 
         <div className="grid gap-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">
+              <CardTitle className="text-lg md:text-xl">
                 Welcome back, {user?.email ? user.email.split('@')[0] : 'User'}!
               </CardTitle>
               <CardDescription>
@@ -193,20 +196,22 @@ const DashboardPage = () => {
         </div>
 
         <Tabs defaultValue="applications" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="applications">
-              <Mail className="h-4 w-4 mr-2" />
-              My Applications
-            </TabsTrigger>
-            <TabsTrigger value="projects">
-              <Folder className="h-4 w-4 mr-2" />
-              My Projects
-            </TabsTrigger>
-            <TabsTrigger value="received">
-              <Users2 className="h-4 w-4 mr-2" />
-              Received Applications
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto pb-2">
+            <TabsList className="w-full md:w-auto flex justify-between md:inline-flex">
+              <TabsTrigger value="applications" className="flex-1 md:flex-none">
+                <Mail className="h-4 w-4 mr-2" />
+                <span className="whitespace-nowrap">My Applications</span>
+              </TabsTrigger>
+              <TabsTrigger value="projects" className="flex-1 md:flex-none">
+                <Folder className="h-4 w-4 mr-2" />
+                <span className="whitespace-nowrap">My Projects</span>
+              </TabsTrigger>
+              <TabsTrigger value="received" className="flex-1 md:flex-none">
+                <Users2 className="h-4 w-4 mr-2" />
+                <span className="whitespace-nowrap">Received Apps</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="applications" className="space-y-4">
             <h2 className="text-xl font-semibold">Applications</h2>
