@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
@@ -6,7 +7,8 @@ import {
   MessageSquare, 
   BookOpen, 
   Settings, 
-  Building
+  Building,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
