@@ -25,7 +25,7 @@ export default function PartnersPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  // Use the usePartnerships hook instead of direct query
+  // Use the enhanced usePartnerships hook
   const { data: partnerships, isLoading: isLoadingPartnerships } = usePartnerships(user?.id);
 
   // Filter partnerships based on search query
@@ -46,7 +46,9 @@ export default function PartnersPage() {
   const activePartnerships = filteredPartnerships?.filter(p => p.status === 'active') || [];
   
   // Find past partnerships (completed)
-  const pastPartnerships = filteredPartnerships?.filter(p => p.status === 'completed') || [];
+  const pastPartnerships = filteredPartnerships?.filter(p => 
+    p.status === 'completed' || (p.projects?.status === 'completed')
+  ) || [];
 
   // View partnership details (navigate to project page)
   const handleViewDetails = (projectId) => {
@@ -70,7 +72,10 @@ export default function PartnersPage() {
           partnershipsList.map((partnership) => (
             <TableRow key={partnership.id}>
               <TableCell className="font-medium">
-                {partnership.organizations?.name || "Unknown Organization"}
+                {partnership.organizations?.name || 
+                 partnership.organization_name || 
+                 partnership.projects?.organization_name || 
+                 "Unknown Organization"}
               </TableCell>
               <TableCell>{partnership.projects?.title || "Unknown Project"}</TableCell>
               <TableCell>
@@ -83,7 +88,7 @@ export default function PartnersPage() {
                 {partnership.status === 'active' && (
                   <Badge variant="default">Active</Badge>
                 )}
-                {partnership.status === 'completed' && (
+                {(partnership.status === 'completed' || partnership.projects?.status === 'completed') && (
                   <Badge variant="outline">Completed</Badge>
                 )}
               </TableCell>

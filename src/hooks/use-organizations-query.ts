@@ -37,7 +37,8 @@ export function usePartnerships(userId: string | undefined) {
     queryFn: async () => {
       if (!userId) return [];
 
-      const { data, error } = await supabase
+      // First get all partnerships from partnerships table
+      const { data: partnershipData, error: partnershipError } = await supabase
         .from("partnerships")
         .select(`
           *,
@@ -47,9 +48,46 @@ export function usePartnerships(userId: string | undefined) {
         .eq("partner_id", userId)
         .order("created_at", { ascending: false });
 
-      handleSupabaseError(error, "Error fetching partnerships", toast);
+      handleSupabaseError(partnershipError, "Error fetching partnerships", toast);
 
-      return data || [];
+      // Now get approved applications that might not be in partnerships table yet
+      const { data: applicationData, error: applicationError } = await supabase
+        .from("project_applications")
+        .select(`
+          *,
+          projects:project_id(id, title, status, organization_name, completed_at),
+          organizations:organization_id(id, name, logo, industry, location)
+        `)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      handleSupabaseError(applicationError, "Error fetching applications", toast);
+
+      // Transform applications to partnership format
+      const applicationsAsPartnerships = applicationData?.map(app => ({
+        id: app.id,
+        partner_id: app.user_id,
+        project_id: app.project_id,
+        organization_id: app.organization_id,
+        partnership_type: app.partnership_type,
+        status: app.status === 'pending' ? 'pending' : (app.status === 'approved' ? 'active' : 'rejected'),
+        created_at: app.created_at,
+        updated_at: app.updated_at,
+        projects: app.projects,
+        organizations: app.organizations
+      })) || [];
+
+      // Combine and deduplicate (preferring items from partnerships table)
+      const allPartnerships = [...(partnershipData || [])];
+      
+      // Add applications that don't already exist in partnerships (based on project_id)
+      applicationsAsPartnerships.forEach(app => {
+        if (!allPartnerships.some(p => p.project_id === app.project_id)) {
+          allPartnerships.push(app);
+        }
+      });
+
+      return allPartnerships;
     },
     enabled: !!userId,
   });
