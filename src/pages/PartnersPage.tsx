@@ -5,12 +5,20 @@ import { PartnerCard } from "@/components/partner-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Grid3X3, List, Plus, Search } from "lucide-react";
+import { Grid3X3, List, Search } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { usePartners } from "@/hooks/use-supabase-query";
+import { usePartners, usePartnerships } from "@/hooks/use-supabase-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
 
 // Define industry skill mappings
 const industrySkills: Record<string, string[]> = {
@@ -31,8 +39,12 @@ export default function PartnersPage() {
   const [locationFilter, setLocationFilter] = useState("all");
   const [sizeFilter, setSizeFilter] = useState("all");
   const { user } = useAuth();
-
-  const { data: partners, isLoading } = usePartners();
+  
+  // Fetch partners data
+  const { data: partners, isLoading: partnersLoading } = usePartners();
+  
+  // Fetch partnerships data
+  const { data: partnerships, isLoading: partnershipsLoading } = usePartnerships(user?.id);
 
   // Filter and search organizations
   const filteredOrganizations = partners?.filter(org => {
@@ -72,17 +84,57 @@ export default function PartnersPage() {
     return industrySkills[organization.industry] || defaultSkills;
   };
 
+  // Find active partnerships
+  const activePartnerships = partnerships?.filter(p => p.status === 'active') || [];
+  
+  // Find requested partnerships
+  const requestedPartnerships = partnerships?.filter(p => p.status === 'pending') || [];
+  
+  // Find past partnerships
+  const pastPartnerships = partnerships?.filter(p => p.status === 'completed') || [];
+
+  const isLoading = partnersLoading || partnershipsLoading;
+
+  const renderPartnershipTable = (partnershipsList: any[]) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Organization</TableHead>
+          <TableHead>Project</TableHead>
+          <TableHead>Type</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {partnershipsList.length > 0 ? (
+          partnershipsList.map((partnership) => (
+            <TableRow key={partnership.id}>
+              <TableCell className="font-medium">{partnership.organization?.name || "Unknown Organization"}</TableCell>
+              <TableCell>{partnership.project?.title || "Unknown Project"}</TableCell>
+              <TableCell>{partnership.partnership_type}</TableCell>
+              <TableCell>{partnership.status}</TableCell>
+              <TableCell>
+                <Button variant="outline" size="sm">View Details</Button>
+              </TableCell>
+            </TableRow>
+          ))
+        ) : (
+          <TableRow>
+            <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">No partnerships found</TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+  );
+
   return (
     <Layout>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold">Partners</h1>
-          <p className="text-muted-foreground">Find collaborative organizations to work with</p>
+          <p className="text-muted-foreground">Manage partnership relationships</p>
         </div>
-        <Button className="gap-1 self-start">
-          <Plus className="h-4 w-4" />
-          <span>Add Organization</span>
-        </Button>
       </div>
 
       <Tabs defaultValue="explore" className="mb-6">
@@ -198,21 +250,39 @@ export default function PartnersPage() {
         </TabsContent>
 
         <TabsContent value="requested" className="mt-0">
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">No partner requests have been sent yet.</p>
-          </div>
+          {isLoading ? (
+            <div className="py-8">
+              <Skeleton className="h-12 w-full mb-4" />
+              <Skeleton className="h-12 w-full mb-4" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : (
+            renderPartnershipTable(requestedPartnerships)
+          )}
         </TabsContent>
 
         <TabsContent value="connected" className="mt-0">
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">You haven't connected with any organizations yet.</p>
-          </div>
+          {isLoading ? (
+            <div className="py-8">
+              <Skeleton className="h-12 w-full mb-4" />
+              <Skeleton className="h-12 w-full mb-4" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : (
+            renderPartnershipTable(activePartnerships)
+          )}
         </TabsContent>
 
         <TabsContent value="past" className="mt-0">
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">You don't have any past partnerships.</p>
-          </div>
+          {isLoading ? (
+            <div className="py-8">
+              <Skeleton className="h-12 w-full mb-4" />
+              <Skeleton className="h-12 w-full mb-4" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : (
+            renderPartnershipTable(pastPartnerships)
+          )}
         </TabsContent>
       </Tabs>
     </Layout>
