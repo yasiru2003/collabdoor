@@ -78,10 +78,8 @@ export type Database = {
           content: string
           created_at: string
           id: string
-          image_url: string | null
           location: string | null
           organization_id: string | null
-          tagged_organizations: string[] | null
           updated_at: string
           user_id: string
         }
@@ -89,10 +87,8 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
-          image_url?: string | null
           location?: string | null
           organization_id?: string | null
-          tagged_organizations?: string[] | null
           updated_at?: string
           user_id: string
         }
@@ -100,10 +96,8 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
-          image_url?: string | null
           location?: string | null
           organization_id?: string | null
-          tagged_organizations?: string[] | null
           updated_at?: string
           user_id?: string
         }

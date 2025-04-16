@@ -9,12 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Heart, MessageSquare, Send, Share, MapPin, Tag } from "lucide-react";
+import { Heart, MessageSquare, AtSign, Building, Send, Share } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { FeedPost as FeedPostType } from "./types";
 
 interface FeedPostProps {
-  post: FeedPostType;
+  post: any;
   currentUser: any;
 }
 
@@ -26,7 +25,7 @@ export function FeedPost({ post, currentUser }: FeedPostProps) {
   
   // Check if the current user has liked this post
   const userLike = post.feed_likes?.find(
-    (like) => like.user_id === currentUser?.id
+    (like: any) => like.user_id === currentUser?.id
   );
   
   // Get comments count
@@ -114,7 +113,7 @@ export function FeedPost({ post, currentUser }: FeedPostProps) {
     : "";
   
   return (
-    <Card className="w-full">
+    <Card>
       <CardHeader className="pb-2">
         <div className="flex justify-between">
           <div className="flex items-center space-x-3">
@@ -131,6 +130,7 @@ export function FeedPost({ post, currentUser }: FeedPostProps) {
                 {post.organizations && (
                   <>
                     <span className="mx-1">•</span>
+                    <Building className="h-3 w-3 mr-1" />
                     <span>{post.organizations.name}</span>
                   </>
                 )}
@@ -152,37 +152,12 @@ export function FeedPost({ post, currentUser }: FeedPostProps) {
       <CardContent>
         <p className="whitespace-pre-wrap">{post.content}</p>
         
-        {/* Show post image if available */}
-        {post.image_url && (
-          <div className="mt-3 rounded-md overflow-hidden">
-            <img 
-              src={post.image_url} 
-              alt="Post image" 
-              className="w-full max-h-96 object-cover"
-            />
-          </div>
+        {post.location && (
+          <Badge variant="outline" className="mt-2">
+            <AtSign className="h-3 w-3 mr-1" />
+            {post.location}
+          </Badge>
         )}
-        
-        <div className="flex flex-wrap gap-2 mt-3">
-          {post.location && (
-            <Badge variant="outline" className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" />
-              {post.location}
-            </Badge>
-          )}
-          
-          {/* Display tagged organizations */}
-          {post.taggedOrganizationsDetails && post.taggedOrganizationsDetails.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {post.taggedOrganizationsDetails.map((org) => (
-                <Badge key={org.id} variant="secondary" className="flex items-center gap-1">
-                  <Tag className="h-3 w-3" />
-                  {org.name}
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
       </CardContent>
       
       <CardFooter className="flex-col space-y-2 pt-0">
@@ -221,7 +196,7 @@ export function FeedPost({ post, currentUser }: FeedPostProps) {
             {/* Comments list */}
             <div className="space-y-3 max-h-60 overflow-y-auto">
               {post.feed_comments && post.feed_comments.length > 0 ? (
-                post.feed_comments.map((comment) => (
+                post.feed_comments.map((comment: any) => (
                   <div key={comment.id} className="flex space-x-2">
                     <Avatar className="h-6 w-6">
                       <AvatarImage src={comment.profiles?.profile_image || ""} />
