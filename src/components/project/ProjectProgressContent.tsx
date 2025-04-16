@@ -4,7 +4,10 @@ import { ProjectTracker } from "@/components/project/ProjectTracker";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Trophy } from "lucide-react";
+import { PlusCircle, Trophy, CheckCircle2 } from "lucide-react";
+import { ReviewsList } from "@/components/reviews/ReviewsList";
+import { useReviews } from "@/hooks/use-reviews";
+import { useEffect, useState } from "react";
 
 interface ProjectProgressContentProps {
   projectId: string;
@@ -25,11 +28,49 @@ export function ProjectProgressContent({
   handleCompleteProject,
   projectStatus
 }: ProjectProgressContentProps) {
+  const [projectReviews, setProjectReviews] = useState([]);
+  const { getProjectReviews } = useReviews();
+  const isCompleted = projectStatus === "completed";
+
+  // Load project reviews when the component mounts
+  useEffect(() => {
+    async function loadReviews() {
+      if (projectId) {
+        const reviews = await getProjectReviews(projectId);
+        setProjectReviews(reviews);
+      }
+    }
+    loadReviews();
+  }, [projectId, getProjectReviews]);
+
   return (
     <>
-      <ProjectTracker projectId={projectId} isOwner={isOwner} />
+      <ProjectTracker projectId={projectId} isOwner={isOwner} readOnly={isCompleted} />
       
-      {canUpdateProgress && phases && phases.length > 0 && (
+      {isCompleted && (
+        <Card className="mt-6">
+          <CardHeader className="flex items-center">
+            <CheckCircle2 className="h-8 w-8 text-green-600 mb-2" />
+            <CardTitle>Project Complete</CardTitle>
+            <CardDescription>
+              This project has been completed successfully. No further updates can be made to the progress tracker.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+      
+      {isCompleted && (
+        <div className="mt-6">
+          <ReviewsList
+            reviews={projectReviews}
+            title="Project Reviews"
+            description="Reviews and feedback from project partners and organizers"
+            emptyMessage="No reviews have been submitted for this project yet"
+          />
+        </div>
+      )}
+      
+      {canUpdateProgress && phases && phases.length > 0 && !isCompleted && (
         <Card className="mt-4">
           <CardHeader>
             <CardTitle className="text-lg">Quick Progress Updates</CardTitle>
@@ -74,7 +115,7 @@ export function ProjectProgressContent({
       )}
       
       {/* Add Complete Project button at the bottom of the progress tab */}
-      {isOwner && projectStatus !== "completed" && (
+      {isOwner && !isCompleted && (
         <Card className="mt-6">
           <CardHeader>
             <CardTitle>Complete This Project</CardTitle>

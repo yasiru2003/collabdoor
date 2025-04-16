@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Check, Clock, ListChecks, PlusCircle, Loader2, Edit, Trash2 } from "lucide-react";
+import { Calendar as CalendarIcon, Check, Clock, ListChecks, PlusCircle, Loader2, Edit, Trash2, Lock } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -23,9 +23,10 @@ import { useAuth } from "@/hooks/use-auth";
 interface ProjectTrackerProps {
   projectId: string;
   isOwner: boolean;
+  readOnly?: boolean;
 }
 
-export function ProjectTracker({ projectId, isOwner }: ProjectTrackerProps) {
+export function ProjectTracker({ projectId, isOwner, readOnly = false }: ProjectTrackerProps) {
   const { data: phases, isLoading: phasesLoading, refetch } = useProjectPhases(projectId);
   const { addProjectPhase, updateProjectPhase, deleteProjectPhase, isLoading: mutationLoading } = useProjectPhasesMutations();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -84,6 +85,8 @@ export function ProjectTracker({ projectId, isOwner }: ProjectTrackerProps) {
   };
 
   const handleStatusChange = async (phaseId: string, status: 'not-started' | 'in-progress' | 'completed') => {
+    if (readOnly) return;
+    
     const updates: Partial<ProjectPhase> = { status };
     
     // If marked as completed, set the completed date
@@ -130,10 +133,15 @@ export function ProjectTracker({ projectId, isOwner }: ProjectTrackerProps) {
         <div>
           <CardTitle className="text-xl flex items-center gap-2">
             <ListChecks className="h-5 w-5" /> Project Tracker
+            {readOnly && <Lock className="h-4 w-4 ml-2 text-amber-600" />}
           </CardTitle>
-          <CardDescription>Track and manage project progress</CardDescription>
+          <CardDescription>
+            {readOnly 
+              ? "This project is completed. Progress tracker is in read-only mode." 
+              : "Track and manage project progress"}
+          </CardDescription>
         </div>
-        {isOwner && (
+        {isOwner && !readOnly && (
           <Button onClick={handleAddPhase} size="sm" className="flex items-center gap-1">
             <PlusCircle className="h-4 w-4" /> Add Phase
           </Button>
@@ -163,7 +171,7 @@ export function ProjectTracker({ projectId, isOwner }: ProjectTrackerProps) {
                     </div>
                     <div className="flex items-center gap-2">
                       {getStatusBadge(phase.status)}
-                      {isOwner && (
+                      {isOwner && !readOnly && (
                         <>
                           <Button variant="ghost" size="icon" onClick={() => handleEditPhase(phase)}>
                             <Edit className="h-4 w-4" />
@@ -191,7 +199,7 @@ export function ProjectTracker({ projectId, isOwner }: ProjectTrackerProps) {
                     )}
                   </div>
                   
-                  {isOwner && (
+                  {isOwner && !readOnly && (
                     <div className="flex gap-2 mt-3">
                       <Select
                         value={phase.status}
@@ -216,11 +224,11 @@ export function ProjectTracker({ projectId, isOwner }: ProjectTrackerProps) {
               <ListChecks className="h-12 w-12 mx-auto mb-3 opacity-50" />
               <h3 className="text-lg font-medium mb-1">No Phases Yet</h3>
               <p className="text-sm max-w-md mx-auto">
-                {isOwner 
+                {isOwner && !readOnly
                   ? "Get started by adding phases to track your project's progress."
                   : "The project organizer has not added any phases yet."}
               </p>
-              {isOwner && (
+              {isOwner && !readOnly && (
                 <Button onClick={handleAddPhase} className="mt-4">
                   <PlusCircle className="h-4 w-4 mr-2" /> Add First Phase
                 </Button>
@@ -231,117 +239,121 @@ export function ProjectTracker({ projectId, isOwner }: ProjectTrackerProps) {
       </CardContent>
       
       {/* Dialog for adding/editing phases */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>{editMode ? "Edit Phase" : "Add New Phase"}</DialogTitle>
-            <DialogDescription>
-              {editMode ? "Update the details of this project phase." : "Add a new phase to track project progress."}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="title">Phase Title</Label>
-              <Input
-                id="title"
-                value={currentPhase?.title || ''}
-                onChange={(e) => setCurrentPhase({...currentPhase, title: e.target.value})}
-                placeholder="e.g., Planning, Development, Testing"
-              />
+      {!readOnly && (
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>{editMode ? "Edit Phase" : "Add New Phase"}</DialogTitle>
+              <DialogDescription>
+                {editMode ? "Update the details of this project phase." : "Add a new phase to track project progress."}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="title">Phase Title</Label>
+                <Input
+                  id="title"
+                  value={currentPhase?.title || ''}
+                  onChange={(e) => setCurrentPhase({...currentPhase, title: e.target.value})}
+                  placeholder="e.g., Planning, Development, Testing"
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={currentPhase?.description || ''}
+                  onChange={(e) => setCurrentPhase({...currentPhase, description: e.target.value})}
+                  placeholder="Describe the activities in this phase..."
+                  rows={3}
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={currentPhase?.status || 'not-started'}
+                  onValueChange={(value) => setCurrentPhase({...currentPhase, status: value as 'not-started' | 'in-progress' | 'completed'})}
+                >
+                  <SelectTrigger id="status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="not-started">Not Started</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid gap-2">
+                <Label>Due Date (Optional)</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !currentPhase?.dueDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {currentPhase?.dueDate ? format(new Date(currentPhase.dueDate), "PPP") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={currentPhase?.dueDate ? new Date(currentPhase.dueDate) : undefined}
+                      onSelect={(date) => setCurrentPhase({
+                        ...currentPhase, 
+                        dueDate: date ? date.toISOString() : undefined
+                      })}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
             
-            <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={currentPhase?.description || ''}
-                onChange={(e) => setCurrentPhase({...currentPhase, description: e.target.value})}
-                placeholder="Describe the activities in this phase..."
-                rows={3}
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={currentPhase?.status || 'not-started'}
-                onValueChange={(value) => setCurrentPhase({...currentPhase, status: value as 'not-started' | 'in-progress' | 'completed'})}
-              >
-                <SelectTrigger id="status">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="not-started">Not Started</SelectItem>
-                  <SelectItem value="in-progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label>Due Date (Optional)</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !currentPhase?.dueDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {currentPhase?.dueDate ? format(new Date(currentPhase.dueDate), "PPP") : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={currentPhase?.dueDate ? new Date(currentPhase.dueDate) : undefined}
-                    onSelect={(date) => setCurrentPhase({
-                      ...currentPhase, 
-                      dueDate: date ? date.toISOString() : undefined
-                    })}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSavePhase} disabled={!currentPhase?.title || mutationLoading}>
-              {mutationLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {editMode ? "Update Phase" : "Add Phase"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSavePhase} disabled={!currentPhase?.title || mutationLoading}>
+                {mutationLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {editMode ? "Update Phase" : "Add Phase"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
       
       {/* Confirmation dialog for deleting phases */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Delete Phase</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this phase? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={confirmDeletePhase} disabled={mutationLoading}>
-              {mutationLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {!readOnly && (
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Delete Phase</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this phase? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <DialogFooter className="mt-4">
+              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={confirmDeletePhase} disabled={mutationLoading}>
+                {mutationLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </Card>
   );
 }

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -292,6 +291,7 @@ export default function ProjectDetailPage() {
         progressNote={progressNote}
         setProgressNote={setProgressNote}
         onSave={handleAddProgressNote}
+        projectStatus={project.status}
       />
       
       <CompletionDialog 
