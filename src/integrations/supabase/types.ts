@@ -295,6 +295,7 @@ export type Database = {
           organization_id: string | null
           organizer_id: string
           partnership_types: Database["public"]["Enums"]["partnership_type"][]
+          proposal_file_path: string | null
           required_skills: string[] | null
           start_date: string | null
           status: Database["public"]["Enums"]["project_status"]
@@ -312,6 +313,7 @@ export type Database = {
           organization_id?: string | null
           organizer_id: string
           partnership_types: Database["public"]["Enums"]["partnership_type"][]
+          proposal_file_path?: string | null
           required_skills?: string[] | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
@@ -329,6 +331,7 @@ export type Database = {
           organization_id?: string | null
           organizer_id?: string
           partnership_types?: Database["public"]["Enums"]["partnership_type"][]
+          proposal_file_path?: string | null
           required_skills?: string[] | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]

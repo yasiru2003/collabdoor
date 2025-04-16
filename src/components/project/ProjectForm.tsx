@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Upload } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -35,6 +36,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PartnershipType, Organization } from "@/types";
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ACCEPTED_FILE_TYPES = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+
 const formSchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters" }),
   description: z.string().min(10, { message: "Description must be at least 10 characters" }),
@@ -45,6 +49,17 @@ const formSchema = z.object({
   partnershipTypes: z.array(z.string()).min(1, { message: "Select at least one partnership type" }),
   requiredSkills: z.array(z.string()).optional(),
   organizationId: z.string().optional(),
+  proposalFile: z
+    .instanceof(File)
+    .optional()
+    .refine(
+      (file) => !file || file.size <= MAX_FILE_SIZE,
+      "File size must be less than 10MB"
+    )
+    .refine(
+      (file) => !file || ACCEPTED_FILE_TYPES.includes(file.type),
+      "Only PDF and Word documents are accepted"
+    ),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -56,6 +71,7 @@ export function ProjectForm() {
   const [newSkill, setNewSkill] = useState("");
   const [userOrganizations, setUserOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -128,6 +144,14 @@ export function ProjectForm() {
       form.getValues().requiredSkills?.filter((s) => s !== skill) || []
     );
   };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      form.setValue("proposalFile", file);
+    }
+  };
   
   const onSubmit = async (values: FormValues) => {
     if (!user) {
@@ -142,6 +166,23 @@ export function ProjectForm() {
     setIsSubmitting(true);
     
     try {
+      let proposal_file_path = null;
+      
+      // Upload proposal file if selected
+      if (values.proposalFile) {
+        const fileExt = values.proposalFile.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('project_proposals')
+          .upload(filePath, values.proposalFile);
+        
+        if (uploadError) throw uploadError;
+        
+        proposal_file_path = filePath;
+      }
+      
       const projectData = {
         title: values.title,
         description: values.description,
@@ -152,8 +193,9 @@ export function ProjectForm() {
         partnership_types: values.partnershipTypes as PartnershipType[],
         required_skills: values.requiredSkills,
         organizer_id: user.id,
-        organization_id: values.organizationId || null,
+        organization_id: values.organizationId === "none" ? null : values.organizationId || null,
         status: "published" as "draft" | "published" | "in-progress" | "completed",
+        proposal_file_path: proposal_file_path,
       };
       
       const { data, error } = await supabase.from("projects").insert(projectData).select();
@@ -266,6 +308,51 @@ export function ProjectForm() {
                 )}
               />
             </div>
+            
+            {/* Project Proposal File Upload */}
+            <FormField
+              control={form.control}
+              name="proposalFile"
+              render={({ field: { value, onChange, ...fieldProps } }) => (
+                <FormItem>
+                  <FormLabel>Project Proposal</FormLabel>
+                  <FormDescription>
+                    Upload a detailed project proposal document (optional, PDF or Word, max 10MB)
+                  </FormDescription>
+                  <FormControl>
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          onChange={handleFileChange}
+                          className="flex-1"
+                          {...fieldProps}
+                        />
+                      </div>
+                      {selectedFile && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span>Selected file: {selectedFile.name}</span>
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => {
+                              setSelectedFile(null);
+                              form.setValue("proposalFile", undefined);
+                            }}
+                            className="h-auto p-1"
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             {/* Organization selection */}
             {userOrganizations.length > 0 && (
@@ -478,7 +565,17 @@ export function ProjectForm() {
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Create Project"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Create Project
+                  </>
+                )}
               </Button>
             </div>
           </form>

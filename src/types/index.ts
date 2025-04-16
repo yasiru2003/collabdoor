@@ -42,6 +42,7 @@ export interface Project {
   image?: string;
   requiredSkills?: string[];
   location?: string;
+  proposalFilePath?: string;
   partners?: {
     id: string;
     name: string;
