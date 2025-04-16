@@ -74,8 +74,15 @@ export function useProjectApplications(projectId: string | undefined) {
         }
       }
       
-      console.log("Project applications fetched:", applications);
-      return applications || [];
+      // Ensure we always return objects that conform to the ApplicationWithProfile type
+      // by adding the profiles property (as null) to each application
+      const typedApplications: ApplicationWithProfile[] = applications?.map(app => ({
+        ...app,
+        profiles: null
+      })) || [];
+      
+      console.log("Project applications fetched:", typedApplications);
+      return typedApplications;
     },
     enabled: !!projectId,
   });

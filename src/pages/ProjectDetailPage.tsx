@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -449,7 +448,7 @@ export default function ProjectDetailPage() {
     );
   };
 
-// Let's focus on fixing the applications table section with proper null checks and TypeScript type safety
+// Let's specifically fix the renderApplicationsTable function that's causing the error
 const renderApplicationsTable = () => {
   if (!isOwner || !projectApplications || projectApplications.length === 0) {
     return null;
@@ -476,8 +475,8 @@ const renderApplicationsTable = () => {
             {projectApplications.map((application) => {
               console.log("Rendering application:", application);
               
-              // Check if application has profiles property to avoid TypeScript error
-              const hasProfileData = 'profiles' in application && application.profiles;
+              // Extract profile data safely with proper type checks
+              const hasProfileData = application && 'profiles' in application && application.profiles;
               
               // Extract profile data with safe access
               const profileImage = hasProfileData ? application.profiles?.profile_image || "" : "";
