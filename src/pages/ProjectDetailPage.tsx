@@ -472,14 +472,16 @@ const renderApplicationsTable = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {projectApplications.map((application: ApplicationWithProfile) => {
+            {projectApplications.map((application) => {
               console.log("Rendering application:", application);
               
+              // Check if application has profiles property to avoid TypeScript error
+              const hasProfileData = 'profiles' in application && application.profiles;
+              
               // Extract profile data with safe access
-              const profiles = application.profiles || {} as ProfileData;
-              const profileImage = profiles.profile_image || "";
-              const profileName = profiles.name || "Unknown";
-              const profileEmail = profiles.email || "";
+              const profileImage = hasProfileData ? application.profiles?.profile_image || "" : "";
+              const profileName = hasProfileData ? application.profiles?.name || "Unknown" : "Unknown";
+              const profileEmail = hasProfileData ? application.profiles?.email || "" : "";
               
               // Only calculate initials if we have a valid name
               const initials = profileName !== "Unknown" 

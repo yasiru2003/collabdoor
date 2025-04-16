@@ -1,29 +1,8 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { handleSupabaseError } from "./use-supabase-utils";
-
-// Define interface for profile data
-export interface ProfileData {
-  id?: string;
-  name?: string;
-  email?: string;
-  profile_image?: string;
-}
-
-// Define interface for application data with profile field
-export interface ApplicationWithProfile {
-  id: string;
-  project_id: string;
-  user_id: string;
-  status: "pending" | "approved" | "rejected";
-  partnership_type: string;
-  message?: string;
-  created_at: string;
-  updated_at: string;
-  profiles?: ProfileData | null;
-}
+import { ApplicationWithProfile, ProfileData } from "@/types";
 
 /**
  * Hook to fetch all applications for a specific project
