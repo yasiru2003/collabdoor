@@ -98,7 +98,10 @@ export default function PartnersPage() {
           .update({ status: "active" })
           .eq("id", partnershipId);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error updating partnership:", error);
+          throw error;
+        }
       }
 
       toast({
@@ -154,7 +157,10 @@ export default function PartnersPage() {
           .update({ status: "rejected" })
           .eq("id", partnershipId);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error updating partnership:", error);
+          throw error;
+        }
       }
 
       toast({

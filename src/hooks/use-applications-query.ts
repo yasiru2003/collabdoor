@@ -246,7 +246,10 @@ export function useProjectApplications() {
       if (error) throw error;
 
       if (status === "approved") {
-        // Create partnership record
+        // Create partnership record - Use service role (or authenticated user with correct permissions)
+        // We need to make sure this user has correct permissions to insert into partnerships table
+        const { data: currentUser } = await supabase.auth.getUser();
+        
         const { error: partnershipError } = await supabase
           .from("partnerships")
           .insert({
@@ -257,7 +260,18 @@ export function useProjectApplications() {
             status: "active"
           });
 
-        if (partnershipError) throw partnershipError;
+        if (partnershipError) {
+          console.error("Error creating partnership:", partnershipError);
+          
+          // If row level security blocks the partnership creation, we'll update the application status but show a warning
+          toast({
+            title: "Application approved with warning",
+            description: "The application status was updated but there was an issue creating the partnership record. Please check your database permissions.",
+            variant: "warning"
+          });
+          
+          // Still proceed with notification
+        }
       }
 
       // Send notification to applicant
