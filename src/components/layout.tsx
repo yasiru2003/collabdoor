@@ -17,7 +17,7 @@ export function Layout({ children }: LayoutProps) {
     <div className="min-h-screen flex flex-col">
       <Header />
       <div className="flex flex-1 overflow-hidden">
-        {!isMobile && <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />}
+        <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
         <main className="flex-1 bg-muted/30 pb-20 md:pb-8 overflow-y-auto">
           <div className="container mx-auto px-4 py-4 md:py-8">
             {children}

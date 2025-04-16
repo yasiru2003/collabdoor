@@ -1,3 +1,4 @@
+
 import {
   Layout,
   FolderKanban,
@@ -61,10 +62,10 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild={!isMobile ? "div" : "button"}>
+      <SheetTrigger asChild>
         <aside
-          className={`fixed left-0 top-0 z-50 flex h-full w-72.5 flex-col border-r bg-background duration-300 ease-linear md:block ${
-            open ? "translate-x-0" : "-translate-x-full"
+          className={`fixed left-0 top-0 z-20 flex h-full w-72.5 flex-col border-r bg-background duration-300 ease-linear md:relative md:z-0 ${
+            open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
           }`}
         >
           <div className="px-6 py-4">
@@ -87,7 +88,9 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
                 <Button
                   key={item.name}
                   variant="ghost"
-                  className="justify-start px-4"
+                  className={`justify-start px-4 ${
+                    pathname === item.href ? "bg-accent text-accent-foreground" : ""
+                  }`}
                   asChild
                 >
                   <Link to={item.href} className="w-full">
@@ -105,7 +108,9 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
                 <Button
                   key={item.name}
                   variant="ghost"
-                  className="justify-start px-4"
+                  className={`justify-start px-4 ${
+                    pathname === item.href ? "bg-accent text-accent-foreground" : ""
+                  }`}
                   asChild
                 >
                   <Link to={item.href} className="w-full">
@@ -134,14 +139,79 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
           </div>
         </aside>
       </SheetTrigger>
-      <SheetContent side="left" className="w-72.5">
-        <SheetHeader>
-          <SheetTitle>Are you sure absolutely sure?</SheetTitle>
-          <SheetDescription>
-            This action cannot be undone. This will permanently delete your
-            account and remove your data from our servers.
-          </SheetDescription>
-        </SheetHeader>
+      <SheetContent side="left" className="w-72.5 p-0">
+        <div className="flex h-full flex-col">
+          {/* Mobile sidebar content - same as desktop */}
+          <div className="px-6 py-4">
+            <Link to="/dashboard" className="flex items-center space-x-2">
+              <Avatar>
+                <AvatarImage src={user?.user_metadata?.profile_image || ""} />
+                <AvatarFallback>
+                  {user?.email?.substring(0, 2).toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <span className="font-bold">{user?.user_metadata?.name || user?.email}</span>
+            </Link>
+          </div>
+
+          <Separator />
+
+          <ScrollArea className="flex-1">
+            <div className="flex flex-col space-y-1 px-2 py-4">
+              {navigation.map((item) => (
+                <Button
+                  key={item.name}
+                  variant="ghost"
+                  className={`justify-start px-4 ${
+                    pathname === item.href ? "bg-accent text-accent-foreground" : ""
+                  }`}
+                  asChild
+                >
+                  <Link to={item.href} className="w-full">
+                    <item.icon className="mr-2 h-4 w-4" />
+                    {item.name}
+                  </Link>
+                </Button>
+              ))}
+            </div>
+
+            <Separator />
+
+            <div className="flex flex-col space-y-1 px-2 py-4">
+              {profileActions.map((item) => (
+                <Button
+                  key={item.name}
+                  variant="ghost"
+                  className={`justify-start px-4 ${
+                    pathname === item.href ? "bg-accent text-accent-foreground" : ""
+                  }`}
+                  asChild
+                >
+                  <Link to={item.href} className="w-full">
+                    <item.icon className="mr-2 h-4 w-4" />
+                    {item.name}
+                  </Link>
+                </Button>
+              ))}
+            </div>
+          </ScrollArea>
+
+          <Separator />
+
+          <div className="flex items-center px-6 py-4">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={async () => {
+                await signOut();
+                navigate("/login");
+              }}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Log out
+            </Button>
+          </div>
+        </div>
       </SheetContent>
     </Sheet>
   );
