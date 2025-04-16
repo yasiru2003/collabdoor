@@ -370,7 +370,7 @@ export default function ProjectDetailPage() {
     );
   };
 
-// Let's focus on fixing the applications table section
+// Let's focus on fixing the applications table section with proper null checks
 const renderApplicationsTable = () => {
   if (!isOwner || !projectApplications || projectApplications.length === 0) {
     return null;
@@ -395,7 +395,7 @@ const renderApplicationsTable = () => {
           </TableHeader>
           <TableBody>
             {projectApplications.map((application) => {
-              // Extract profile data safely with type checking
+              // Safely extract profile data with null checks
               const profileImage = application.profiles && typeof application.profiles === 'object' && 
                 'profile_image' in application.profiles ? 
                 String(application.profiles.profile_image || "") : "";
@@ -408,6 +408,7 @@ const renderApplicationsTable = () => {
                 'email' in application.profiles ? 
                 String(application.profiles.email || "") : "";
               
+              // Only calculate initials if we have a valid name
               const initials = profileName !== "Unknown" ? 
                 profileName.substring(0, 2).toUpperCase() : "??";
 
@@ -434,7 +435,7 @@ const renderApplicationsTable = () => {
                   <TableCell>
                     <Badge 
                       variant={
-                        application.status === "approved" ? "default" : 
+                        application.status === "approved" ? "success" : 
                         application.status === "rejected" ? "destructive" : 
                         "secondary"
                       }
