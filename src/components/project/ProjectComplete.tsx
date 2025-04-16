@@ -20,7 +20,7 @@ interface ProjectCompleteProps {
   onCancel?: () => void; // Add the optional onCancel prop
 }
 
-export function ProjectComplete({ projectId, projectTitle, partners, onComplete, onCancel }: ProjectCompleteProps) {
+export function ProjectComplete({ projectId, projectTitle, partners = [], onComplete, onCancel }: ProjectCompleteProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);

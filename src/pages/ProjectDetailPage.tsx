@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -918,28 +917,3 @@ const renderApplicationsTable = () => {
               />
             </div>
           </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setProgressDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddProgressNote}>
-              Save Progress Update
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Project Completion Dialog */}
-      <Dialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <ProjectComplete 
-            projectId={id as string} 
-            onComplete={onProjectCompleted} 
-            onCancel={() => setCompleteDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
-    </Layout>
-  );
-}
