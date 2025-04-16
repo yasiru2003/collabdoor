@@ -96,9 +96,11 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
           </SidebarLink>
         </div>
 
-        <Button className="w-full gap-2 mb-8">
-          <PlusCircle className="h-4 w-4" />
-          <span>New Project</span>
+        <Button asChild className="w-full gap-2 mb-8">
+          <Link to="/projects/new">
+            <PlusCircle className="h-4 w-4" />
+            <span>New Project</span>
+          </Link>
         </Button>
 
         <div className="absolute bottom-8 left-0 right-0 px-4">

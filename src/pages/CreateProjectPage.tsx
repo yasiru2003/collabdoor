@@ -7,12 +7,12 @@ import { useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 
 export default function CreateProjectPage() {
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth(); // Changed isLoading to loading to match the AuthContext type
   const navigate = useNavigate();
   
   // Redirect if not authenticated
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!loading && !user) {
       toast({
         title: "Authentication required",
         description: "Please login to create a project",
@@ -20,9 +20,9 @@ export default function CreateProjectPage() {
       });
       navigate("/login", { state: { from: "/projects/new" } });
     }
-  }, [user, isLoading, navigate]);
+  }, [user, loading, navigate]);
   
-  if (isLoading) {
+  if (loading) {
     return (
       <Layout>
         <div className="flex justify-center items-center min-h-[60vh]">
