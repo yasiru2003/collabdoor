@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast as sonnerToast } from "@/components/ui/sonner";
@@ -339,12 +340,15 @@ export function useProjectApplications(projectId: string | undefined) {
     queryFn: async () => {
       if (!projectId) return [];
 
-      // Use explicit join to properly get profiles data
+      // Modified query to fix the relationship issue
       const { data, error } = await supabase
         .from("project_applications")
         .select(`
           *,
-          profiles:profiles(id, name, email, profile_image)
+          user:user_id(
+            id,
+            profiles:profiles!inner(id, name, email, profile_image)
+          )
         `)
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
@@ -359,7 +363,11 @@ export function useProjectApplications(projectId: string | undefined) {
         throw error;
       }
 
-      return data || [];
+      // Transform the data to match the expected format in ProjectDetailPage
+      return data?.map(app => ({
+        ...app,
+        profiles: app.user?.profiles || null
+      })) || [];
     },
     enabled: !!projectId,
   });

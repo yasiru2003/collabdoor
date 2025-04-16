@@ -395,26 +395,13 @@ const renderApplicationsTable = () => {
           </TableHeader>
           <TableBody>
             {projectApplications.map((application) => {
-              // Safely extract profile data with null checks
-              const profiles = application.profiles || {};
+              // Safely extract profile data with proper null checks
+              const profile = application.profiles || {};
               
-              // Check if profiles is an object and has the expected properties
-              const isValidProfileObject = typeof profiles === 'object' && profiles !== null;
-              
-              // Extract profile image with proper null checks
-              const profileImage = isValidProfileObject && 'profile_image' in profiles 
-                ? String(profiles.profile_image || "") 
-                : "";
-              
-              // Extract profile name with proper null checks
-              const profileName = isValidProfileObject && 'name' in profiles 
-                ? String(profiles.name || "Unknown") 
-                : "Unknown";
-              
-              // Extract profile email with proper null checks
-              const profileEmail = isValidProfileObject && 'email' in profiles 
-                ? String(profiles.email || "") 
-                : "";
+              // Extract profile data with proper null checks
+              const profileImage = profile.profile_image || "";
+              const profileName = profile.name || "Unknown";
+              const profileEmail = profile.email || "";
               
               // Only calculate initials if we have a valid name
               const initials = profileName !== "Unknown" 
