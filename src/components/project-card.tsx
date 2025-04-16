@@ -3,9 +3,9 @@ import { Project } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Calendar, MapPin, Users, Check, Loader2 } from "lucide-react";
+import { Calendar, MapPin, Users, Check, Loader2, BarChart2 } from "lucide-react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { useState, useEffect } from "react";
 import { useProjectApplications } from "@/hooks/use-project-applications";
@@ -32,6 +32,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const { user } = useAuth();
   const { checkApplicationStatus, applyToProject, isLoading } = useProjectApplications();
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
+  const navigate = useNavigate();
   
   // Check if current user is the project owner
   const isOwner = user && user.id === project.organizerId;
@@ -80,10 +81,20 @@ export function ProjectCard({ project }: ProjectCardProps) {
     }
   };
 
+  // Navigate to project detail with progress tab focused
+  const handleProgressClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate(`/projects/${project.id}?tab=progress`);
+  };
+
   // Render apply button based on conditions
   const renderApplyButton = () => {
     if (isOwner) {
-      return null; // Don't show apply button for the project owner
+      return (
+        <Button size="sm" variant="outline" onClick={handleProgressClick}>
+          <BarChart2 className="h-4 w-4 mr-1" /> Progress
+        </Button>
+      );
     }
     
     if (applicationStatus === "pending") {
@@ -96,9 +107,14 @@ export function ProjectCard({ project }: ProjectCardProps) {
     
     if (applicationStatus === "approved") {
       return (
-        <Button size="sm" variant="outline" className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800" disabled>
-          <Check className="h-4 w-4 mr-1" /> Approved
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800" disabled>
+            <Check className="h-4 w-4 mr-1" /> Approved
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleProgressClick}>
+            <BarChart2 className="h-4 w-4" />
+          </Button>
+        </div>
       );
     }
     

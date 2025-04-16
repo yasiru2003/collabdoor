@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Project, PartnershipType } from "@/types";
+import { Project, PartnershipType, ProjectPhase } from "@/types";
 import { useProject } from "@/hooks/use-projects-query";
 import { useProjectApplications, ApplicationWithProfile, ProfileData } from "@/hooks/use-applications-query";
 import { format } from "date-fns";
@@ -37,6 +37,8 @@ import {
   Check,
   Loader2,
   X,
+  BarChart2,
+  PlusCircle
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useProjectApplications as useProjectApps } from "@/hooks/use-project-applications";
@@ -51,18 +53,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useProjectPhases } from "@/hooks/use-supabase-query";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { data: project, isLoading, error } = useProject(id);
   const [saved, setSaved] = useState(false);
@@ -78,9 +77,22 @@ export default function ProjectDetailPage() {
   const [applicationOpen, setApplicationOpen] = useState(false);
   const [partnershipType, setPartnershipType] = useState<PartnershipType>("skilled");
   const [message, setMessage] = useState("");
+  const [progressDialogOpen, setProgressDialogOpen] = useState(false);
+  const [progressNote, setProgressNote] = useState("");
+  const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
+  const { data: phases } = useProjectPhases(id);
+  
+  // Get default tab from URL or set to "overview"
+  const defaultTab = searchParams.get("tab") || "overview";
 
   // Check if current user is the project owner
   const isOwner = user && project && user.id === project.organizerId;
+  
+  // Check if current user is an approved partner
+  const isApprovedPartner = applicationStatus === "approved";
+  
+  // Check if user can update progress (either owner or approved partner)
+  const canUpdateProgress = isOwner || isApprovedPartner;
 
   useEffect(() => {
     // Simulate checking if project is saved
@@ -124,6 +136,28 @@ export default function ProjectDetailPage() {
       setApplicationStatus("pending");
       setApplicationOpen(false);
       setMessage("");
+    }
+  };
+
+  const handleUpdateApplicationStatus = async (applicationId: string, status: "approved" | "rejected") => {
+    await updateApplicationStatus(applicationId, status);
+  };
+  
+  const openProgressDialog = (phaseId: string) => {
+    setSelectedPhaseId(phaseId);
+    setProgressNote("");
+    setProgressDialogOpen(true);
+  };
+  
+  const handleAddProgressNote = () => {
+    // This would be connected to a real backend function to save progress notes
+    if (progressNote.trim() && selectedPhaseId) {
+      toast({
+        title: "Progress Update Added",
+        description: "Your progress update has been saved successfully.",
+      });
+      setProgressDialogOpen(false);
+      setProgressNote("");
     }
   };
 
@@ -574,78 +608,182 @@ const renderApplicationsTable = () => {
                 </>
               )}
             </Button>
+            {canUpdateProgress && (
+              <Button
+                variant="progress"
+                size="sm"
+                onClick={() => setSearchParams({ tab: "progress" })}
+                className="flex items-center gap-1"
+              >
+                <BarChart2 className="h-4 w-4" /> Track Progress
+              </Button>
+            )}
             {renderApplyButton()}
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 space-y-6">
-            <Card>
-              <CardHeader className="p-0">
-                {project.image ? (
-                  <div className="aspect-video w-full overflow-hidden rounded-t-lg">
-                    <img
-                      src={project.image}
-                      alt={project.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="aspect-video w-full overflow-hidden rounded-t-lg bg-muted flex items-center justify-center">
-                    <Building2Icon className="h-16 w-16 text-muted-foreground" />
-                  </div>
-                )}
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Published {format(new Date(project.createdAt), "MMM d, yyyy")}
-                    </p>
-                    {renderTimeline()}
-                  </div>
-                  <Separator />
-                  <div>
-                    <h2 className="text-xl font-semibold mb-2">About the Project</h2>
-                    <p className="whitespace-pre-line">{project.description}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {renderApplicationsTable()}
-          </div>
-
-          <div className="space-y-6">
-            <Card>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src="" alt={project.organizerName} />
-                      <AvatarFallback className="bg-primary text-primary-foreground">
-                        {project.organizerName.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-medium">{project.organizerName}</h3>
-                      <p className="text-sm text-muted-foreground">Project Organizer</p>
+        <Tabs defaultValue={defaultTab} onValueChange={(value) => setSearchParams({ tab: value })}>
+          <TabsList className="mb-6">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="progress">Progress Tracker</TabsTrigger>
+            {isOwner && <TabsTrigger value="applications">Applications</TabsTrigger>}
+          </TabsList>
+          
+          <TabsContent value="overview">
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="md:col-span-2 space-y-6">
+                <Card>
+                  <CardHeader className="p-0">
+                    {project.image ? (
+                      <div className="aspect-video w-full overflow-hidden rounded-t-lg">
+                        <img
+                          src={project.image}
+                          alt={project.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="aspect-video w-full overflow-hidden rounded-t-lg bg-muted flex items-center justify-center">
+                        <Building2Icon className="h-16 w-16 text-muted-foreground" />
+                      </div>
+                    )}
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Published {format(new Date(project.createdAt), "MMM d, yyyy")}
+                        </p>
+                        {renderTimeline()}
+                      </div>
+                      <Separator />
+                      <div>
+                        <h2 className="text-xl font-semibold mb-2">About the Project</h2>
+                        <p className="whitespace-pre-line">{project.description}</p>
+                      </div>
                     </div>
-                  </div>
-                  <Separator />
-                  {renderPartnershipTypes()}
-                  {renderRequiredSkills()}
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              </div>
 
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">How You Can Partner</h2>
-              {renderPartnershipCards()}
+              <div className="space-y-6">
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src="" alt={project.organizerName} />
+                          <AvatarFallback className="bg-primary text-primary-foreground">
+                            {project.organizerName.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h3 className="font-medium">{project.organizerName}</h3>
+                          <p className="text-sm text-muted-foreground">Project Organizer</p>
+                        </div>
+                      </div>
+                      <Separator />
+                      {renderPartnershipTypes()}
+                      {renderRequiredSkills()}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="space-y-4">
+                  <h2 className="text-xl font-semibold">How You Can Partner</h2>
+                  {renderPartnershipCards()}
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="progress">
+            <ProjectTracker projectId={id as string} isOwner={isOwner} />
+            
+            {canUpdateProgress && phases && phases.length > 0 && (
+              <Card className="mt-4">
+                <CardHeader>
+                  <CardTitle className="text-lg">Quick Progress Updates</CardTitle>
+                  <CardDescription>Add progress updates to specific phases</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {phases.map((phase: ProjectPhase) => (
+                      <Card key={phase.id} className="overflow-hidden">
+                        <CardHeader className="p-4 pb-2">
+                          <CardTitle className="text-base">{phase.title}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0">
+                          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{phase.description}</p>
+                          <Badge 
+                            variant="outline" 
+                            className={
+                              phase.status === 'completed' ? "bg-green-100 text-green-800" : 
+                              phase.status === 'in-progress' ? "bg-blue-100 text-blue-800" : "bg-gray-100"
+                            }
+                          >
+                            {phase.status === 'not-started' ? 'Not Started' : 
+                             phase.status === 'in-progress' ? 'In Progress' : 'Completed'}
+                          </Badge>
+                        </CardContent>
+                        <CardFooter className="p-4 pt-0">
+                          <Button 
+                            onClick={() => openProgressDialog(phase.id)} 
+                            className="w-full" 
+                            size="sm"
+                            variant={phase.status === 'not-started' ? "outline" : "progress"}
+                          >
+                            <PlusCircle className="h-4 w-4 mr-1" />
+                            Add Progress Update
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="applications">
+            {renderApplicationsTable()}
+          </TabsContent>
+        </Tabs>
+      </div>
+      
+      {/* Progress Update Dialog */}
+      <Dialog open={progressDialogOpen} onOpenChange={setProgressDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Add Progress Update</DialogTitle>
+            <DialogDescription>
+              Provide details about the progress made on this phase.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="progress-note">Progress Notes</Label>
+              <Textarea
+                id="progress-note"
+                placeholder="Describe the progress made, challenges encountered, and next steps..."
+                value={progressNote}
+                onChange={(e) => setProgressNote(e.target.value)}
+                rows={5}
+              />
             </div>
           </div>
-        </div>
-      </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProgressDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="progress" onClick={handleAddProgressNote}>
+              Save Progress Update
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
