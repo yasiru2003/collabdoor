@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,11 +13,9 @@ import {
 } from "./ui/dropdown-menu";
 import { Bell, Menu } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { toast } from "@/hooks/use-toast";
 
 export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) {
   const { user, signOut } = useAuth();
-  const [hasNotifications] = useState(true);
 
   const handleLogout = async () => {
     try {
@@ -25,13 +23,6 @@ export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) 
     } catch (error) {
       console.error("Error signing out:", error);
     }
-  };
-
-  const handleNotificationClick = () => {
-    toast({
-      title: "Notifications",
-      description: "You have 3 unread notifications",
-    });
   };
 
   return (
@@ -51,16 +42,24 @@ export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) 
           </Link>
         </div>
 
-        {/* Removed the navigation links that were here */}
+        <div className="hidden md:flex items-center gap-6">
+          <Link to="/projects" className="text-muted-foreground hover:text-foreground">
+            Projects
+          </Link>
+          <Link to="/partners" className="text-muted-foreground hover:text-foreground">
+            Partners
+          </Link>
+          <Link to="/messages" className="text-muted-foreground hover:text-foreground">
+            Messages
+          </Link>
+        </div>
 
         <div className="flex items-center gap-4">
           {user ? (
             <>
-              <Button variant="ghost" size="icon" className="relative" onClick={handleNotificationClick}>
+              <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
-                {hasNotifications && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full"></span>
-                )}
+                <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full"></span>
               </Button>
               
               <DropdownMenu>
@@ -85,11 +84,6 @@ export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) 
                   <DropdownMenuItem asChild>
                     <Link to="/settings" className="cursor-pointer w-full">Settings</Link>
                   </DropdownMenuItem>
-                  {user.email === "yasirubandaraprivate@gmail.com" && (
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin" className="cursor-pointer w-full">Admin Panel</Link>
-                    </DropdownMenuItem>
-                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
                 </DropdownMenuContent>
