@@ -1,14 +1,11 @@
 
 import { Link } from "react-router-dom";
-import { Button } from "./ui/button";
 import { 
   Home, 
   Users, 
   MessageSquare, 
   BookOpen, 
   Settings, 
-  PlusCircle,
-  X,
   Building
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -95,13 +92,6 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
             Organizations
           </SidebarLink>
         </div>
-
-        <Button asChild className="w-full gap-2 mb-8">
-          <Link to="/projects/new">
-            <PlusCircle className="h-4 w-4" />
-            <span>New Project</span>
-          </Link>
-        </Button>
 
         <div className="absolute bottom-8 left-0 right-0 px-4">
           <SidebarLink to="/settings" icon={Settings}>
