@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Clock, Folder, LayoutDashboard, Mail, Users } from "lucide-react";
+import { CalendarDays, Clock, Folder, LayoutDashboard, Mail, Users, Users2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +17,7 @@ const DashboardPage = () => {
   const { user } = useAuth();
   const [projects, setProjects] = useState<any[]>([]);
   const [userApplications, setUserApplications] = useState<any[]>([]);
+  const [receivedApplications, setReceivedApplications] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { getUserApplications, updateApplicationStatus } = useProjectApplications();
   const queryClient = useQueryClient();
@@ -37,6 +38,27 @@ const DashboardPage = () => {
           console.error("Error fetching projects:", projectError);
         } else {
           setProjects(projectData || []);
+          
+          // Fetch received applications for the user's projects
+          if (projectData && projectData.length > 0) {
+            const projectIds = projectData.map(project => project.id);
+            
+            const { data: applications, error: applicationsError } = await supabase
+              .from("project_applications")
+              .select(`
+                *,
+                projects(*),
+                profiles:profiles(*)
+              `)
+              .in("project_id", projectIds)
+              .order("created_at", { ascending: false });
+              
+            if (applicationsError) {
+              console.error("Error fetching received applications:", applicationsError);
+            } else {
+              setReceivedApplications(applications || []);
+            }
+          }
         }
 
         // Fetch user applications
@@ -72,6 +94,25 @@ const DashboardPage = () => {
         if (user?.id) {
           const applications = await getUserApplications(user.id);
           setUserApplications(applications);
+          
+          // Refresh received applications
+          if (projects.length > 0) {
+            const projectIds = projects.map(project => project.id);
+            
+            const { data: receivedApps, error } = await supabase
+              .from("project_applications")
+              .select(`
+                *,
+                projects(*),
+                profiles:profiles(*)
+              `)
+              .in("project_id", projectIds)
+              .order("created_at", { ascending: false });
+              
+            if (!error) {
+              setReceivedApplications(receivedApps || []);
+            }
+          }
         }
         
         toast({
@@ -119,6 +160,10 @@ const DashboardPage = () => {
             <TabsTrigger value="projects">
               <Folder className="h-4 w-4 mr-2" />
               My Projects
+            </TabsTrigger>
+            <TabsTrigger value="received">
+              <Users2 className="h-4 w-4 mr-2" />
+              Received Applications
             </TabsTrigger>
           </TabsList>
 
@@ -248,6 +293,99 @@ const DashboardPage = () => {
                   </p>
                   <Button asChild>
                     <Link to="/projects/create">Create Your First Project</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="received" className="space-y-4">
+            <h2 className="text-xl font-semibold">Applications to My Projects</h2>
+            
+            {isLoading ? (
+              <div className="flex items-center justify-center py-10">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+              </div>
+            ) : receivedApplications.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {receivedApplications.map((application) => {
+                  // Safely extract profile data with null checks
+                  const profiles = application.profiles || {};
+                  
+                  // Extract profile data with proper null checks
+                  const profileName = profiles && profiles.name ? profiles.name : "Unknown";
+                  const profileEmail = profiles && profiles.email ? profiles.email : "";
+                  
+                  return (
+                    <Card key={application.id} className="overflow-hidden">
+                      <CardHeader className="pb-2">
+                        <div className="flex justify-between items-start">
+                          <CardTitle className="text-lg">
+                            <Link to={`/projects/${application.project_id}`} className="hover:text-primary transition-colors">
+                              {application.projects?.title || "Untitled Project"}
+                            </Link>
+                          </CardTitle>
+                          <Badge variant={getStatusBadgeVariant(application.status)}>
+                            {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                          </Badge>
+                        </div>
+                        <CardDescription>
+                          From: <span className="font-medium">{profileName}</span>
+                          {profileEmail && <span className="text-xs ml-2">({profileEmail})</span>}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="pb-2">
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <div className="flex items-center">
+                            <CalendarDays className="mr-2 h-4 w-4" />
+                            Applied on {new Date(application.created_at).toLocaleDateString()}
+                          </div>
+                          <div className="flex items-center">
+                            <Users className="mr-2 h-4 w-4" />
+                            Partnership Type: {application.partnership_type}
+                          </div>
+                          {application.message && (
+                            <div className="mt-2">
+                              <p className="font-medium text-sm">Applicant message:</p>
+                              <p className="text-sm italic">{application.message}</p>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                      {application.status === "pending" && (
+                        <CardFooter className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="text-green-700 hover:bg-green-100"
+                            onClick={() => handleUpdateStatus(application.id, "approved")}
+                          >
+                            Approve
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="text-red-700 hover:bg-red-100"
+                            onClick={() => handleUpdateStatus(application.id, "rejected")}
+                          >
+                            Reject
+                          </Button>
+                        </CardFooter>
+                      )}
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <Card className="bg-muted/50">
+                <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+                  <Users2 className="h-10 w-10 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Applications Received</h3>
+                  <p className="text-muted-foreground mb-4">
+                    You haven't received any applications to your projects yet.
+                  </p>
+                  <Button asChild variant="secondary">
+                    <Link to="/projects">View Your Projects</Link>
                   </Button>
                 </CardContent>
               </Card>
