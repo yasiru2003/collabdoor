@@ -52,6 +52,23 @@ import type {
   TablesUpdate 
 } from "@/integrations/supabase/types";
 
+// Define a type for join requests with profiles
+interface JoinRequestWithProfile {
+  id: string;
+  user_id: string;
+  organization_id: string;
+  status: string;
+  message?: string;
+  created_at: string;
+  updated_at: string;
+  organizations?: { name: string };
+  profiles?: {
+    name?: string;
+    email?: string;
+    profile_image?: string;
+  };
+}
+
 export function AdminOrganizations() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOrg, setSelectedOrg] = useState<any>(null);
@@ -115,11 +132,11 @@ export function AdminOrganizations() {
           const profile = profilesData?.find(profile => profile.id === request.user_id);
           return {
             ...request,
-            profile: profile || null
+            profiles: profile || null
           };
         });
         
-        return requestsWithProfiles;
+        return requestsWithProfiles as JoinRequestWithProfile[];
       }
       
       return requestsData || [];
@@ -249,7 +266,7 @@ export function AdminOrganizations() {
     }
   };
   
-  const handleApproveRequest = (request: any) => {
+  const handleApproveRequest = (request: JoinRequestWithProfile) => {
     handleRequestMutation.mutate({
       requestId: request.id,
       status: "approved",
@@ -259,7 +276,7 @@ export function AdminOrganizations() {
     });
   };
   
-  const handleRejectRequest = (request: any) => {
+  const handleRejectRequest = (request: JoinRequestWithProfile) => {
     handleRequestMutation.mutate({
       requestId: request.id,
       status: "rejected",
@@ -405,19 +422,19 @@ export function AdminOrganizations() {
                     </TableRow>
                   ))
                 ) : joinRequests?.length ? (
-                  joinRequests.map((request) => (
+                  joinRequests.map((request: JoinRequestWithProfile) => (
                     <TableRow key={request.id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={request.profile?.profile_image || ""} />
+                            <AvatarImage src={request.profiles?.profile_image || ""} />
                             <AvatarFallback className="text-xs">
-                              {request.profile?.name?.substring(0, 2).toUpperCase() || "U"}
+                              {request.profiles?.name?.substring(0, 2).toUpperCase() || "U"}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="font-medium text-sm">{request.profile?.name || "Unknown User"}</p>
-                            <p className="text-xs text-muted-foreground">{request.profile?.email || ""}</p>
+                            <p className="font-medium text-sm">{request.profiles?.name || "Unknown User"}</p>
+                            <p className="text-xs text-muted-foreground">{request.profiles?.email || ""}</p>
                           </div>
                         </div>
                       </TableCell>
