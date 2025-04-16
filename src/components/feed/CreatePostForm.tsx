@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { 
-  AtSign, MapPin, Send, Building 
+  MapPin, Send, Building 
 } from "lucide-react";
 import {
   Select,
@@ -41,18 +42,29 @@ export function CreatePostForm({ userOrganizations }: CreatePostFormProps) {
     mutationFn: async () => {
       if (!user || !content.trim()) return;
       
-      const { data, error } = await supabase
-        .from("feed_posts")
-        .insert({
+      try {
+        const postData = {
           user_id: user.id,
           content: content.trim(),
-          organization_id: selectedOrgId,
           location: location.trim() || null
-        })
-        .select();
+        };
         
-      if (error) throw error;
-      return data;
+        // Only add organization_id if one is selected
+        if (selectedOrgId) {
+          Object.assign(postData, { organization_id: selectedOrgId });
+        }
+        
+        const { data, error } = await supabase
+          .from("feed_posts")
+          .insert(postData)
+          .select();
+          
+        if (error) throw error;
+        return data;
+      } catch (error) {
+        console.error("Error creating post:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       setContent("");
@@ -108,7 +120,10 @@ export function CreatePostForm({ userOrganizations }: CreatePostFormProps) {
               </div>
               
               {userOrganizations.length > 0 && (
-                <Select value={selectedOrgId || ""} onValueChange={setSelectedOrgId}>
+                <Select 
+                  value={selectedOrgId || ""} 
+                  onValueChange={(value) => setSelectedOrgId(value || null)}
+                >
                   <SelectTrigger className="w-full md:w-60 h-9">
                     <div className="flex items-center">
                       <Building className="h-4 w-4 mr-2 text-muted-foreground" />

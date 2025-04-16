@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
@@ -34,40 +35,50 @@ export default function FeedPage() {
     queryFn: async () => {
       if (!user) return [];
       
-      let query = supabase
-        .from("feed_posts")
-        .select(`
-          *,
-          profiles!feed_posts_user_id_fkey(name, profile_image),
-          organizations!feed_posts_organization_id_fkey(name, logo),
-          feed_likes(id, user_id),
-          feed_comments(id, content, created_at, user_id, profiles(name, profile_image))
-        `)
-        .order("created_at", { ascending: false });
-      
-      if (activeTab === "following") {
-        // Get organizations the user is a member of
-        const { data: memberships } = await supabase
-          .from("organization_members")
-          .select("organization_id")
-          .eq("user_id", user.id);
+      try {
+        let query = supabase
+          .from("feed_posts")
+          .select(`
+            *,
+            profiles!inner(name, profile_image),
+            organizations(name, logo),
+            feed_likes(id, user_id),
+            feed_comments(id, content, created_at, user_id, profiles!inner(name, profile_image))
+          `)
+          .order("created_at", { ascending: false });
         
-        if (memberships && memberships.length > 0) {
-          const orgIds = memberships.map(m => m.organization_id);
-          query = query.in("organization_id", orgIds);
-        } else {
-          return []; // User doesn't follow any organizations
+        if (activeTab === "following") {
+          // Get organizations the user is a member of
+          const { data: memberships } = await supabase
+            .from("organization_members")
+            .select("organization_id")
+            .eq("user_id", user.id);
+          
+          if (memberships && memberships.length > 0) {
+            const orgIds = memberships.map(m => m.organization_id);
+            query = query.in("organization_id", orgIds);
+          } else {
+            return []; // User doesn't follow any organizations
+          }
         }
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) {
+        
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error("Error fetching posts:", error);
+          throw error;
+        }
+        
+        return data || [];
+      } catch (error) {
         console.error("Error fetching posts:", error);
-        throw error;
+        toast({
+          title: "Error",
+          description: "Failed to load posts. Please try again later.",
+          variant: "destructive",
+        });
+        return [];
       }
-      
-      return data || [];
     },
     enabled: !!user,
   });
@@ -81,27 +92,43 @@ export default function FeedPage() {
     queryFn: async () => {
       if (!user) return [];
       
-      // Get organizations where user is a member
-      const { data: memberships, error: membershipError } = await supabase
-        .from("organization_members")
-        .select("organization_id")
-        .eq("user_id", user.id);
-      
-      if (membershipError) throw membershipError;
-      
-      if (memberships && memberships.length > 0) {
-        const orgIds = memberships.map(m => m.organization_id);
+      try {
+        // Get organizations where user is a member
+        const { data: memberships, error: membershipError } = await supabase
+          .from("organization_members")
+          .select("organization_id")
+          .eq("user_id", user.id);
         
-        const { data: organizations, error: orgsError } = await supabase
-          .from("organizations")
-          .select("id, name, logo")
-          .in("id", orgIds);
+        if (membershipError) {
+          console.error("Error fetching memberships:", membershipError);
+          throw membershipError;
+        }
         
-        if (orgsError) throw orgsError;
-        return organizations || [];
+        if (memberships && memberships.length > 0) {
+          const orgIds = memberships.map(m => m.organization_id);
+          
+          const { data: organizations, error: orgsError } = await supabase
+            .from("organizations")
+            .select("id, name, logo")
+            .in("id", orgIds);
+          
+          if (orgsError) {
+            console.error("Error fetching organizations:", orgsError);
+            throw orgsError;
+          }
+          return organizations || [];
+        }
+        
+        return [];
+      } catch (error) {
+        console.error("Error fetching user organizations:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load your organizations. Please try again later.",
+          variant: "destructive",
+        });
+        return [];
       }
-      
-      return [];
     },
     enabled: !!user,
   });

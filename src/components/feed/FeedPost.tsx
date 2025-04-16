@@ -34,24 +34,29 @@ export function FeedPost({ post, currentUser }: FeedPostProps) {
   // Like/unlike a post
   const { mutate: toggleLike } = useMutation({
     mutationFn: async () => {
-      if (userLike) {
-        // Unlike the post
-        const { error } = await supabase
-          .from("feed_likes")
-          .delete()
-          .eq("id", userLike.id);
-          
-        if (error) throw error;
-      } else {
-        // Like the post
-        const { error } = await supabase
-          .from("feed_likes")
-          .insert({
-            post_id: post.id,
-            user_id: currentUser.id
-          });
-          
-        if (error) throw error;
+      try {
+        if (userLike) {
+          // Unlike the post
+          const { error } = await supabase
+            .from("feed_likes")
+            .delete()
+            .eq("id", userLike.id);
+            
+          if (error) throw error;
+        } else {
+          // Like the post
+          const { error } = await supabase
+            .from("feed_likes")
+            .insert({
+              post_id: post.id,
+              user_id: currentUser.id
+            });
+            
+          if (error) throw error;
+        }
+      } catch (error) {
+        console.error("Like toggle error:", error);
+        throw error;
       }
     },
     onSuccess: () => {
@@ -72,17 +77,22 @@ export function FeedPost({ post, currentUser }: FeedPostProps) {
     mutationFn: async () => {
       if (!commentText.trim()) return;
       
-      const { error } = await supabase
-        .from("feed_comments")
-        .insert({
-          post_id: post.id,
-          user_id: currentUser.id,
-          content: commentText.trim()
-        });
+      try {
+        const { error } = await supabase
+          .from("feed_comments")
+          .insert({
+            post_id: post.id,
+            user_id: currentUser.id,
+            content: commentText.trim()
+          });
+          
+        if (error) throw error;
         
-      if (error) throw error;
-      
-      setCommentText("");
+        setCommentText("");
+      } catch (error) {
+        console.error("Comment error:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["feed-posts"] });

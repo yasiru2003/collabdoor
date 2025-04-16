@@ -214,10 +214,9 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
       </SheetTrigger>
       <SheetContent side="left" className="w-72.5">
         <SheetHeader>
-          <SheetTitle>Are you sure absolutely sure?</SheetTitle>
+          <SheetTitle>Navigation</SheetTitle>
           <SheetDescription>
-            This action cannot be undone. This will permanently delete your
-            account and remove your data from our servers.
+            Browse through the app sections.
           </SheetDescription>
         </SheetHeader>
       </SheetContent>
