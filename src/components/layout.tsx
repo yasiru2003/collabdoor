@@ -13,13 +13,9 @@ export function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
   return (
     <div className="min-h-screen flex flex-col">
-      <Header mobileMenuToggle={toggleSidebar} />
+      <Header />
       <div className="flex flex-1">
         {!isMobile && <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />}
         <main className="flex-1 p-4 md:p-8 bg-muted/30 pb-20 md:pb-8">

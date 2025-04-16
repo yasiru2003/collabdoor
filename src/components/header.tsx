@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Bell, Menu } from "lucide-react";
+import { Bell } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { 
   Popover, 
@@ -19,7 +19,7 @@ import {
 } from "./ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/use-notifications";
-import { useEffect } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) {
   const { user, signOut } = useAuth();
@@ -30,6 +30,7 @@ export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) 
     markAllAsRead, 
     unreadCount 
   } = useNotifications();
+  const isMobile = useIsMobile();
 
   const handleLogout = async () => {
     try {
@@ -43,16 +44,11 @@ export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) 
     <header className="border-b border-border bg-background sticky top-0 z-50">
       <div className="container flex items-center justify-between h-16 mx-auto px-4">
         <div className="flex items-center gap-2">
-          {mobileMenuToggle && (
-            <Button variant="ghost" size="icon" onClick={mobileMenuToggle} className="md:hidden">
-              <Menu />
-            </Button>
-          )}
           <Link to="/" className="flex items-center gap-2">
             <div className="font-bold text-xl bg-primary text-primary-foreground px-2 py-1 rounded">
               CD
             </div>
-            <span className="font-bold text-xl hidden sm:block">CollabDoor</span>
+            {!isMobile && <span className="font-bold text-xl">CollabDoor</span>}
           </Link>
         </div>
 
@@ -149,11 +145,13 @@ export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) 
             </>
           ) : (
             <>
-              <Button variant="ghost" asChild>
-                <Link to="/login">Log In</Link>
-              </Button>
+              {!isMobile && (
+                <Button variant="ghost" asChild>
+                  <Link to="/login">Log In</Link>
+                </Button>
+              )}
               <Button asChild>
-                <Link to="/signup">Sign Up</Link>
+                <Link to="/signup">{isMobile ? "Sign Up" : "Sign Up"}</Link>
               </Button>
             </>
           )}
