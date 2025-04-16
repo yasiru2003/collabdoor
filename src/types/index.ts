@@ -1,4 +1,3 @@
-
 export type UserRole = 'partner' | 'organizer';
 
 export interface User {
@@ -48,6 +47,17 @@ export interface Project {
   }[];
   createdAt: string;
   updatedAt: string;
+  phases?: ProjectPhase[];
+}
+
+export interface ProjectPhase {
+  id: string;
+  title: string;
+  description: string;
+  status: 'not-started' | 'in-progress' | 'completed';
+  dueDate?: string;
+  completedDate?: string;
+  order: number;
 }
 
 export interface ProfileData {

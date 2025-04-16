@@ -25,3 +25,7 @@ export {
   type ApplicationWithProfile,
   type ProfileData,
 } from "./use-applications-query";
+
+export {
+  useProjectPhases,
+} from "./use-phases-query";

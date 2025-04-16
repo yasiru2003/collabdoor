@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -39,6 +40,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useProjectApplications as useProjectApps } from "@/hooks/use-project-applications";
+import { ProjectTracker } from "@/components/project/ProjectTracker";
 import {
   Dialog,
   DialogContent,
