@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,9 +13,41 @@ import {
 } from "./ui/dropdown-menu";
 import { Bell, Menu } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { 
+  Popover, 
+  PopoverContent, 
+  PopoverTrigger 
+} from "./ui/popover";
+import { useToast } from "@/hooks/use-toast";
 
 export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) {
   const { user, signOut } = useAuth();
+  const { toast } = useToast();
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      title: "New project application",
+      message: "Someone applied to your project",
+      time: "5 minutes ago",
+      read: false,
+    },
+    {
+      id: 2,
+      title: "Application approved",
+      message: "Your application has been approved",
+      time: "2 hours ago",
+      read: false,
+    },
+    {
+      id: 3,
+      title: "New message",
+      message: "You have a new message from a partner",
+      time: "Yesterday",
+      read: true,
+    }
+  ]);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleLogout = async () => {
     try {
@@ -23,6 +55,24 @@ export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) 
     } catch (error) {
       console.error("Error signing out:", error);
     }
+  };
+
+  const markAsRead = (id: number) => {
+    setNotifications(notifications.map(n => 
+      n.id === id ? { ...n, read: true } : n
+    ));
+    toast({
+      title: "Notification marked as read",
+      description: "The notification has been marked as read.",
+    });
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(notifications.map(n => ({ ...n, read: true })));
+    toast({
+      title: "All notifications marked as read",
+      description: "All notifications have been marked as read.",
+    });
   };
 
   return (
@@ -42,25 +92,64 @@ export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) 
           </Link>
         </div>
 
-        <div className="hidden md:flex items-center gap-6">
-          <Link to="/projects" className="text-muted-foreground hover:text-foreground">
-            Projects
-          </Link>
-          <Link to="/partners" className="text-muted-foreground hover:text-foreground">
-            Partners
-          </Link>
-          <Link to="/messages" className="text-muted-foreground hover:text-foreground">
-            Messages
-          </Link>
-        </div>
-
         <div className="flex items-center gap-4">
           {user ? (
             <>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full"></span>
-              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full"></span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0" align="end">
+                  <div className="flex items-center justify-between p-4 border-b">
+                    <h3 className="font-semibold">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={markAllAsRead}
+                        className="text-xs h-8"
+                      >
+                        Mark all as read
+                      </Button>
+                    )}
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifications.length > 0 ? (
+                      notifications.map((notification) => (
+                        <div 
+                          key={notification.id} 
+                          className={`p-4 border-b last:border-0 hover:bg-muted/50 transition-colors ${notification.read ? 'bg-background' : 'bg-muted/30'}`}
+                        >
+                          <div className="flex justify-between items-start mb-1">
+                            <h4 className="font-medium text-sm">{notification.title}</h4>
+                            {!notification.read && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => markAsRead(notification.id)}
+                                className="h-6 px-2 text-xs"
+                              >
+                                Mark read
+                              </Button>
+                            )}
+                          </div>
+                          <p className="text-muted-foreground text-sm mb-1">{notification.message}</p>
+                          <span className="text-xs text-muted-foreground">{notification.time}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-4 text-center text-muted-foreground">
+                        No notifications
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -83,6 +172,9 @@ export function Header({ mobileMenuToggle }: { mobileMenuToggle?: () => void }) 
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/settings" className="cursor-pointer w-full">Settings</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin" className="cursor-pointer w-full">Admin Panel</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
