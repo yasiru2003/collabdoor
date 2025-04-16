@@ -360,7 +360,10 @@ export default function OrganizationDetailPage() {
             </Tabs>
           </div>
           
-          
+          <div className="lg:col-span-1">
+            {/* Sidebar content could go here if needed */}
+          </div>
+        </div>
       </div>
     </Layout>
   );
