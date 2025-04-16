@@ -360,17 +360,7 @@ export default function OrganizationDetailPage() {
             </Tabs>
           </div>
           
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Contact</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full">Contact Organization</Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+          
       </div>
     </Layout>
   );
