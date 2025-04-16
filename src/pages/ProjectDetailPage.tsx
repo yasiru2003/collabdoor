@@ -396,21 +396,30 @@ const renderApplicationsTable = () => {
           <TableBody>
             {projectApplications.map((application) => {
               // Safely extract profile data with null checks
-              const profileImage = application.profiles && typeof application.profiles === 'object' && 
-                'profile_image' in application.profiles ? 
-                String(application.profiles.profile_image || "") : "";
+              const profiles = application.profiles || {};
               
-              const profileName = application.profiles && typeof application.profiles === 'object' && 
-                'name' in application.profiles ? 
-                String(application.profiles.name || "Unknown") : "Unknown";
+              // Check if profiles is an object and has the expected properties
+              const isValidProfileObject = typeof profiles === 'object' && profiles !== null;
               
-              const profileEmail = application.profiles && typeof application.profiles === 'object' && 
-                'email' in application.profiles ? 
-                String(application.profiles.email || "") : "";
+              // Extract profile image with proper null checks
+              const profileImage = isValidProfileObject && 'profile_image' in profiles 
+                ? String(profiles.profile_image || "") 
+                : "";
+              
+              // Extract profile name with proper null checks
+              const profileName = isValidProfileObject && 'name' in profiles 
+                ? String(profiles.name || "Unknown") 
+                : "Unknown";
+              
+              // Extract profile email with proper null checks
+              const profileEmail = isValidProfileObject && 'email' in profiles 
+                ? String(profiles.email || "") 
+                : "";
               
               // Only calculate initials if we have a valid name
-              const initials = profileName !== "Unknown" ? 
-                profileName.substring(0, 2).toUpperCase() : "??";
+              const initials = profileName !== "Unknown" 
+                ? profileName.substring(0, 2).toUpperCase() 
+                : "??";
 
               return (
                 <TableRow key={application.id}>
