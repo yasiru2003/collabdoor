@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,16 +41,14 @@ export function CreatePostForm({ userOrganizations }: CreatePostFormProps) {
     mutationFn: async () => {
       if (!user || !content.trim()) return;
       
-      const newPost = {
-        user_id: user.id,
-        content: content.trim(),
-        organization_id: selectedOrgId || null,
-        location: location.trim() || null
-      };
-      
       const { data, error } = await supabase
         .from("feed_posts")
-        .insert(newPost)
+        .insert({
+          user_id: user.id,
+          content: content.trim(),
+          organization_id: selectedOrgId,
+          location: location.trim() || null
+        })
         .select();
         
       if (error) throw error;
