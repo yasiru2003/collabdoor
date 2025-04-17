@@ -1,9 +1,11 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 import LandingPage from "./pages/LandingPage";
@@ -22,7 +24,6 @@ import CreateOrganizationPage from "./pages/CreateOrganizationPage";
 import OrganizationDetailPage from "./pages/OrganizationDetailPage";
 import EditOrganizationPage from "./pages/EditOrganizationPage";
 import AdminPage from "./pages/AdminPage";
-
 import FeedPage from "./pages/FeedPage";
 
 const queryClient = new QueryClient();
@@ -35,24 +36,31 @@ const App = () => (
           <Toaster />
           <Sonner />
           <Routes>
+            {/* Public routes */}
             <Route path="/" element={<LandingPage />} />
-            <Route path="/index" element={<Index />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/projects" element={<ProjectsPage />} />
-            <Route path="/projects/new" element={<CreateProjectPage />} />
-            <Route path="/projects/:id" element={<ProjectDetailPage />} />
-            <Route path="/partners" element={<PartnersPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/messages" element={<MessagesPage />} />
-            <Route path="/feed" element={<FeedPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/organizations" element={<OrganizationsPage />} />
-            <Route path="/organizations/new" element={<CreateOrganizationPage />} />
-            <Route path="/organizations/:id" element={<OrganizationDetailPage />} />
-            <Route path="/organizations/:id/edit" element={<EditOrganizationPage />} />
-            <Route path="/admin" element={<AdminPage />} />
+            
+            {/* Protected routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/index" element={<Index />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/projects/new" element={<CreateProjectPage />} />
+              <Route path="/projects/:id" element={<ProjectDetailPage />} />
+              <Route path="/partners" element={<PartnersPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/messages" element={<MessagesPage />} />
+              <Route path="/feed" element={<FeedPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/organizations" element={<OrganizationsPage />} />
+              <Route path="/organizations/new" element={<CreateOrganizationPage />} />
+              <Route path="/organizations/:id" element={<OrganizationDetailPage />} />
+              <Route path="/organizations/:id/edit" element={<EditOrganizationPage />} />
+              <Route path="/admin" element={<AdminPage />} />
+            </Route>
+            
+            {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
