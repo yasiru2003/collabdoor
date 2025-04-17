@@ -118,10 +118,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, userData?: any) => {
     try {
-      // Always set role to 'user' instead of partner/organizer
+      // Ensure role is set to a valid enum value, defaulting to 'partner'
       const userMetadata = {
         ...userData,
-        role: 'user'
+        role: userData?.role === 'user' ? 'user' : 'partner'
       };
       
       const { error } = await supabase.auth.signUp({
@@ -137,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       toast({
         title: "Sign up successful",
-        description: "Check your email for the confirmation link.",
+        description: "Please check your email to confirm your account.",
       });
     } catch (error: any) {
       console.error("Signup error:", error);

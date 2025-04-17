@@ -676,7 +676,7 @@ export type Database = {
       application_status: "pending" | "approved" | "rejected"
       partnership_type: "monetary" | "knowledge" | "skilled" | "volunteering"
       project_status: "draft" | "published" | "in-progress" | "completed"
-      user_role: "partner" | "organizer"
+      user_role: "partner" | "organizer" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -795,7 +795,7 @@ export const Constants = {
       application_status: ["pending", "approved", "rejected"],
       partnership_type: ["monetary", "knowledge", "skilled", "volunteering"],
       project_status: ["draft", "published", "in-progress", "completed"],
-      user_role: ["partner", "organizer"],
+      user_role: ["partner", "organizer", "user"],
     },
   },
 } as const
