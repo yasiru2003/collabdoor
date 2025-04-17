@@ -1,9 +1,10 @@
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { handleSupabaseError } from "./use-supabase-utils";
 import { ProjectPhase } from "@/types";
+import { toast as sonnerToast } from "sonner";
 
 /**
  * Hook to fetch all phases for a specific project
@@ -58,4 +59,87 @@ export function useProjectPhases(projectId: string | undefined) {
     },
     enabled: !!projectId,
   });
+}
+
+/**
+ * Hook to add a new phase to a project
+ */
+export function usePhaseCreation() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const addPhase = useMutation({
+    mutationFn: async ({ projectId, phase }: { projectId: string, phase: Omit<ProjectPhase, 'id'> }) => {
+      if (!projectId) throw new Error("Project ID is required");
+      
+      try {
+        // First get the current phases to determine the order
+        const { data: existingPhases, error: fetchError } = await supabase
+          .from("project_phases")
+          .select("order")
+          .eq("project_id", projectId)
+          .order("order", { ascending: false })
+          .limit(1);
+        
+        handleSupabaseError(fetchError, "Error fetching existing phases", toast);
+        
+        // Set the order for the new phase
+        const nextOrder = existingPhases && existingPhases.length > 0 ? existingPhases[0].order + 1 : 0;
+        
+        const { data, error } = await supabase
+          .from("project_phases")
+          .insert({
+            project_id: projectId,
+            title: phase.title,
+            description: phase.description,
+            status: phase.status || 'not-started',
+            due_date: phase.dueDate,
+            order: nextOrder,
+          })
+          .select()
+          .single();
+
+        handleSupabaseError(error, "Error adding project phase", toast);
+        
+        // Convert from snake_case to camelCase
+        const newPhase = {
+          id: data?.id,
+          projectId: data?.project_id,
+          title: data?.title,
+          description: data?.description,
+          status: data?.status,
+          dueDate: data?.due_date,
+          completedDate: data?.completed_date,
+          order: data?.order,
+          createdAt: data?.created_at,
+          updatedAt: data?.updated_at,
+        };
+        
+        return newPhase;
+      } catch (error: any) {
+        console.error("Error adding phase:", error);
+        throw error;
+      }
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate project phases query to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["projectPhases", variables.projectId] });
+      
+      sonnerToast.success("Phase added", {
+        description: "New project phase has been added successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to add phase",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  });
+
+  return {
+    addPhase,
+    isLoading: addPhase.isPending
+  };
 }
