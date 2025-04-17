@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -51,21 +50,27 @@ export default function ProjectDetailPage() {
   // Transform the organization data to match the Organization type
   // Only accessing properties that are actually available in the organizations object
   const userOrganizations: Organization[] = rawUserOrganizations ? 
-    rawUserOrganizations.map(org => ({
-      id: org.organizations?.id || org.id,
-      name: org.organizations?.name || "",
-      // Set optional properties safely, checking if they exist first
-      description: org.organizations?.description || undefined,
-      industry: org.organizations?.industry || undefined,
-      location: org.organizations?.location || undefined,
-      size: org.organizations?.size || undefined,
-      logo: org.organizations?.logo || undefined,
-      website: org.organizations?.website || undefined,
-      foundedYear: org.organizations?.founded_year || undefined,
-      createdAt: org.created_at || "",
-      updatedAt: org.updated_at || "",
-      owner_id: org.organizations?.owner_id || "",
-    })) : [];
+    rawUserOrganizations.map(org => {
+      // First, ensure organizations exists and has valid properties
+      const orgData = org.organizations || { id: org.id, name: "" };
+      
+      return {
+        id: orgData.id || org.id,
+        name: orgData.name || "",
+        // Set optional properties safely
+        description: orgData.description,
+        industry: orgData.industry,
+        location: orgData.location,
+        size: orgData.size,
+        logo: orgData.logo,
+        website: orgData.website,
+        foundedYear: orgData.founded_year,
+        createdAt: org.created_at || "",
+        updatedAt: org.updated_at || "",
+        owner_id: orgData.owner_id || "",
+      };
+    }) : [];
+  
   
   const { data: projectApplications, refetch: refetchApplications } = useProjectApplicationsQuery(isValidUuid ? id : undefined);
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
@@ -95,6 +100,7 @@ export default function ProjectDetailPage() {
   
   // State for project completion dialog
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
+  
   
   const handleContact = () => {
     if (!user) {
