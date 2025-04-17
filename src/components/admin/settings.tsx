@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { SystemSettings } from "@/types";
 import { 
   Table, 
   TableBody, 
@@ -18,12 +19,53 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 
 export function AdminSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newLocationName, setNewLocationName] = useState("");
   const [newPartnershipType, setNewPartnershipType] = useState("");
+  const [settings, setSettings] = useState<{
+    autoApproveOrganizations: boolean;
+    autoApproveProjects: boolean;
+  }>({
+    autoApproveOrganizations: false,
+    autoApproveProjects: false
+  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+
+  // Query for settings
+  const { 
+    data: systemSettings = [],
+    isLoading: isLoadingSettings,
+    refetch: refetchSettings
+  } = useQuery({
+    queryKey: ["admin-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('*');
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Initialize settings from DB
+  useEffect(() => {
+    if (systemSettings.length > 0) {
+      const settingsMap: Record<string, boolean> = {};
+      systemSettings.forEach((setting: SystemSettings) => {
+        settingsMap[setting.key] = setting.value;
+      });
+      
+      setSettings({
+        autoApproveOrganizations: settingsMap['auto_approve_organizations'] || false,
+        autoApproveProjects: settingsMap['auto_approve_projects'] || false
+      });
+    }
+  }, [systemSettings]);
 
   // Query for locations
   const { 
@@ -169,6 +211,69 @@ export function AdminSettings() {
     }
   });
 
+  // Mutation for saving settings
+  const saveSettingsMutation = useMutation({
+    mutationFn: async (settingsData: {
+      autoApproveOrganizations: boolean;
+      autoApproveProjects: boolean;
+    }) => {
+      setIsSavingSettings(true);
+      
+      // Check if settings exist and update or insert accordingly
+      for (const [key, value] of Object.entries({
+        auto_approve_organizations: settingsData.autoApproveOrganizations,
+        auto_approve_projects: settingsData.autoApproveProjects
+      })) {
+        const { data: existingSetting } = await supabase
+          .from('system_settings')
+          .select('*')
+          .eq('key', key)
+          .maybeSingle();
+        
+        if (existingSetting) {
+          // Update existing setting
+          const { error } = await supabase
+            .from('system_settings')
+            .update({ value: value })
+            .eq('key', key);
+          
+          if (error) throw error;
+        } else {
+          // Insert new setting
+          const { error } = await supabase
+            .from('system_settings')
+            .insert({ 
+              key: key, 
+              value: value,
+              description: key === 'auto_approve_organizations' 
+                ? 'Automatically approve new organization creation requests' 
+                : 'Automatically approve new project publication requests'
+            });
+          
+          if (error) throw error;
+        }
+      }
+      
+      return { success: true };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-settings"] });
+      toast({
+        title: "Settings saved",
+        description: "Your settings have been saved successfully."
+      });
+      setIsSavingSettings(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error saving settings",
+        description: error.message,
+        variant: "destructive"
+      });
+      setIsSavingSettings(false);
+    }
+  });
+
   const handleAddLocation = (e: React.FormEvent) => {
     e.preventDefault();
     if (newLocationName.trim()) {
@@ -189,6 +294,10 @@ export function AdminSettings() {
 
   const handleDeletePartnershipType = (id: string) => {
     deletePartnershipTypeMutation.mutate(id);
+  };
+
+  const handleSaveSettings = () => {
+    saveSettingsMutation.mutate(settings);
   };
 
   return (
@@ -352,10 +461,18 @@ export function AdminSettings() {
                     Automatically approve new organization creation requests
                   </p>
                 </div>
-                <Button variant="outline">
-                  <Badge variant="outline" className="mr-2">ON</Badge>
-                  Enabled
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Switch 
+                    checked={settings.autoApproveOrganizations}
+                    onCheckedChange={(checked) => 
+                      setSettings(prev => ({ ...prev, autoApproveOrganizations: checked }))
+                    }
+                    id="auto-approve-orgs"
+                  />
+                  <Badge variant="outline">
+                    {settings.autoApproveOrganizations ? 'ON' : 'OFF'}
+                  </Badge>
+                </div>
               </div>
 
               <div className="flex items-center justify-between p-4 border rounded-md">
@@ -365,16 +482,28 @@ export function AdminSettings() {
                     Automatically approve new project publication requests
                   </p>
                 </div>
-                <Button variant="outline">
-                  <Badge variant="outline" className="mr-2">ON</Badge>
-                  Enabled
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Switch 
+                    checked={settings.autoApproveProjects}
+                    onCheckedChange={(checked) => 
+                      setSettings(prev => ({ ...prev, autoApproveProjects: checked }))
+                    }
+                    id="auto-approve-projects"
+                  />
+                  <Badge variant="outline">
+                    {settings.autoApproveProjects ? 'ON' : 'OFF'}
+                  </Badge>
+                </div>
               </div>
 
               <div className="mt-6">
-                <Button className="w-full">
+                <Button 
+                  className="w-full" 
+                  onClick={handleSaveSettings}
+                  disabled={isSavingSettings}
+                >
                   <Save className="h-4 w-4 mr-2" />
-                  Save Settings
+                  {isSavingSettings ? 'Saving...' : 'Save Settings'}
                 </Button>
               </div>
             </CardContent>

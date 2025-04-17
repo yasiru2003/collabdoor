@@ -36,31 +36,8 @@ export function AdminProjects() {
         .order('created_at', { ascending: false });
       
       if (data) {
-        // Map the raw data to Project objects
-        const mappedProjects = data.map(project => ({
-          id: project.id,
-          title: project.title,
-          description: project.description,
-          status: project.status,
-          organizerId: project.organizer_id,
-          organizerName: project.profiles?.name || "Unknown",
-          organizationId: project.organization_id,
-          organizationName: project.organization_name,
-          createdAt: project.created_at,
-          updatedAt: project.updated_at,
-          image: project.image,
-          location: project.location,
-          timeline: {
-            start: project.start_date,
-            end: project.end_date
-          },
-          requiredSkills: project.required_skills || [],
-          partnershipTypes: project.partnership_types || [],
-          category: project.category,
-          applicationsEnabled: project.applications_enabled !== false,
-          completedAt: project.completed_at
-        })) as Project[];
-        
+        // Map the raw data to Project objects using the utility function
+        const mappedProjects = data.map(project => mapSupabaseProjectToProject(project)) as Project[];
         setPendingPublishProjects(mappedProjects);
       }
     };

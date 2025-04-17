@@ -1,3 +1,4 @@
+
 export interface Project {
   id: string;
   title: string;
@@ -104,4 +105,14 @@ export interface ApplicationWithProfile {
     profile_image?: string;
     skills?: string[];
   };
+}
+
+// New interface for system settings
+export interface SystemSettings {
+  id: string;
+  key: string;
+  value: boolean;
+  description?: string;
+  created_at: string;
+  updated_at: string;
 }
