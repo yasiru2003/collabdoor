@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -28,17 +27,29 @@ export function useProjectPhases(projectId?: string) {
       throw error;
     }
     
-    return data as ProjectPhase[];
+    // Convert database snake_case to camelCase for frontend
+    return data.map((phase: any) => ({
+      id: phase.id,
+      projectId: phase.project_id,
+      title: phase.title,
+      description: phase.description,
+      status: phase.status,
+      order: phase.order,
+      dueDate: phase.due_date,
+      completedDate: phase.completed_date,
+      createdAt: phase.created_at,
+      updatedAt: phase.updated_at
+    })) as ProjectPhase[];
   };
 
   // Hook to add a new phase for a project
-  const addPhase = async (phase: Omit<ProjectPhase, "id" | "created_at" | "updated_at">) => {
+  const addPhase = async (phase: Omit<ProjectPhase, "id" | "createdAt" | "updatedAt">) => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from("project_phases")
         .insert({
-          project_id: phase.project_id,
+          project_id: phase.projectId,
           title: phase.title,
           description: phase.description,
           due_date: phase.dueDate,
@@ -51,7 +62,7 @@ export function useProjectPhases(projectId?: string) {
       if (error) throw error;
       
       // Invalidate project phases query to refetch data
-      queryClient.invalidateQueries({ queryKey: ["project-phases", phase.project_id] });
+      queryClient.invalidateQueries({ queryKey: ["project-phases", phase.projectId] });
       
       toast({
         title: "Phase added",
@@ -144,7 +155,7 @@ export function usePhaseCreation() {
       const { data, error } = await supabase
         .from("project_phases")
         .insert({
-          project_id: phase.project_id,
+          project_id: phase.projectId,
           title: phase.title,
           description: phase.description,
           due_date: phase.dueDate,

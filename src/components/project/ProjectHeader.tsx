@@ -1,6 +1,5 @@
-
 import React from "react";
-import { Project, PartnershipType } from "@/types";
+import { Project, PartnershipType, Organization } from "@/types";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Bookmark, BookmarkCheck, Clock, HandshakeIcon, MessageCircle, Users } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { OrganizationSimple } from "@/types";
 
 interface ProjectHeaderProps {
   project: Project;
@@ -26,7 +24,7 @@ interface ProjectHeaderProps {
   setMessage: (message: string) => void;
   applicationOpen: boolean;
   setApplicationOpen: (open: boolean) => void;
-  userOrganizations: OrganizationSimple[];
+  userOrganizations: Organization[];
   selectedOrganizationId: string | null;
   setSelectedOrganizationId: (id: string | null) => void;
   onApplySubmit: () => void;

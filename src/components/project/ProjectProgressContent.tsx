@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -88,9 +87,14 @@ export function ProjectProgressContent({
       return;
     }
 
+    // Convert to the correct expected format
     await addPhase({
-      ...newPhase,
+      title: newPhase.title,
+      description: newPhase.description,
+      dueDate: newPhase.dueDate,
+      status: newPhase.status,
       order: phases.length,
+      projectId: projectId // Changed from project_id to projectId to match the type
     });
 
     setNewPhase({
