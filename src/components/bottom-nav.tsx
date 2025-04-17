@@ -1,5 +1,5 @@
 
-import { Home, Building2 } from "lucide-react";
+import { Home, Building2, FolderKanban, MessageSquare } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +16,7 @@ export function BottomNav() {
     {
       href: "/projects",
       label: "Projects",
-      icon: Project,
+      icon: FolderKanban,
       active: location.pathname.startsWith("/projects"),
     },
     {
@@ -28,7 +28,7 @@ export function BottomNav() {
     {
       href: "/messages",
       label: "Message",
-      icon: Message,
+      icon: MessageSquare,
       active: location.pathname.startsWith("/messages"),
     }
   ];
