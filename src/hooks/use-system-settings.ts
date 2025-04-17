@@ -11,7 +11,7 @@ export function useSystemSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const query = useQuery({
+  const query = useQuery<SystemSettings[]>({
     queryKey: ["system-settings"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -32,8 +32,12 @@ export function useSystemSettings() {
     }
   });
 
-  const updateSetting = useMutation({
-    mutationFn: async ({ key, value }: { key: string; value: boolean }) => {
+  const updateSetting = useMutation<
+    { key: string; value: boolean }, 
+    Error, 
+    { key: string; value: boolean }
+  >({
+    mutationFn: async ({ key, value }) => {
       // Check if setting exists
       const { data: existingSetting } = await supabase
         .from("system_settings")
@@ -67,7 +71,7 @@ export function useSystemSettings() {
         description: "The system setting has been updated successfully.",
       });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast({
         title: "Error updating setting",
         description: error.message,

@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,37 +19,21 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
+import { useSystemSettings } from "@/hooks/use-system-settings";
 
 export function AdminSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newLocationName, setNewLocationName] = useState("");
   const [newPartnershipType, setNewPartnershipType] = useState("");
-  const [settings, setSettings] = useState<{
-    autoApproveOrganizations: boolean;
-    autoApproveProjects: boolean;
-  }>({
+  const [settings, setSettings] = useState({
     autoApproveOrganizations: false,
     autoApproveProjects: false
   });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
-  // Query for settings
-  const { 
-    data: systemSettings = [],
-    isLoading: isLoadingSettings,
-    refetch: refetchSettings
-  } = useQuery({
-    queryKey: ["admin-settings"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('system_settings')
-        .select('*');
-      
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Use the custom hook for system settings
+  const { settings: systemSettings, isLoading: isLoadingSettings, updateSetting } = useSystemSettings();
 
   // Initialize settings from DB
   useEffect(() => {
@@ -67,7 +50,7 @@ export function AdminSettings() {
     }
   }, [systemSettings]);
 
-  // Query for locations
+  // Existing queries for locations and partnership types
   const { 
     data: locations = [], 
     isLoading: isLoadingLocations
@@ -211,68 +194,32 @@ export function AdminSettings() {
     }
   });
 
-  // Mutation for saving settings
-  const saveSettingsMutation = useMutation({
-    mutationFn: async (settingsData: {
-      autoApproveOrganizations: boolean;
-      autoApproveProjects: boolean;
-    }) => {
-      setIsSavingSettings(true);
-      
-      // Check if settings exist and update or insert accordingly
-      for (const [key, value] of Object.entries({
-        auto_approve_organizations: settingsData.autoApproveOrganizations,
-        auto_approve_projects: settingsData.autoApproveProjects
-      })) {
-        const { data: existingSetting } = await supabase
-          .from('system_settings')
-          .select('*')
-          .eq('key', key)
-          .maybeSingle();
-        
-        if (existingSetting) {
-          // Update existing setting
-          const { error } = await supabase
-            .from('system_settings')
-            .update({ value: value })
-            .eq('key', key);
-          
-          if (error) throw error;
-        } else {
-          // Insert new setting
-          const { error } = await supabase
-            .from('system_settings')
-            .insert({ 
-              key: key, 
-              value: value,
-              description: key === 'auto_approve_organizations' 
-                ? 'Automatically approve new organization creation requests' 
-                : 'Automatically approve new project publication requests'
-            });
-          
-          if (error) throw error;
-        }
-      }
-      
-      return { success: true };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-settings"] });
-      toast({
-        title: "Settings saved",
-        description: "Your settings have been saved successfully."
+  // Handle saving settings
+  const handleSaveSettings = () => {
+    setIsSavingSettings(true);
+    
+    // Update both settings
+    Promise.all([
+      updateSetting({ key: 'auto_approve_organizations', value: settings.autoApproveOrganizations }),
+      updateSetting({ key: 'auto_approve_projects', value: settings.autoApproveProjects })
+    ])
+      .then(() => {
+        toast({
+          title: "Settings saved",
+          description: "Your settings have been saved successfully."
+        });
+      })
+      .catch((error) => {
+        toast({
+          title: "Error saving settings",
+          description: error.message,
+          variant: "destructive"
+        });
+      })
+      .finally(() => {
+        setIsSavingSettings(false);
       });
-      setIsSavingSettings(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error saving settings",
-        description: error.message,
-        variant: "destructive"
-      });
-      setIsSavingSettings(false);
-    }
-  });
+  };
 
   const handleAddLocation = (e: React.FormEvent) => {
     e.preventDefault();
@@ -294,10 +241,6 @@ export function AdminSettings() {
 
   const handleDeletePartnershipType = (id: string) => {
     deletePartnershipTypeMutation.mutate(id);
-  };
-
-  const handleSaveSettings = () => {
-    saveSettingsMutation.mutate(settings);
   };
 
   return (
