@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -48,17 +49,19 @@ export default function ProjectDetailPage() {
   } = useProjectApplications();
   
   // Transform the organization data to match the Organization type
+  // Only accessing properties that are actually available in the organizations object
   const userOrganizations: Organization[] = rawUserOrganizations ? 
     rawUserOrganizations.map(org => ({
       id: org.organizations?.id || org.id,
       name: org.organizations?.name || "",
-      description: org.organizations?.description,
-      industry: org.organizations?.industry,
-      location: org.organizations?.location,
-      size: org.organizations?.size,
-      logo: org.organizations?.logo,
-      website: org.organizations?.website,
-      foundedYear: org.organizations?.founded_year,
+      // Set optional properties safely, checking if they exist first
+      description: org.organizations?.description || undefined,
+      industry: org.organizations?.industry || undefined,
+      location: org.organizations?.location || undefined,
+      size: org.organizations?.size || undefined,
+      logo: org.organizations?.logo || undefined,
+      website: org.organizations?.website || undefined,
+      foundedYear: org.organizations?.founded_year || undefined,
       createdAt: org.created_at || "",
       updatedAt: org.updated_at || "",
       owner_id: org.organizations?.owner_id || "",
