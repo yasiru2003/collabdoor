@@ -12,7 +12,8 @@ type AuthContextType = {
   signOut: () => Promise<void>;
   loading: boolean;
   updateUserProfile: (profile: any) => Promise<void>;
-  userProfile: any; // Add userProfile to store profile data
+  userProfile: any;
+  signInWithGoogle: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -95,6 +96,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/dashboard'
+        }
+      });
+
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        title: "Error signing in with Google",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   const signUp = async (email: string, password: string, userData?: any) => {
     try {
       // Always set role to 'user' instead of partner/organizer
@@ -108,6 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
         options: {
           data: userMetadata,
+          emailRedirectTo: window.location.origin + '/dashboard'
         },
       });
 
@@ -118,9 +140,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "Check your email for the confirmation link.",
       });
     } catch (error: any) {
+      console.error("Signup error:", error);
       toast({
         title: "Error signing up",
-        description: error.message,
+        description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
       throw error;
@@ -185,7 +208,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signOut, 
       loading,
       updateUserProfile,
-      userProfile
+      userProfile,
+      signInWithGoogle
     }}>
       {children}
     </AuthContext.Provider>
