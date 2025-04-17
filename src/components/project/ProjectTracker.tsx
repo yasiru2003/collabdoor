@@ -289,7 +289,7 @@ export function ProjectTracker({ projectId, isOwner, readOnly = false }: Project
               </div>
               
               <div className="grid gap-2">
-                <Label>Due Date (Optional)</Label>
+                <Label>Due Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
