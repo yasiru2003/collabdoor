@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProjectPhase } from "@/types";
-import { CalendarIcon, CheckSquare, Clock, Plus, AlertCircle as AlertCircleIcon } from "lucide-react";
+import { CalendarIcon, CheckSquare, Clock, Plus, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { usePhaseCreation } from "@/hooks/use-phases-query";
 import { Badge } from "@/components/ui/badge";
@@ -93,7 +93,7 @@ export function ProjectProgressContent({
       
       {phases.length === 0 ? (
         <EmptyState
-          icon={<AlertCircleIcon />}
+          icon={AlertCircle}
           title="No phases yet"
           description={
             isOwner
