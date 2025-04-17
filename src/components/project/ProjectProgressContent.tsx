@@ -1,21 +1,21 @@
 
-import { ProjectPhase } from "@/types";
-import { ProjectTracker } from "@/components/project/ProjectTracker";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Trophy, CheckCircle2 } from "lucide-react";
-import { ReviewsList } from "@/components/reviews/ReviewsList";
-import { useReviews } from "@/hooks/use-reviews";
-import { useEffect, useState } from "react";
+import { ProjectPhase } from "@/types";
+import { CalendarIcon, CheckSquare, Clock, Plus, AlertCircle } from "lucide-react";
+import { format } from "date-fns";
+import { usePhaseCreation } from "@/hooks/use-phases-query";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/empty-state";
 
 interface ProjectProgressContentProps {
   projectId: string;
   isOwner: boolean;
   canUpdateProgress: boolean;
-  phases: ProjectPhase[] | undefined;
   openProgressDialog: (phaseId: string) => void;
   handleCompleteProject: () => void;
+  phases?: ProjectPhase[];
   projectStatus: string;
 }
 
@@ -23,118 +23,141 @@ export function ProjectProgressContent({
   projectId,
   isOwner,
   canUpdateProgress,
-  phases,
   openProgressDialog,
   handleCompleteProject,
+  phases = [],
   projectStatus
 }: ProjectProgressContentProps) {
-  const [projectReviews, setProjectReviews] = useState([]);
-  const { getProjectReviews } = useReviews();
-  const isCompleted = projectStatus === "completed";
-
-  // Load project reviews when the component mounts or when projectId/status changes
-  useEffect(() => {
-    async function loadReviews() {
-      if (projectId && isCompleted) {
-        console.log(`Loading reviews for completed project: ${projectId}`);
-        const reviews = await getProjectReviews(projectId);
-        console.log(`Found ${reviews.length} reviews`);
-        setProjectReviews(reviews);
-      }
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const { addPhase, isLoading: isAddingPhase } = usePhaseCreation();
+  
+  const isCompleted = projectStatus === 'completed';
+  
+  // Get the current status percentage
+  const getProgressPercentage = () => {
+    if (phases.length === 0) return 0;
+    
+    const completedPhases = phases.filter(
+      phase => phase.status === 'completed'
+    ).length;
+    
+    return Math.round((completedPhases / phases.length) * 100);
+  };
+  
+  const getPhaseStatusBadge = (status: string) => {
+    switch (status) {
+      case 'not-started':
+        return <Badge variant="outline" className="bg-gray-50">Not Started</Badge>;
+      case 'in-progress':
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">In Progress</Badge>;
+      case 'completed':
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Completed</Badge>;
+      case 'delayed':
+        return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Delayed</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
     }
-    loadReviews();
-  }, [projectId, getProjectReviews, isCompleted]);
-
+  };
+  
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'No date set';
+    return format(new Date(dateString), 'MMM d, yyyy');
+  };
+  
   return (
-    <>
-      <ProjectTracker projectId={projectId} isOwner={isOwner} readOnly={isCompleted} />
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold">Project Progress</h2>
+          <p className="text-muted-foreground">
+            Track project phases and milestones
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {isOwner && !isCompleted && (
+            <Button variant="outline" onClick={() => setCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Phase
+            </Button>
+          )}
+          
+          {isOwner && !isCompleted && phases.length > 0 && getProgressPercentage() === 100 && (
+            <Button onClick={handleCompleteProject}>
+              <CheckSquare className="h-4 w-4 mr-2" />
+              Mark Project as Complete
+            </Button>
+          )}
+        </div>
+      </div>
       
-      {isCompleted && (
-        <Card className="mt-6">
-          <CardHeader className="flex items-center">
-            <CheckCircle2 className="h-8 w-8 text-green-600 mb-2" />
-            <CardTitle>Project Complete</CardTitle>
-            <CardDescription>
-              This project has been completed successfully. No further updates can be made to the progress tracker.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      )}
-      
-      {isCompleted && (
-        <div className="mt-6">
-          <ReviewsList
-            reviews={projectReviews}
-            title="Project Reviews"
-            description="Reviews and feedback from project partners and organizers"
-            emptyMessage="No reviews have been submitted for this project yet"
-          />
+      {phases.length === 0 ? (
+        <EmptyState
+          icon={<AlertCircle />}
+          title="No phases yet"
+          description={
+            isOwner
+              ? "Add phases to track progress of your project"
+              : "The project owner hasn't added any phases yet"
+          }
+          action={
+            isOwner && !isCompleted ? (
+              <Button onClick={() => setCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Phase
+              </Button>
+            ) : undefined
+          }
+        />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {phases.map((phase) => (
+            <Card key={phase.id} className="flex flex-col">
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start mb-1">
+                  <CardTitle className="text-xl">{phase.title}</CardTitle>
+                  {getPhaseStatusBadge(phase.status)}
+                </div>
+                <CardDescription className="line-clamp-3">
+                  {phase.description || "No description provided"}
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="flex-grow space-y-2">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  <span>Due: {formatDate(phase.dueDate)}</span>
+                </div>
+                
+                {phase.completedDate && (
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <CheckSquare className="h-4 w-4 mr-2 text-green-600" />
+                    <span>Completed: {formatDate(phase.completedDate)}</span>
+                  </div>
+                )}
+              </CardContent>
+              
+              <CardFooter className="pt-2 border-t flex justify-between items-center">
+                <div className="text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4 inline mr-1" />
+                  Phase {phase.order + 1}
+                </div>
+                
+                {canUpdateProgress && !isCompleted && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => openProgressDialog(phase.id)}
+                    disabled={phase.status === 'completed'}
+                  >
+                    Update Progress
+                  </Button>
+                )}
+              </CardFooter>
+            </Card>
+          ))}
         </div>
       )}
-      
-      {canUpdateProgress && phases && phases.length > 0 && !isCompleted && (
-        <Card className="mt-4">
-          <CardHeader>
-            <CardTitle className="text-lg">Quick Progress Updates</CardTitle>
-            <CardDescription>Add progress updates to specific phases</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {phases.map((phase: ProjectPhase) => (
-                <Card key={phase.id} className="overflow-hidden">
-                  <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-base">{phase.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{phase.description}</p>
-                    <Badge 
-                      variant="outline" 
-                      className={
-                        phase.status === 'completed' ? "bg-green-100 text-green-800" : 
-                        phase.status === 'in-progress' ? "bg-blue-100 text-blue-800" : "bg-gray-100"
-                      }
-                    >
-                      {phase.status === 'not-started' ? 'Not Started' : 
-                       phase.status === 'in-progress' ? 'In Progress' : 'Completed'}
-                    </Badge>
-                  </CardContent>
-                  <CardFooter className="p-4 pt-0">
-                    <Button 
-                      onClick={() => openProgressDialog(phase.id)} 
-                      className="w-full" 
-                      size="sm"
-                      variant={phase.status === 'not-started' ? "outline" : "default"}
-                    >
-                      <PlusCircle className="h-4 w-4 mr-1" />
-                      Add Progress Update
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      
-      {isOwner && !isCompleted && (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Complete This Project</CardTitle>
-            <CardDescription>
-              Mark this project as completed, review partners, and wrap up your collaboration
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={handleCompleteProject}
-              size="lg"
-              className="w-full py-6 text-lg bg-purple-600 hover:bg-purple-700 text-white"
-            >
-              <Trophy className="h-6 w-6 mr-2" /> Complete Project
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-    </>
+    </div>
   );
 }

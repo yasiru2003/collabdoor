@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -7,7 +8,7 @@ import { Project, PartnershipType, ApplicationWithProfile } from "@/types";
 import { useProject } from "@/hooks/use-projects-query";
 import { useProjectApplicationsQuery } from "@/hooks/use-applications-query";
 import { useAuth } from "@/hooks/use-auth";
-import { useProjectApplications } from "@/hooks/use-project-applications";
+import { ApplicationStatus, useProjectApplications } from "@/hooks/use-project-applications";
 import { useProjectPhases } from "@/hooks/use-phases-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
