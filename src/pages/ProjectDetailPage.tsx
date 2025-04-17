@@ -147,16 +147,30 @@ export default function ProjectDetailPage() {
   const handleApply = async () => {
     if (!user || !id) return;
     
-    // Process the selectedOrganizationId - if it's "individual", pass null
-    const orgId = selectedOrganizationId === "individual" ? null : selectedOrganizationId;
-    
-    // Pass the organization ID to the applyToProject function
-    const result = await applyToProject(id, user.id, partnershipType, message, orgId);
-    if (result) {
-      setApplicationStatus("pending");
-      setApplicationOpen(false);
-      setMessage("");
-      setSelectedOrganizationId(null);
+    try {
+      // Process the selectedOrganizationId - if it's "individual", pass null
+      const orgId = selectedOrganizationId === "individual" ? null : selectedOrganizationId;
+      
+      // Pass the organization ID to the applyToProject function
+      const result = await applyToProject(id, user.id, partnershipType, message, orgId);
+      if (result) {
+        setApplicationStatus("pending");
+        setApplicationOpen(false);
+        setMessage("");
+        setSelectedOrganizationId(null);
+        
+        toast({
+          title: "Application submitted",
+          description: "Your application has been sent to the project organizer.",
+        });
+      }
+    } catch (error) {
+      console.error("Error applying to project:", error);
+      toast({
+        title: "Application failed",
+        description: "There was an error submitting your application. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -174,7 +188,28 @@ export default function ProjectDetailPage() {
   };
 
   const handleUpdateApplicationStatus = async (applicationId: string, status: "approved" | "rejected") => {
-    await updateApplicationStatus(applicationId, status);
+    try {
+      await updateApplicationStatus(applicationId, status);
+      
+      toast({
+        title: status === "approved" ? "Application approved" : "Application rejected",
+        description: status === "approved" 
+          ? "The partner has been added to your project." 
+          : "The application has been rejected.",
+      });
+      
+      // Refresh the applications list
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (error) {
+      console.error(`Error ${status} application:`, error);
+      toast({
+        title: "Error updating application",
+        description: `There was an error ${status === "approved" ? "approving" : "rejecting"} the application.`,
+        variant: "destructive",
+      });
+    }
   };
   
   const openProgressDialog = (phaseId: string) => {
@@ -207,6 +242,12 @@ export default function ProjectDetailPage() {
   const navigateToOrganization = () => {
     if (project?.organizationId) {
       navigate(`/organizations/${project.organizationId}`);
+    }
+  };
+  
+  const navigateToOrganizerProfile = () => {
+    if (project?.organizerId) {
+      navigate(`/profile/${project.organizerId}`);
     }
   };
 
@@ -279,6 +320,7 @@ export default function ProjectDetailPage() {
           userOrganizations={userOrganizations}
           selectedOrganizationId={selectedOrganizationId}
           setSelectedOrganizationId={setSelectedOrganizationId}
+          onApplySubmit={handleApply}
         />
 
         <Tabs defaultValue={defaultTab} onValueChange={(value) => setSearchParams({ tab: value })}>
@@ -293,6 +335,7 @@ export default function ProjectDetailPage() {
               project={project} 
               isOwner={isOwner} 
               navigateToOrganization={navigateToOrganization}
+              navigateToOrganizerProfile={navigateToOrganizerProfile}
               handleCompleteProject={handleCompleteProject}
             />
           </TabsContent>

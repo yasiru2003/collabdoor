@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ProjectPhase } from "@/types";
 import { CalendarIcon, CheckSquare, Clock, Plus, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
-import { usePhaseCreation } from "@/hooks/use-phases-query";
+import { useProjectPhases } from "@/hooks/use-phases-query";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/empty-state";
 
@@ -29,7 +29,7 @@ export function ProjectProgressContent({
   projectStatus
 }: ProjectProgressContentProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const { addPhase, isLoading: isAddingPhase } = usePhaseCreation();
+  const { addPhase, isLoading: isAddingPhase } = useProjectPhases();
   
   const isCompleted = projectStatus === 'completed';
   

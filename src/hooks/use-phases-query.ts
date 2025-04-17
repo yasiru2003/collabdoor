@@ -2,144 +2,188 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { handleSupabaseError } from "./use-supabase-utils";
 import { ProjectPhase } from "@/types";
-import { toast as sonnerToast } from "sonner";
+import { useState } from "react";
 
 /**
- * Hook to fetch all phases for a specific project
+ * Hook to fetch project phases
  */
-export function useProjectPhases(projectId: string | undefined) {
+export function useProjectPhases(projectId?: string) {
   const { toast } = useToast();
-  
-  return useQuery({
-    queryKey: ["projectPhases", projectId],
-    queryFn: async () => {
-      if (!projectId) return [];
-      
-      // Check if projectId is a valid UUID
-      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId);
-      if (!isValidUuid) {
-        console.warn(`Invalid UUID format for project ID: ${projectId}`);
-        return [];
-      }
+  const [isLoading, setIsLoading] = useState(false);
+  const queryClient = useQueryClient();
 
-      console.log("Fetching project phases for:", projectId);
-      
-      try {
-        const { data, error } = await supabase
-          .from("project_phases")
-          .select("*")
-          .eq("project_id", projectId)
-          .order("order", { ascending: true });
+  const fetchProjectPhases = async () => {
+    if (!projectId) return [];
+    console.log("Fetching project phases for:", projectId);
+    
+    const { data, error } = await supabase
+      .from("project_phases")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("order", { ascending: true });
+    
+    if (error) {
+      console.error("Error fetching project phases:", error);
+      throw error;
+    }
+    
+    return data as ProjectPhase[];
+  };
 
-        handleSupabaseError(error, "Error fetching project phases", toast);
-        
-        return (data || []).map(phase => ({
-          id: phase.id,
-          projectId: phase.project_id,
-          project_id: phase.project_id, // Keep for compatibility
+  // Hook to add a new phase for a project
+  const addPhase = async (phase: Omit<ProjectPhase, "id" | "created_at" | "updated_at">) => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("project_phases")
+        .insert({
+          project_id: phase.project_id,
           title: phase.title,
           description: phase.description,
-          status: phase.status,
-          dueDate: phase.due_date,
-          completedDate: phase.completed_date,
-          due_date: phase.due_date, // Keep for compatibility
-          completed_date: phase.completed_date, // Keep for compatibility
+          due_date: phase.dueDate,
+          status: phase.status || 'not-started',
           order: phase.order,
-          createdAt: phase.created_at,
-          updatedAt: phase.updated_at,
-          created_at: phase.created_at, // Keep for compatibility
-          updated_at: phase.updated_at, // Keep for compatibility
-        })) as ProjectPhase[];
-      } catch (error) {
-        console.error("Error fetching project phases:", error);
-        return [];
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Invalidate project phases query to refetch data
+      queryClient.invalidateQueries({ queryKey: ["project-phases", phase.project_id] });
+      
+      toast({
+        title: "Phase added",
+        description: "Project phase has been added successfully.",
+      });
+      
+      return data;
+    } catch (error: any) {
+      console.error("Error adding project phase:", error);
+      toast({
+        title: "Error adding phase",
+        description: error.message,
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Hook to update a phase's status
+  const updatePhaseStatus = async (phaseId: string, status: string, completedDate?: string | null) => {
+    setIsLoading(true);
+    try {
+      const updateData: any = { status };
+      if (status === 'completed' && !completedDate) {
+        updateData.completed_date = new Date().toISOString();
+      } else if (completedDate) {
+        updateData.completed_date = completedDate;
       }
-    },
-    enabled: !!projectId,
-  });
+      
+      const { data, error } = await supabase
+        .from("project_phases")
+        .update(updateData)
+        .eq("id", phaseId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Invalidate project phases query to refetch data
+      const projectId = data.project_id;
+      queryClient.invalidateQueries({ queryKey: ["project-phases", projectId] });
+      
+      toast({
+        title: "Phase updated",
+        description: `Phase status updated to ${status}.`,
+      });
+      
+      return data;
+    } catch (error: any) {
+      console.error("Error updating phase status:", error);
+      toast({
+        title: "Error updating phase",
+        description: error.message,
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return {
+    data: useQuery<ProjectPhase[]>({
+      queryKey: ["project-phases", projectId],
+      queryFn: fetchProjectPhases,
+      enabled: !!projectId,
+    }).data,
+    addPhase,
+    updatePhaseStatus,
+    isLoading,
+  };
 }
 
-/**
- * Hook to add a new phase to a project
- */
+// Hook for creating project phases
 export function usePhaseCreation() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  const addPhase = useMutation({
-    mutationFn: async ({ projectId, phase }: { projectId: string, phase: Omit<ProjectPhase, 'id'> }) => {
-      if (!projectId) throw new Error("Project ID is required");
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Mutation for adding a new phase
+  const { mutate: addPhaseMutation } = useMutation({
+    mutationFn: async (phase: Omit<ProjectPhase, "id" | "created_at" | "updated_at">) => {
+      setIsLoading(true);
       
-      try {
-        // First get the current phases to determine the order
-        const { data: existingPhases, error: fetchError } = await supabase
-          .from("project_phases")
-          .select("order")
-          .eq("project_id", projectId)
-          .order("order", { ascending: false })
-          .limit(1);
-        
-        handleSupabaseError(fetchError, "Error fetching existing phases", toast);
-        
-        // Set the order for the new phase
-        const nextOrder = existingPhases && existingPhases.length > 0 ? existingPhases[0].order + 1 : 0;
-        
-        const { data, error } = await supabase
-          .from("project_phases")
-          .insert({
-            project_id: projectId,
-            title: phase.title,
-            description: phase.description,
-            status: phase.status || 'not-started',
-            due_date: phase.dueDate,
-            order: nextOrder,
-          })
-          .select()
-          .single();
-
-        handleSupabaseError(error, "Error adding project phase", toast);
-        
-        // Convert from snake_case to camelCase
-        const newPhase = {
-          id: data?.id,
-          projectId: data?.project_id,
-          title: data?.title,
-          description: data?.description,
-          status: data?.status,
-          dueDate: data?.due_date,
-          completedDate: data?.completed_date,
-          order: data?.order,
-          createdAt: data?.created_at,
-          updatedAt: data?.updated_at,
-        };
-        
-        return newPhase;
-      } catch (error: any) {
-        console.error("Error adding phase:", error);
-        throw error;
-      }
-    },
-    onSuccess: (_, variables) => {
-      // Invalidate project phases query to refresh the data
-      queryClient.invalidateQueries({ queryKey: ["projectPhases", variables.projectId] });
+      const { data, error } = await supabase
+        .from("project_phases")
+        .insert({
+          project_id: phase.project_id,
+          title: phase.title,
+          description: phase.description,
+          due_date: phase.dueDate,
+          status: phase.status || 'not-started',
+          order: phase.order,
+        })
+        .select()
+        .single();
       
-      sonnerToast.success("Phase added", {
-        description: "New project phase has been added successfully",
-      });
+      if (error) throw error;
+      
+      return data;
     },
-    onError: (error: Error) => {
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["project-phases", data.project_id] });
+      
       toast({
-        title: "Failed to add phase",
-        description: error.message || "An unexpected error occurred",
+        title: "Phase added",
+        description: "Project phase has been added successfully.",
+      });
+      
+      setIsLoading(false);
+    },
+    onError: (error: any) => {
+      console.error("Error adding project phase:", error);
+      
+      toast({
+        title: "Error adding phase",
+        description: error.message,
         variant: "destructive",
       });
+      
+      setIsLoading(false);
     }
   });
-
+  
+  const addPhase = (phase: Omit<ProjectPhase, "id" | "created_at" | "updated_at">) => {
+    addPhaseMutation(phase);
+  };
+  
   return {
     addPhase,
-    isLoading: addPhase.isPending
+    isLoading
   };
 }

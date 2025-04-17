@@ -1,55 +1,37 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Edit, 
-  ChevronDown, 
-  Building2, 
-  CalendarIcon, 
-  MapPin, 
-  Tag,
-  BookmarkPlus,
-  BookmarkCheck,
-  MessageSquare,
-  HandHeart,
-  Brain,
-  Briefcase,
-  Users,
-  CornerDownRight,
-  School
-} from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Project, PartnershipType } from "@/types";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
+import { BookmarkIcon, CheckCircleIcon, MessageSquare, UserPlus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
 
 interface ProjectHeaderProps {
   project: Project;
   isOwner: boolean;
   canUpdateProgress: boolean;
   applicationStatus: string | null;
-  applicationLoading: boolean;
   saved: boolean;
   setSaved: (saved: boolean) => void;
   handleApply: () => void;
   handleContact: () => void;
+  applicationLoading: boolean;
   partnershipType: PartnershipType;
   setPartnershipType: (type: PartnershipType) => void;
   message: string;
@@ -59,18 +41,19 @@ interface ProjectHeaderProps {
   userOrganizations?: any[];
   selectedOrganizationId: string | null;
   setSelectedOrganizationId: (id: string | null) => void;
+  onApplySubmit: () => void;
 }
 
-export function ProjectHeader({
-  project,
+export function ProjectHeader({ 
+  project, 
   isOwner,
   canUpdateProgress,
   applicationStatus,
-  applicationLoading,
   saved,
   setSaved,
   handleApply,
   handleContact,
+  applicationLoading,
   partnershipType,
   setPartnershipType,
   message,
@@ -79,219 +62,144 @@ export function ProjectHeader({
   setApplicationOpen,
   userOrganizations = [],
   selectedOrganizationId,
-  setSelectedOrganizationId
+  setSelectedOrganizationId,
+  onApplySubmit
 }: ProjectHeaderProps) {
-  const [isApplicationDialogOpen, setIsApplicationDialogOpen] = useState(false);
+  const [localSaved, setLocalSaved] = useState(saved);
   
-  const handleSave = () => {
-    localStorage.setItem(`saved_${project.id}`, saved ? "false" : "true");
-    setSaved(!saved);
-  };
-  
-  const partnershipIcons = {
-    "monetary": <HandHeart className="h-5 w-5 mr-2" />,
-    "knowledge": <Brain className="h-5 w-5 mr-2" />,
-    "skilled": <Briefcase className="h-5 w-5 mr-2" />,
-    "volunteering": <Users className="h-5 w-5 mr-2" />
-  };
-  
-  const partnershipLabels = {
-    "monetary": "Financial Support",
-    "knowledge": "Knowledge/Expertise",
-    "skilled": "Skilled Work",
-    "volunteering": "Volunteer Work"
-  };
-  
-  const partnershipDescriptions = {
-    "monetary": "Provide financial resources to support the project",
-    "knowledge": "Contribute with expertise, consultation, or mentoring",
-    "skilled": "Offer professional services or specialized skills",
-    "volunteering": "Participate with your time and effort"
-  };
-  
-  const getStatusBadgeColor = () => {
-    switch (project.status) {
-      case 'draft': return 'bg-slate-500';
-      case 'published': return 'bg-green-500';
-      case 'in-progress': return 'bg-blue-500';
-      case 'completed': return 'bg-purple-500';
-      default: return 'bg-slate-500';
+  const handleSaveProject = () => {
+    // Toggle saved state
+    const newSavedState = !localSaved;
+    setLocalSaved(newSavedState);
+    setSaved(newSavedState);
+    
+    // Save to localStorage (in a real app, this would be saved to a database)
+    if (newSavedState) {
+      localStorage.setItem(`saved_${project.id}`, "true");
+    } else {
+      localStorage.removeItem(`saved_${project.id}`);
     }
   };
   
-  const getApplicationButtonText = () => {
-    if (applicationStatus === "pending") return "Application Pending";
-    if (applicationStatus === "approved") return "Application Approved";
-    if (applicationStatus === "rejected") return "Application Rejected";
-    return "Apply to this Project";
+  const getApplicationStatusBadge = () => {
+    switch (applicationStatus) {
+      case "pending":
+        return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Application Pending</Badge>;
+      case "approved":
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Application Approved</Badge>;
+      case "rejected":
+        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Application Rejected</Badge>;
+      default:
+        return null;
+    }
   };
-  
-  const getApplicationButtonVariant = () => {
-    if (applicationStatus === "pending") return "outline";
-    if (applicationStatus === "approved") return "ghost";
-    if (applicationStatus === "rejected") return "ghost";
-    return "default";
-  };
-  
-  const isApplicationEnabled = project.applicationsEnabled !== false && project.status === 'published';
   
   return (
     <div className="mb-8">
-      <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-3xl font-bold">{project.title}</h1>
-            <Badge className={getStatusBadgeColor()}>
-              {project.status === 'in-progress' ? 'In Progress' : 
-               project.status.charAt(0).toUpperCase() + project.status.slice(1)}
-            </Badge>
-          </div>
+      {project.image && (
+        <div className="relative h-64 w-full mb-6 overflow-hidden rounded-lg">
+          <img
+            src={project.image}
+            alt={project.title}
+            className="h-full w-full object-cover"
+          />
+        </div>
+      )}
+      
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4">
+        <div>
+          <h1 className="text-3xl font-bold">{project.title}</h1>
           
-          <div className="flex flex-wrap gap-x-4 gap-y-2 text-muted-foreground">
-            {project.organizationName && (
-              <div className="flex items-center">
-                <Building2 className="h-4 w-4 mr-1" />
-                <span>{project.organizationName}</span>
-              </div>
-            )}
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <Badge variant="outline" className="capitalize">
+              {project.category || "General"}
+            </Badge>
             
-            {project.location && (
-              <div className="flex items-center">
-                <MapPin className="h-4 w-4 mr-1" />
-                <span>{project.location}</span>
-              </div>
-            )}
+            <Badge variant="outline" className="capitalize">
+              {project.status}
+            </Badge>
             
-            {project.category && (
-              <div className="flex items-center">
-                <Tag className="h-4 w-4 mr-1" />
-                <span>{project.category}</span>
-              </div>
-            )}
-            
-            {project.timeline.start && (
-              <div className="flex items-center">
-                <CalendarIcon className="h-4 w-4 mr-1" />
-                <span>
-                  {new Date(project.timeline.start).toLocaleDateString()}
-                  {project.timeline.end && ` - ${new Date(project.timeline.end).toLocaleDateString()}`}
-                </span>
-              </div>
-            )}
+            {applicationStatus && getApplicationStatusBadge()}
           </div>
         </div>
-      
-        <div className="flex flex-wrap gap-2">
-          {isOwner && (
-            <Button asChild variant="outline">
-              <Link to={`/projects/${project.id}/edit`}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Project
-              </Link>
+        
+        <div className="flex flex-wrap gap-2 mt-2 sm:mt-0">
+          {!isOwner && !applicationStatus && project.status !== 'completed' && (
+            <Button onClick={handleApply} disabled={applicationLoading}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Apply Now
             </Button>
           )}
           
           {!isOwner && (
-            <>
-              <Button 
-                variant={saved ? "outline" : "ghost"} 
-                size="icon"
-                onClick={handleSave}
-              >
-                {saved ? 
-                  <BookmarkCheck className="h-5 w-5 text-primary" /> : 
-                  <BookmarkPlus className="h-5 w-5" />
-                }
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                onClick={handleContact}
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Contact
-              </Button>
-              
-              {isApplicationEnabled && !isOwner && !canUpdateProgress && (
-                <Button 
-                  onClick={() => setApplicationOpen(true)}
-                  disabled={applicationLoading || applicationStatus === "pending" || applicationStatus === "approved"}
-                  variant={getApplicationButtonVariant()}
-                >
-                  {getApplicationButtonText()}
-                </Button>
-              )}
-            </>
+            <Button variant="outline" onClick={handleContact}>
+              <MessageSquare className="mr-2 h-4 w-4" />
+              Contact
+            </Button>
           )}
+          
+          <Button 
+            variant="outline" 
+            onClick={handleSaveProject} 
+            className={localSaved ? "bg-blue-50 border-blue-200" : ""}
+          >
+            <BookmarkIcon className={`mr-2 h-4 w-4 ${localSaved ? "text-blue-500 fill-blue-500" : ""}`} />
+            {localSaved ? "Saved" : "Save"}
+          </Button>
         </div>
       </div>
       
-      {project.partnershipTypes && project.partnershipTypes.length > 0 && (
-        <div className="mb-4">
-          <h3 className="text-sm font-medium mb-2">Partnership Types Needed:</h3>
-          <div className="flex flex-wrap gap-2">
-            {project.partnershipTypes.map((type) => (
-              <Badge key={type} variant="secondary" className="flex items-center">
-                {partnershipIcons[type]}
-                {partnershipLabels[type as keyof typeof partnershipLabels]}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      )}
-      
+      {/* Application Dialog */}
       <Dialog open={applicationOpen} onOpenChange={setApplicationOpen}>
-        <DialogContent className="sm:max-w-[550px]">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Apply to Project</DialogTitle>
             <DialogDescription>
-              Submit an application to partner on the project "{project.title}". The project organizer will review your application.
+              Submit your application to join this project
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-6 py-4">
-            {/* Partnership type selection */}
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-sm font-medium mb-3">How do you want to contribute?</h3>
-                <RadioGroup 
-                  value={partnershipType} 
-                  onValueChange={(value) => setPartnershipType(value as PartnershipType)}
-                  className="space-y-3"
-                >
-                  {project.partnershipTypes.map((type) => (
-                    <div key={type} className="flex items-start space-x-2">
-                      <RadioGroupItem value={type} id={type} className="mt-1" />
-                      <div className="grid gap-1.5">
-                        <Label htmlFor={type} className="font-medium flex items-center">
-                          {partnershipIcons[type]}
-                          {partnershipLabels[type as keyof typeof partnershipLabels]}
-                        </Label>
-                        <p className="text-sm text-muted-foreground pl-7">
-                          {partnershipDescriptions[type as keyof typeof partnershipDescriptions]}
-                        </p>
-                      </div>
-                    </div>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="partnership-type">Partnership Type</Label>
+              <Select
+                value={partnershipType}
+                onValueChange={(value) => setPartnershipType(value as PartnershipType)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select partnership type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {project.partnershipTypes?.map((type) => (
+                    <SelectItem key={type} value={type} className="capitalize">
+                      {type}
+                    </SelectItem>
                   ))}
-                </RadioGroup>
-              </div>
+                  {!project.partnershipTypes?.includes("skilled") && (
+                    <SelectItem value="skilled">Skilled</SelectItem>
+                  )}
+                  {!project.partnershipTypes?.includes("financial") && (
+                    <SelectItem value="financial">Financial</SelectItem>
+                  )}
+                  {!project.partnershipTypes?.includes("resource") && (
+                    <SelectItem value="resource">Resource</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
             
-            {/* Organization selection */}
             {userOrganizations && userOrganizations.length > 0 && (
               <div className="space-y-2">
-                <Label htmlFor="organization" className="text-sm font-medium">
-                  Apply as individual or organization?
-                </Label>
-                <Select 
-                  value={selectedOrganizationId || "individual"} 
-                  onValueChange={(value) => setSelectedOrganizationId(value === "individual" ? null : value)}
+                <Label htmlFor="organization">Apply as</Label>
+                <Select
+                  value={selectedOrganizationId || 'individual'}
+                  onValueChange={(value) => setSelectedOrganizationId(value === 'individual' ? null : value)}
                 >
                   <SelectTrigger id="organization">
-                    <SelectValue placeholder="Select how you want to apply" />
+                    <SelectValue placeholder="Select organization or individual" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="individual">As an Individual</SelectItem>
+                    <SelectItem value="individual">Individual</SelectItem>
                     {userOrganizations.map((org) => (
                       <SelectItem key={org.organizations.id} value={org.organizations.id}>
                         {org.organizations.name}
@@ -299,23 +207,17 @@ export function ProjectHeader({
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  Applying as an organization may increase your chances of acceptance
-                </p>
               </div>
             )}
             
-            {/* Message */}
             <div className="space-y-2">
-              <Label htmlFor="message" className="text-sm font-medium">
-                Message to the project organizer
-              </Label>
+              <Label htmlFor="message">Message (Optional)</Label>
               <Textarea
                 id="message"
-                placeholder="Introduce yourself and explain why you want to partner on this project..."
+                placeholder="Introduce yourself and explain why you want to join this project"
+                rows={4}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                className="min-h-24"
               />
             </div>
           </div>
@@ -324,14 +226,15 @@ export function ProjectHeader({
             <Button 
               variant="outline" 
               onClick={() => setApplicationOpen(false)}
+              disabled={applicationLoading}
             >
               Cancel
             </Button>
             <Button 
-              onClick={handleApply}
+              onClick={onApplySubmit} 
               disabled={applicationLoading}
             >
-              {applicationLoading ? "Sending..." : "Submit Application"}
+              {applicationLoading ? "Submitting..." : "Submit Application"}
             </Button>
           </DialogFooter>
         </DialogContent>
