@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CheckCircle2, Clock } from "lucide-react";
 
 interface ProgressDialogProps {
   open: boolean;
@@ -12,6 +13,9 @@ interface ProgressDialogProps {
   setProgressNote: (note: string) => void;
   onSave: () => void;
   projectStatus?: string;
+  phaseId?: string;
+  phaseStatus?: string;
+  onStatusChange?: (status: string) => void;
 }
 
 export function ProgressDialog({
@@ -20,7 +24,10 @@ export function ProgressDialog({
   progressNote,
   setProgressNote,
   onSave,
-  projectStatus = "in-progress"
+  projectStatus = "in-progress",
+  phaseId,
+  phaseStatus = "not-started",
+  onStatusChange
 }: ProgressDialogProps) {
   const isCompleted = projectStatus === "completed";
 
@@ -50,6 +57,26 @@ export function ProgressDialog({
         {!isCompleted ? (
           <>
             <div className="grid gap-4 py-4">
+              {onStatusChange && (
+                <div className="grid gap-2">
+                  <Label htmlFor="phase-status">Phase Status</Label>
+                  <Select 
+                    value={phaseStatus} 
+                    onValueChange={(value) => onStatusChange(value)}
+                  >
+                    <SelectTrigger id="phase-status" className="w-full">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="not-started">Not Started</SelectItem>
+                      <SelectItem value="in-progress">In Progress</SelectItem>
+                      <SelectItem value="delayed">Delayed</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              
               <div className="grid gap-2">
                 <Label htmlFor="progress-note">Progress Note</Label>
                 <Textarea
@@ -59,6 +86,11 @@ export function ProgressDialog({
                   placeholder="Describe the progress made or any updates on this phase..."
                   rows={5}
                 />
+              </div>
+              
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Clock className="h-4 w-4 mr-2" />
+                Updated: {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}
               </div>
             </div>
             

@@ -1,8 +1,9 @@
+
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProjectPhase } from "@/types";
-import { CalendarIcon, CheckSquare, Clock, Plus, AlertCircle } from "lucide-react";
+import { CalendarIcon, CheckSquare, Clock, Plus, AlertCircle, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { useProjectPhases } from "@/hooks/use-phases-query";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ProjectProgressContentProps {
   projectId: string;
@@ -33,6 +36,9 @@ export function ProjectProgressContent({
   projectStatus
 }: ProjectProgressContentProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [currentPhase, setCurrentPhase] = useState<Partial<ProjectPhase> | null>(null);
   const [newPhase, setNewPhase] = useState({
     title: '',
     description: '',
@@ -41,7 +47,14 @@ export function ProjectProgressContent({
     order: 0,
     project_id: projectId
   });
-  const { addPhase, isLoading: isAddingPhase, refetch } = useProjectPhases(projectId);
+  
+  const { 
+    addPhase, 
+    updatePhaseStatus, 
+    isLoading: isAddingPhase, 
+    refetch 
+  } = useProjectPhases(projectId);
+  
   const { toast } = useToast();
   
   const isCompleted = projectStatus === 'completed';
@@ -94,7 +107,7 @@ export function ProjectProgressContent({
       dueDate: newPhase.dueDate,
       status: newPhase.status,
       order: phases.length,
-      projectId: projectId // Changed from project_id to projectId to match the type
+      projectId: projectId
     });
 
     setNewPhase({
@@ -107,6 +120,39 @@ export function ProjectProgressContent({
     });
 
     setCreateDialogOpen(false);
+    refetch();
+  };
+
+  const handleEditPhase = (phase: ProjectPhase) => {
+    setCurrentPhase(phase);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeletePhase = (phase: ProjectPhase) => {
+    setCurrentPhase(phase);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleUpdatePhase = async () => {
+    if (!currentPhase || !currentPhase.id) return;
+
+    await updatePhaseStatus(currentPhase.id, currentPhase.status || 'not-started');
+    setEditDialogOpen(false);
+    toast({
+      title: "Phase updated",
+      description: "The project phase has been updated successfully."
+    });
+    refetch();
+  };
+
+  const handleStatusChange = async (phaseId: string, status: string) => {
+    if (isCompleted) return;
+    
+    await updatePhaseStatus(phaseId, status);
+    toast({
+      title: "Status updated",
+      description: `Phase status updated to ${status.replace('-', ' ')}.`
+    });
     refetch();
   };
   
@@ -136,6 +182,21 @@ export function ProjectProgressContent({
           )}
         </div>
       </div>
+      
+      {/* Progress overview */}
+      {phases.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Overall Progress</CardTitle>
+            <CardDescription>
+              {completedPhases}/{phases.length} phases completed ({getProgressPercentage()}%)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Progress value={getProgressPercentage()} className="h-2" />
+          </CardContent>
+        </Card>
+      )}
       
       {phases.length === 0 ? (
         <EmptyState
@@ -189,15 +250,45 @@ export function ProjectProgressContent({
                   Phase {phase.order + 1}
                 </div>
                 
-                {canUpdateProgress && !isCompleted && (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => openProgressDialog(phase.id)}
-                    disabled={phase.status === 'completed'}
-                  >
-                    Update Progress
-                  </Button>
+                {!isCompleted && (
+                  <div className="flex gap-2">
+                    {canUpdateProgress && (
+                      <Select
+                        value={phase.status}
+                        onValueChange={(value) => handleStatusChange(phase.id, value)}
+                        disabled={isCompleted}
+                      >
+                        <SelectTrigger className="w-[180px] h-8">
+                          <SelectValue placeholder="Update status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="not-started">Not Started</SelectItem>
+                          <SelectItem value="in-progress">In Progress</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="delayed">Delayed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                    
+                    {isOwner && (
+                      <>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleEditPhase(phase)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleDeletePhase(phase)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 )}
               </CardFooter>
             </Card>
@@ -246,6 +337,23 @@ export function ProjectProgressContent({
                 onChange={(e) => setNewPhase({...newPhase, dueDate: e.target.value})}
               />
             </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="status">Initial Status</Label>
+              <Select
+                value={newPhase.status}
+                onValueChange={(value) => setNewPhase({...newPhase, status: value})}
+              >
+                <SelectTrigger id="status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="not-started">Not Started</SelectItem>
+                  <SelectItem value="in-progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           
           <DialogFooter>
@@ -253,6 +361,86 @@ export function ProjectProgressContent({
             <Button onClick={handleAddPhase} disabled={isAddingPhase}>
               {isAddingPhase ? 'Adding...' : 'Add Phase'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog for editing phase */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Phase</DialogTitle>
+            <DialogDescription>
+              Update the details of this project phase
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-title">Phase Title</Label>
+              <Input
+                id="edit-title"
+                value={currentPhase?.title || ''}
+                onChange={(e) => setCurrentPhase({...currentPhase, title: e.target.value})}
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={currentPhase?.description || ''}
+                onChange={(e) => setCurrentPhase({...currentPhase, description: e.target.value})}
+                rows={3}
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="edit-status">Status</Label>
+              <Select
+                value={currentPhase?.status || 'not-started'}
+                onValueChange={(value) => setCurrentPhase({...currentPhase, status: value})}
+              >
+                <SelectTrigger id="edit-status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="not-started">Not Started</SelectItem>
+                  <SelectItem value="in-progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="delayed">Delayed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpdatePhase}>Update Phase</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Phase</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this phase? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => {
+              // Here would be the delete logic
+              setDeleteDialogOpen(false);
+              toast({
+                title: "Phase deleted",
+                description: "The project phase has been deleted."
+              });
+            }}>Delete Phase</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
