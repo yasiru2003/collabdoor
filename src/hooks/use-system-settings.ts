@@ -32,12 +32,8 @@ export function useSystemSettings() {
     }
   });
 
-  const updateSetting = useMutation<
-    { key: string; value: boolean }, 
-    Error, 
-    { key: string; value: boolean }
-  >({
-    mutationFn: async ({ key, value }) => {
+  const updateSetting = useMutation({
+    mutationFn: async ({ key, value }: { key: string; value: boolean }) => {
       // Check if setting exists
       const { data: existingSetting } = await supabase
         .from("system_settings")

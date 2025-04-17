@@ -200,8 +200,8 @@ export function AdminSettings() {
     
     // Update both settings
     Promise.all([
-      updateSetting({ key: 'auto_approve_organizations', value: settings.autoApproveOrganizations }),
-      updateSetting({ key: 'auto_approve_projects', value: settings.autoApproveProjects })
+      updateSetting.mutate({ key: 'auto_approve_organizations', value: settings.autoApproveOrganizations }),
+      updateSetting.mutate({ key: 'auto_approve_projects', value: settings.autoApproveProjects })
     ])
       .then(() => {
         toast({
