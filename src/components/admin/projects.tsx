@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProjects } from "@/hooks/use-projects-query";
@@ -11,12 +12,33 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Project } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { CheckCircle, AlertCircle } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function AdminProjects() {
   const { data: projects, isLoading, refetch } = useProjects();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [pendingPublishProjects, setPendingPublishProjects] = useState<Project[]>([]);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Get pending publish projects
+  useState(() => {
+    const fetchPendingProjects = async () => {
+      const { data } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('status', 'pending_publish')
+        .order('created_at', { ascending: false });
+      
+      if (data) {
+        setPendingPublishProjects(data);
+      }
+    };
+    
+    fetchPendingProjects();
+  }, []);
 
   const handleEdit = (project: Project) => {
     setSelectedProject(project);
@@ -55,6 +77,100 @@ export function AdminProjects() {
       });
     }
   };
+  
+  const handleApprovePublication = async (projectId: string) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({
+          status: 'published'
+        })
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      // Update organization owner notification
+      const { data: projectData } = await supabase
+        .from('projects')
+        .select('title, organizer_id')
+        .eq('id', projectId)
+        .single();
+
+      if (projectData) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: projectData.organizer_id,
+            title: 'Project Published',
+            message: `Your project "${projectData.title}" has been approved and published.`,
+            link: `/projects/${projectId}`,
+            read: false
+          });
+      }
+
+      toast({
+        title: "Project published",
+        description: "The project has been successfully published.",
+      });
+      
+      // Update local state
+      setPendingPublishProjects(prev => prev.filter(p => p.id !== projectId));
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    } catch (error: any) {
+      toast({
+        title: "Error publishing project",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleRejectPublication = async (projectId: string) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({
+          status: 'draft'
+        })
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      // Update organization owner notification
+      const { data: projectData } = await supabase
+        .from('projects')
+        .select('title, organizer_id')
+        .eq('id', projectId)
+        .single();
+
+      if (projectData) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: projectData.organizer_id,
+            title: 'Project Publication Rejected',
+            message: `Your project "${projectData.title}" publication was rejected. Please review and resubmit.`,
+            link: `/projects/${projectId}`,
+            read: false
+          });
+      }
+
+      toast({
+        title: "Publication rejected",
+        description: "The project has been returned to draft status.",
+      });
+      
+      // Update local state
+      setPendingPublishProjects(prev => prev.filter(p => p.id !== projectId));
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    } catch (error: any) {
+      toast({
+        title: "Error rejecting publication",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -62,6 +178,7 @@ export function AdminProjects() {
       case 'published': return 'bg-green-500';
       case 'in-progress': return 'bg-blue-500';
       case 'completed': return 'bg-purple-500';
+      case 'pending_publish': return 'bg-yellow-500';
       default: return 'bg-gray-500';
     }
   };
@@ -77,6 +194,49 @@ export function AdminProjects() {
         <CardDescription>Manage all projects in the system</CardDescription>
       </CardHeader>
       <CardContent>
+        {pendingPublishProjects.length > 0 && (
+          <div className="mb-6 border rounded-md p-4 bg-yellow-50 dark:bg-yellow-900/20">
+            <h3 className="font-semibold mb-2 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-2 text-yellow-600" />
+              Pending Publication Approval ({pendingPublishProjects.length})
+            </h3>
+            <div className="space-y-3">
+              {pendingPublishProjects.map(project => (
+                <div key={project.id} className="border-b pb-3 last:border-b-0 last:pb-0">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium">{project.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Category: {project.category || "Uncategorized"}
+                      </p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700"
+                        onClick={() => handleApprovePublication(project.id)}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Approve
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="border-red-500 text-red-600 hover:bg-red-50 hover:text-red-700"
+                        onClick={() => handleRejectPublication(project.id)}
+                      >
+                        <AlertCircle className="h-4 w-4 mr-1" />
+                        Reject
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
         <Tabs defaultValue="all">
           <TabsList>
             <TabsTrigger value="all">All Projects</TabsTrigger>

@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -39,6 +40,9 @@ export function Header() {
       console.error("Error signing out:", error);
     }
   };
+
+  // Check if user is admin - based on email for now
+  const isAdmin = user?.email === "yasirubandaraprivate@gmail.com";
 
   return (
     <header className="border-b border-border bg-background sticky top-0 z-50">
@@ -121,9 +125,11 @@ export function Header() {
                   <DropdownMenuItem asChild>
                     <Link to="/settings" className="cursor-pointer w-full">Settings</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/admin" className="cursor-pointer w-full">Admin Panel</Link>
-                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin" className="cursor-pointer w-full">Admin Panel</Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
                 </DropdownMenuContent>
