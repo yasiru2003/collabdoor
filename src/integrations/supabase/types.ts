@@ -117,6 +117,24 @@ export type Database = {
           },
         ]
       }
+      locations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -314,6 +332,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      partnership_types: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       partnerships: {
         Row: {
@@ -675,7 +711,12 @@ export type Database = {
     Enums: {
       application_status: "pending" | "approved" | "rejected"
       partnership_type: "monetary" | "knowledge" | "skilled" | "volunteering"
-      project_status: "draft" | "published" | "in-progress" | "completed"
+      project_status:
+        | "draft"
+        | "published"
+        | "in-progress"
+        | "completed"
+        | "pending_publish"
       user_role: "partner" | "organizer" | "user"
     }
     CompositeTypes: {
@@ -794,7 +835,13 @@ export const Constants = {
     Enums: {
       application_status: ["pending", "approved", "rejected"],
       partnership_type: ["monetary", "knowledge", "skilled", "volunteering"],
-      project_status: ["draft", "published", "in-progress", "completed"],
+      project_status: [
+        "draft",
+        "published",
+        "in-progress",
+        "completed",
+        "pending_publish",
+      ],
       user_role: ["partner", "organizer", "user"],
     },
   },

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProjects } from "@/hooks/use-projects-query";
@@ -55,7 +56,7 @@ export function AdminProjects() {
           status: selectedProject.status,
           category: selectedProject.category,
           ...(selectedProject.status === 'completed' && { completed_at: new Date().toISOString() })
-        })
+        } as any)
         .eq('id', selectedProject.id);
 
       if (error) throw error;

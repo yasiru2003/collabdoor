@@ -1,4 +1,3 @@
-
 export interface Project {
   id: string;
   title: string;
@@ -10,7 +9,7 @@ export interface Project {
   category?: string;
   image?: string;
   location?: string;
-  status: "draft" | "published" | "in-progress" | "completed";
+  status: "draft" | "published" | "in-progress" | "completed" | "pending_publish";
   timeline: {
     start?: string;
     end?: string;
