@@ -115,15 +115,18 @@ export function useProjectPhases(projectId?: string) {
     }
   };
 
+  const query = useQuery<ProjectPhase[]>({
+    queryKey: ["project-phases", projectId],
+    queryFn: fetchProjectPhases,
+    enabled: !!projectId,
+  });
+
   return {
-    data: useQuery<ProjectPhase[]>({
-      queryKey: ["project-phases", projectId],
-      queryFn: fetchProjectPhases,
-      enabled: !!projectId,
-    }).data,
+    data: query.data,
     addPhase,
     updatePhaseStatus,
     isLoading,
+    refetch: query.refetch,  // Add the refetch method here
   };
 }
 

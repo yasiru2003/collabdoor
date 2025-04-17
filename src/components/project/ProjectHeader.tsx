@@ -178,11 +178,14 @@ export function ProjectHeader({
                   {!project.partnershipTypes?.includes("skilled") && (
                     <SelectItem value="skilled">Skilled</SelectItem>
                   )}
-                  {!project.partnershipTypes?.includes("financial") && (
-                    <SelectItem value="financial">Financial</SelectItem>
+                  {!project.partnershipTypes?.includes("monetary") && (
+                    <SelectItem value="monetary">Monetary</SelectItem>
                   )}
-                  {!project.partnershipTypes?.includes("resource") && (
-                    <SelectItem value="resource">Resource</SelectItem>
+                  {!project.partnershipTypes?.includes("volunteering") && (
+                    <SelectItem value="volunteering">Volunteering</SelectItem>
+                  )}
+                  {!project.partnershipTypes?.includes("knowledge") && (
+                    <SelectItem value="knowledge">Knowledge</SelectItem>
                   )}
                 </SelectContent>
               </Select>

@@ -124,7 +124,7 @@ export function ProjectOverview({
                     <Calendar className="h-5 w-5 text-muted-foreground mr-2 mt-0.5" />
                     <div>
                       <div className="text-sm text-muted-foreground">Start Date</div>
-                      <div className="font-medium">{formatDate(project.startDate)}</div>
+                      <div className="font-medium">{formatDate(project.timeline.start || null)}</div>
                     </div>
                   </div>
                   
@@ -132,7 +132,7 @@ export function ProjectOverview({
                     <Clock className="h-5 w-5 text-muted-foreground mr-2 mt-0.5" />
                     <div>
                       <div className="text-sm text-muted-foreground">End Date</div>
-                      <div className="font-medium">{formatDate(project.endDate)}</div>
+                      <div className="font-medium">{formatDate(project.timeline.end || null)}</div>
                     </div>
                   </div>
                   
