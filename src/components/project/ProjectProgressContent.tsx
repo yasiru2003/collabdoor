@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,26 +62,11 @@ export function ProjectProgressContent({
   const getProgressPercentage = () => {
     if (phases.length === 0) return 0;
     
-    const completedPhases = phases.filter(
+    const completedPhasesCount = phases.filter(
       phase => phase.status === 'completed'
     ).length;
     
-    return Math.round((completedPhases / phases.length) * 100);
-  };
-  
-  const getPhaseStatusBadge = (status: string) => {
-    switch (status) {
-      case 'not-started':
-        return <Badge variant="outline" className="bg-gray-50">Not Started</Badge>;
-      case 'in-progress':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">In Progress</Badge>;
-      case 'completed':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Completed</Badge>;
-      case 'delayed':
-        return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Delayed</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
+    return Math.round((completedPhasesCount / phases.length) * 100);
   };
   
   const formatDate = (dateString: string | null) => {
@@ -156,6 +140,21 @@ export function ProjectProgressContent({
     refetch();
   };
   
+  const getPhaseStatusBadge = (status: string) => {
+    switch (status) {
+      case 'not-started':
+        return <Badge variant="outline" className="bg-gray-50">Not Started</Badge>;
+      case 'in-progress':
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">In Progress</Badge>;
+      case 'completed':
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Completed</Badge>;
+      case 'delayed':
+        return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Delayed</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+  
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -189,7 +188,7 @@ export function ProjectProgressContent({
           <CardHeader>
             <CardTitle>Overall Progress</CardTitle>
             <CardDescription>
-              {completedPhases}/{phases.length} phases completed ({getProgressPercentage()}%)
+              {phases.filter(phase => phase.status === 'completed').length}/{phases.length} phases completed ({getProgressPercentage()}%)
             </CardDescription>
           </CardHeader>
           <CardContent>
