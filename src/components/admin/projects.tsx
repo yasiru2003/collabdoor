@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProjects } from "@/hooks/use-projects-query";
@@ -14,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, AlertCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { mapSupabaseProjectToProject } from "@/utils/data-mappers";
 
 export function AdminProjects() {
   const { data: projects, isLoading, refetch } = useProjects();
@@ -28,12 +28,40 @@ export function AdminProjects() {
     const fetchPendingProjects = async () => {
       const { data } = await supabase
         .from('projects')
-        .select('*')
+        .select(`
+          *,
+          profiles!projects_organizer_id_fkey(id, name, email)
+        `)
         .eq('status', 'pending_publish')
         .order('created_at', { ascending: false });
       
       if (data) {
-        setPendingPublishProjects(data as Project[]);
+        // Map the raw data to Project objects
+        const mappedProjects = data.map(project => ({
+          id: project.id,
+          title: project.title,
+          description: project.description,
+          status: project.status,
+          organizerId: project.organizer_id,
+          organizerName: project.profiles?.name || "Unknown",
+          organizationId: project.organization_id,
+          organizationName: project.organization_name,
+          createdAt: project.created_at,
+          updatedAt: project.updated_at,
+          image: project.image,
+          location: project.location,
+          timeline: {
+            start: project.start_date,
+            end: project.end_date
+          },
+          requiredSkills: project.required_skills || [],
+          partnershipTypes: project.partnership_types || [],
+          category: project.category,
+          applicationsEnabled: project.applications_enabled !== false,
+          completedAt: project.completed_at
+        })) as Project[];
+        
+        setPendingPublishProjects(mappedProjects);
       }
     };
     
