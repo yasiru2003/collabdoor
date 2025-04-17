@@ -8,6 +8,11 @@ import { format } from "date-fns";
 import { useProjectPhases } from "@/hooks/use-phases-query";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/empty-state";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProjectProgressContentProps {
   projectId: string;
@@ -29,7 +34,16 @@ export function ProjectProgressContent({
   projectStatus
 }: ProjectProgressContentProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const { addPhase, isLoading: isAddingPhase } = useProjectPhases();
+  const [newPhase, setNewPhase] = useState({
+    title: '',
+    description: '',
+    dueDate: '',
+    status: 'not-started',
+    order: 0,
+    project_id: projectId
+  });
+  const { addPhase, isLoading: isAddingPhase, refetch } = useProjectPhases(projectId);
+  const { toast } = useToast();
   
   const isCompleted = projectStatus === 'completed';
   
@@ -62,6 +76,34 @@ export function ProjectProgressContent({
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'No date set';
     return format(new Date(dateString), 'MMM d, yyyy');
+  };
+
+  const handleAddPhase = async () => {
+    if (!newPhase.title) {
+      toast({
+        title: "Missing information",
+        description: "Please provide a title for the phase",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    await addPhase({
+      ...newPhase,
+      order: phases.length,
+    });
+
+    setNewPhase({
+      title: '',
+      description: '',
+      dueDate: '',
+      status: 'not-started',
+      order: 0,
+      project_id: projectId
+    });
+
+    setCreateDialogOpen(false);
+    refetch();
   };
   
   return (
@@ -158,6 +200,58 @@ export function ProjectProgressContent({
           ))}
         </div>
       )}
+
+      {/* Dialog for adding new phase */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Phase</DialogTitle>
+            <DialogDescription>
+              Create a new phase to track your project's progress
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="title">Phase Title</Label>
+              <Input
+                id="title"
+                value={newPhase.title}
+                onChange={(e) => setNewPhase({...newPhase, title: e.target.value})}
+                placeholder="e.g., Research, Development, Testing"
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={newPhase.description}
+                onChange={(e) => setNewPhase({...newPhase, description: e.target.value})}
+                placeholder="Describe what will be accomplished in this phase"
+                rows={3}
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="dueDate">Due Date (Optional)</Label>
+              <Input
+                id="dueDate"
+                type="date"
+                value={newPhase.dueDate}
+                onChange={(e) => setNewPhase({...newPhase, dueDate: e.target.value})}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddPhase} disabled={isAddingPhase}>
+              {isAddingPhase ? 'Adding...' : 'Add Phase'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

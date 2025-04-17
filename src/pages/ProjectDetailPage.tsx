@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -47,7 +46,8 @@ export default function ProjectDetailPage() {
     updateApplicationStatus,
     userOrganizations
   } = useProjectApplications();
-  const { data: projectApplications } = useProjectApplicationsQuery(isValidUuid ? id : undefined);
+  
+  const { data: projectApplications, refetch: refetchApplications } = useProjectApplicationsQuery(isValidUuid ? id : undefined);
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
   const [applicationOpen, setApplicationOpen] = useState(false);
   const [partnershipType, setPartnershipType] = useState<PartnershipType>("skilled");
@@ -55,7 +55,8 @@ export default function ProjectDetailPage() {
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
   const [progressNote, setProgressNote] = useState("");
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
-  const { data: phases } = useProjectPhases(isValidUuid ? id : undefined);
+  
+  const { data: phases, refetch: refetchPhases } = useProjectPhases(isValidUuid ? id : undefined);
   
   // New state for organization selection
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
@@ -74,7 +75,7 @@ export default function ProjectDetailPage() {
   
   // State for project completion dialog
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
-
+  
   const handleContact = () => {
     if (!user) {
       toast({
@@ -199,9 +200,7 @@ export default function ProjectDetailPage() {
       });
       
       // Refresh the applications list
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      refetchApplications();
     } catch (error) {
       console.error(`Error ${status} application:`, error);
       toast({
