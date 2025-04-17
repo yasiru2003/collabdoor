@@ -47,7 +47,6 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Layout },
     { name: "Projects", href: "/projects", icon: FolderKanban },
-    { name: "Partners", href: "/partners", icon: Users },
     { name: "Organizations", href: "/organizations", icon: Building },
     { name: "Messages", href: "/messages", icon: MessageSquare },
   ];
