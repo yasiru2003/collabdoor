@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProjects } from "@/hooks/use-projects-query";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +23,7 @@ export function AdminProjects() {
   const queryClient = useQueryClient();
   
   // Get pending publish projects
-  useState(() => {
+  useEffect(() => {
     const fetchPendingProjects = async () => {
       const { data } = await supabase
         .from('projects')
@@ -33,7 +32,7 @@ export function AdminProjects() {
         .order('created_at', { ascending: false });
       
       if (data) {
-        setPendingPublishProjects(data);
+        setPendingPublishProjects(data as Project[]);
       }
     };
     
@@ -55,7 +54,6 @@ export function AdminProjects() {
           title: selectedProject.title,
           status: selectedProject.status,
           category: selectedProject.category,
-          // If changing status to completed, set completed_at
           ...(selectedProject.status === 'completed' && { completed_at: new Date().toISOString() })
         })
         .eq('id', selectedProject.id);

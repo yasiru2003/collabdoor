@@ -33,9 +33,9 @@ export function AdminSettings() {
     queryKey: ["admin-locations"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("locations")
-        .select("*")
-        .order("name");
+        .from('locations')
+        .select('*')
+        .order('name');
       
       if (error) throw error;
       return data || [];
@@ -50,9 +50,9 @@ export function AdminSettings() {
     queryKey: ["admin-partnership-types"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("partnership_types")
-        .select("*")
-        .order("name");
+        .from('partnership_types')
+        .select('*')
+        .order('name');
       
       if (error) throw error;
       return data || [];
@@ -63,7 +63,7 @@ export function AdminSettings() {
   const addLocationMutation = useMutation({
     mutationFn: async (locationName: string) => {
       const { data, error } = await supabase
-        .from("locations")
+        .from('locations')
         .insert({ name: locationName })
         .select()
         .single();
@@ -92,7 +92,7 @@ export function AdminSettings() {
   const addPartnershipTypeMutation = useMutation({
     mutationFn: async (typeName: string) => {
       const { data, error } = await supabase
-        .from("partnership_types")
+        .from('partnership_types')
         .insert({ name: typeName })
         .select()
         .single();
@@ -121,9 +121,9 @@ export function AdminSettings() {
   const deleteLocationMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("locations")
+        .from('locations')
         .delete()
-        .eq("id", id);
+        .eq('id', id);
       
       if (error) throw error;
     },
@@ -147,9 +147,9 @@ export function AdminSettings() {
   const deletePartnershipTypeMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("partnership_types")
+        .from('partnership_types')
         .delete()
-        .eq("id", id);
+        .eq('id', id);
       
       if (error) throw error;
     },
