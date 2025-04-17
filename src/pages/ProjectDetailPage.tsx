@@ -3,7 +3,7 @@ import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom"
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Project, PartnershipType, ApplicationWithProfile } from "@/types";
+import { Project, PartnershipType, ApplicationWithProfile, Organization } from "@/types";
 import { useProject } from "@/hooks/use-projects-query";
 import { useProjectApplicationsQuery } from "@/hooks/use-applications-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -44,8 +44,25 @@ export default function ProjectDetailPage() {
     applyToProject, 
     isLoading: applicationLoading,
     updateApplicationStatus,
-    userOrganizations
+    userOrganizations: rawUserOrganizations
   } = useProjectApplications();
+  
+  // Transform the organization data to match the Organization type
+  const userOrganizations: Organization[] = rawUserOrganizations ? 
+    rawUserOrganizations.map(org => ({
+      id: org.organizations?.id || org.id,
+      name: org.organizations?.name || "",
+      description: org.organizations?.description,
+      industry: org.organizations?.industry,
+      location: org.organizations?.location,
+      size: org.organizations?.size,
+      logo: org.organizations?.logo,
+      website: org.organizations?.website,
+      foundedYear: org.organizations?.founded_year,
+      createdAt: org.created_at || "",
+      updatedAt: org.updated_at || "",
+      owner_id: org.organizations?.owner_id || "",
+    })) : [];
   
   const { data: projectApplications, refetch: refetchApplications } = useProjectApplicationsQuery(isValidUuid ? id : undefined);
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
