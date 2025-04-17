@@ -51,23 +51,21 @@ export default function ProjectDetailPage() {
   // Only accessing properties that are actually available in the organizations object
   const userOrganizations: Organization[] = rawUserOrganizations ? 
     rawUserOrganizations.map(org => {
-      // First, ensure organizations exists and has valid properties
-      const orgData = org.organizations || { id: org.id, name: "" };
-      
+      // Create a default Organization object with required properties
       return {
-        id: orgData.id || org.id,
-        name: orgData.name || "",
-        // Set optional properties safely
-        description: orgData.description,
-        industry: orgData.industry,
-        location: orgData.location,
-        size: orgData.size,
-        logo: orgData.logo,
-        website: orgData.website,
-        foundedYear: orgData.founded_year,
+        id: org.organizations?.id || org.id,
+        name: org.organizations?.name || "",
+        // Set all optional properties to empty strings or undefined as default
+        description: undefined,
+        industry: undefined,
+        location: undefined,
+        size: undefined,
+        logo: undefined,
+        website: undefined,
+        foundedYear: undefined,
         createdAt: org.created_at || "",
         updatedAt: org.updated_at || "",
-        owner_id: orgData.owner_id || "",
+        owner_id: "",
       };
     }) : [];
   
