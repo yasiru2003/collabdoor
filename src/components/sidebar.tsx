@@ -7,6 +7,7 @@ import {
   User,
   Settings,
   LogOut,
+  MessageSquare,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
     { name: "Projects", href: "/projects", icon: FolderKanban },
     { name: "Partners", href: "/partners", icon: Users },
     { name: "Organizations", href: "/organizations", icon: Building },
+    { name: "Messages", href: "/messages", icon: MessageSquare },
   ];
 
   const profileActions = [
