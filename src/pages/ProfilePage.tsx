@@ -11,43 +11,23 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function ProfilePage() {
-  const { user, updateUserProfile } = useAuth();
+  const { user, updateUserProfile, userProfile } = useAuth();
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [bio, setBio] = useState("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
-      // Fetch the user profile data from the profiles table
-      const fetchUserProfile = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-            
-          if (error) throw error;
-          
-          if (data) {
-            setUserData(data);
-            setName(data.name || "");
-            setEmail(user.email || "");
-            setBio(data.bio || "");
-            setProfileImage(data.profile_image || null);
-          }
-        } catch (error) {
-          console.error("Error fetching user profile:", error);
-        }
-      };
-      
-      fetchUserProfile();
+      // Set values from userProfile or user metadata
+      setName(userProfile?.name || user.user_metadata?.name || "");
+      setEmail(user.email || "");
+      setBio(userProfile?.bio || user.user_metadata?.bio || "");
+      setProfileImage(userProfile?.profile_image || user.user_metadata?.profile_image || null);
     }
-  }, [user]);
+  }, [user, userProfile]);
 
   const handleSaveProfile = async () => {
     setIsSaving(true);
@@ -68,21 +48,10 @@ export default function ProfilePage() {
     }
   };
 
-  // Use the corrected role value that matches our defined type
-  const tempUser = {
-    id: "123",
-    name: "John Doe",
-    email: "john@example.com",
-    role: "partner", // Changed from "user" to "partner"
-    profile_image: "/placeholder.svg",
-    bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-    skills: ["React", "TypeScript", "Node.js"],
-  };
-
   return (
     <Layout>
-      <div className="container mx-auto py-10">
-        <div className="mb-8">
+      <div className="container mx-auto py-6 md:py-10 px-4">
+        <div className="mb-6 md:mb-8">
           <h1 className="text-2xl font-bold">Your Profile</h1>
           <p className="text-muted-foreground">
             Manage your profile information and settings.
@@ -93,12 +62,25 @@ export default function ProfilePage() {
           {/* Profile Picture Section */}
           <div>
             <Label htmlFor="profile-image">Profile Picture</Label>
-            <div className="mt-2 flex items-center space-x-4">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={profileImage || tempUser.profile_image || "/placeholder.svg"} alt="Profile Image" />
-                <AvatarFallback>{name ? name.substring(0, 2).toUpperCase() : "U"}</AvatarFallback>
+            <div className="mt-2 flex flex-col sm:flex-row items-center sm:space-x-4">
+              <Avatar className="h-20 w-20 mb-4 sm:mb-0">
+                <AvatarImage src={profileImage || "/placeholder.svg"} alt="Profile Image" />
+                <AvatarFallback className="text-lg bg-primary text-primary-foreground">
+                  {name ? name.substring(0, 2).toUpperCase() : user?.email?.substring(0, 2).toUpperCase() || "U"}
+                </AvatarFallback>
               </Avatar>
-              <Button variant="outline">Change</Button>
+              <div className="flex flex-col space-y-2 w-full sm:w-auto">
+                <Button variant="outline" className="w-full sm:w-auto">Change</Button>
+                {profileImage && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full sm:w-auto text-destructive hover:text-destructive"
+                    onClick={() => setProfileImage(null)}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -112,6 +94,7 @@ export default function ProfilePage() {
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your name"
                 />
               </div>
               <div>
@@ -131,6 +114,7 @@ export default function ProfilePage() {
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   rows={4}
+                  placeholder="Tell us about yourself"
                 />
               </div>
               <Button onClick={handleSaveProfile} disabled={isSaving}>

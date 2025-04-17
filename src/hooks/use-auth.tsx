@@ -12,6 +12,7 @@ type AuthContextType = {
   signOut: () => Promise<void>;
   loading: boolean;
   updateUserProfile: (profile: any) => Promise<void>;
+  userProfile: any; // Add userProfile to store profile data
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,7 +21,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const { toast } = useToast();
+
+  // Function to fetch user profile data
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
+      if (error) throw error;
+      
+      if (data) {
+        setUserProfile(data);
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+    }
+  };
 
   useEffect(() => {
     // Set up auth state listener first
@@ -28,6 +49,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       (event, newSession) => {
         setSession(newSession);
         setUser(newSession?.user ?? null);
+        
+        // Fetch profile data if user exists
+        if (newSession?.user) {
+          fetchUserProfile(newSession.user.id);
+        } else {
+          setUserProfile(null);
+        }
+        
         setLoading(false);
       }
     );
@@ -36,6 +65,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
+      
+      // Fetch profile data if user exists
+      if (currentSession?.user) {
+        fetchUserProfile(currentSession.user.id);
+      }
+      
       setLoading(false);
     });
 
@@ -127,6 +162,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', user.id);
 
       if (error) throw error;
+      
+      // Refresh profile data after update
+      await fetchUserProfile(user.id);
+      
     } catch (error: any) {
       toast({
         title: "Error updating profile",
@@ -145,7 +184,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signUp, 
       signOut, 
       loading,
-      updateUserProfile
+      updateUserProfile,
+      userProfile
     }}>
       {children}
     </AuthContext.Provider>

@@ -50,27 +50,27 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
-      <div className="max-w-md w-full">
-        <div className="text-center mb-8">
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-8">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-6">
           <Link to="/" className="inline-block">
             <div className="font-bold text-3xl bg-primary text-primary-foreground px-3 py-2 rounded inline-block">
               CD
             </div>
           </Link>
-          <h1 className="text-2xl font-bold mt-4">Join CollabDoor</h1>
-          <p className="text-muted-foreground">Create an account to start collaborating</p>
+          <h1 className="text-xl sm:text-2xl font-bold mt-4">Join CollabDoor</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Create an account to start collaborating</p>
         </div>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle>Sign Up</CardTitle>
             <CardDescription>
               Create your CollabDoor account
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+            <form onSubmit={handleSubmit} className="space-y-4 mt-2">
               <div className="grid gap-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input 

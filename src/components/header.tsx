@@ -120,11 +120,9 @@ export function Header() {
             </>
           ) : (
             <>
-              {!isMobile && (
-                <Button variant="ghost" size={isMobile ? "sm" : "default"} asChild>
-                  <Link to="/login">Log In</Link>
-                </Button>
-              )}
+              <Button variant="ghost" size={isMobile ? "sm" : "default"} asChild>
+                <Link to="/login">Log In</Link>
+              </Button>
               <Button size={isMobile ? "sm" : "default"} asChild>
                 <Link to="/signup">Sign Up</Link>
               </Button>

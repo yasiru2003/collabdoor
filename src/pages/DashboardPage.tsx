@@ -15,7 +15,7 @@ import { useUserProjects, useUserApplications } from "@/hooks/use-supabase-query
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const DashboardPage = () => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [receivedApplications, setReceivedApplications] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { updateApplicationStatus } = useProjectApplications();
@@ -29,6 +29,13 @@ const DashboardPage = () => {
   
   // Add application filter state
   const [applicationFilter, setApplicationFilter] = useState<ApplicationStatus | "all">("all");
+
+  // Get user's display name (from profile or metadata or email)
+  const getUserDisplayName = () => {
+    if (userProfile?.name) return userProfile.name;
+    if (user?.user_metadata?.name) return user.user_metadata.name;
+    return user?.email ? user.email.split('@')[0] : 'User';
+  };
 
   useEffect(() => {
     const fetchReceivedApplications = async () => {
@@ -193,7 +200,7 @@ const DashboardPage = () => {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg md:text-xl">
-                Welcome back, {user?.email ? user.email.split('@')[0] : 'User'}!
+                Welcome back, {getUserDisplayName()}!
               </CardTitle>
               <CardDescription>
                 Manage your projects and applications from here.

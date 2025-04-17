@@ -45,20 +45,20 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
-      <div className="max-w-md w-full">
-        <div className="text-center mb-8">
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-8">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-6">
           <Link to="/" className="inline-block">
             <div className="font-bold text-3xl bg-primary text-primary-foreground px-3 py-2 rounded inline-block">
               CD
             </div>
           </Link>
-          <h1 className="text-2xl font-bold mt-4">Welcome back</h1>
-          <p className="text-muted-foreground">Log in to continue to CollabDoor</p>
+          <h1 className="text-xl sm:text-2xl font-bold mt-4">Welcome back</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Log in to continue to CollabDoor</p>
         </div>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle>Log In</CardTitle>
             <CardDescription>
               Enter your credentials to access your account
