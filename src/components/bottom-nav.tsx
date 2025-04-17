@@ -14,10 +14,22 @@ export function BottomNav() {
       active: location.pathname === "/dashboard",
     },
     {
+      href: "/projects",
+      label: "Projects",
+      icon: Project,
+      active: location.pathname.startsWith("/projects"),
+    },
+    {
       href: "/organizations",
       label: "Organizations",
       icon: Building2,
       active: location.pathname.startsWith("/organizations"),
+    },
+    {
+      href: "/messages",
+      label: "Message",
+      icon: Message,
+      active: location.pathname.startsWith("/messages"),
     }
   ];
 
