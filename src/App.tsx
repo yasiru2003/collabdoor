@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -27,6 +26,7 @@ import OrganizationDetailPage from "./pages/OrganizationDetailPage";
 import EditOrganizationPage from "./pages/EditOrganizationPage";
 import AdminPage from "./pages/AdminPage";
 import FeedPage from "./pages/FeedPage";
+import UserProfilePage from "./pages/UserProfilePage";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +62,7 @@ const App = () => (
               <Route path="/organizations/:id" element={<OrganizationDetailPage />} />
               <Route path="/organizations/:id/edit" element={<EditOrganizationPage />} />
               <Route path="/admin" element={<AdminPage />} />
+              <Route path="/users/:userId" element={<UserProfilePage />} />
             </Route>
             
             {/* Catch-all route */}
