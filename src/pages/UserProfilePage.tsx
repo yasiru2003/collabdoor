@@ -2,7 +2,7 @@
 import { useParams } from "react-router-dom";
 import { Layout } from "@/components/layout";
 import { UserProfile } from "@/components/profile/UserProfile";
-import { NotFound } from "@/pages/NotFound";
+import NotFound from "@/pages/NotFound";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";

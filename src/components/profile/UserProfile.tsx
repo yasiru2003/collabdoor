@@ -8,6 +8,8 @@ import { useProjects } from "@/hooks/use-supabase-query";
 import { Mail, Linkedin, Github } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useReviews } from "@/hooks/use-reviews";
+import { useState, useEffect } from "react";
 
 interface UserProfileProps {
   profile: {
@@ -23,6 +25,18 @@ interface UserProfileProps {
 export function UserProfile({ profile }: UserProfileProps) {
   const { data: projects } = useProjects();
   const userProjects = projects?.filter(p => p.organizerId === profile.id) || [];
+  const { getUserReviews } = useReviews();
+  const [reviews, setReviews] = useState([]);
+  
+  // Fetch user reviews
+  useEffect(() => {
+    const fetchReviews = async () => {
+      const userReviews = await getUserReviews(profile.id);
+      setReviews(userReviews);
+    };
+    
+    fetchReviews();
+  }, [profile.id, getUserReviews]);
 
   return (
     <div className="container mx-auto py-6 px-4">
@@ -94,7 +108,12 @@ export function UserProfile({ profile }: UserProfileProps) {
         </TabsContent>
 
         <TabsContent value="reviews">
-          <ReviewsList userId={profile.id} />
+          <ReviewsList 
+            reviews={reviews} 
+            title={`Reviews for ${profile.name}`}
+            description="See what others have said about working with this user"
+            emptyMessage="This user hasn't received any reviews yet" 
+          />
         </TabsContent>
       </Tabs>
     </div>
