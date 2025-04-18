@@ -5,8 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { notifyProjectPartners } from "@/services/notification-service";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProjectReviewForm } from "./ProjectReviewForm";
 
 interface ProjectCompleteProps {
@@ -44,6 +43,37 @@ export function ProjectComplete({ projectId, projectTitle, partners = [], onComp
       if (error) {
         console.error("Error completing project:", error);
         throw error;
+      }
+
+      // Auto-reject pending applications
+      const { data: pendingApplications, error: fetchError } = await supabase
+        .from('project_applications')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('status', 'pending');
+        
+      if (fetchError) {
+        console.error("Error fetching pending applications:", fetchError);
+      } else if (pendingApplications && pendingApplications.length > 0) {
+        // Create an array of objects for each application to update
+        const applicationsToUpdate = pendingApplications.map(app => ({
+          id: app.id,
+          status: 'rejected'
+        }));
+        
+        // Update all pending applications to rejected
+        for (const app of pendingApplications) {
+          const { error: updateError } = await supabase
+            .from('project_applications')
+            .update({ status: 'rejected' })
+            .eq('id', app.id);
+            
+          if (updateError) {
+            console.error(`Error rejecting application ${app.id}:`, updateError);
+          }
+        }
+        
+        console.log(`Auto-rejected ${pendingApplications.length} pending applications`);
       }
 
       // We need to ensure notifications reach all partners, so we'll take extra care here
@@ -135,7 +165,7 @@ export function ProjectComplete({ projectId, projectTitle, partners = [], onComp
 
   return (
     <>
-      <Card>
+      <Card className="w-full max-w-lg mx-auto">
         <CardHeader>
           <CardTitle>Complete Project</CardTitle>
           <CardDescription>Mark this project as completed and notify all partners</CardDescription>
@@ -148,14 +178,16 @@ export function ProjectComplete({ projectId, projectTitle, partners = [], onComp
             <li>Change the project status to "Completed"</li>
             <li>Allow you to review your project partners</li>
             <li>Send notifications to all partners</li>
+            <li>Automatically reject all pending applications</li>
             <li>Allow partners to leave reviews for the project</li>
           </ul>
         </CardContent>
-        <CardFooter className="flex justify-between">
+        <CardFooter className="flex flex-col sm:flex-row justify-between gap-2">
           {onCancel && (
             <Button 
               variant="outline" 
               onClick={onCancel}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
@@ -163,6 +195,7 @@ export function ProjectComplete({ projectId, projectTitle, partners = [], onComp
           <Button 
             onClick={handleComplete} 
             disabled={loading}
+            className="w-full sm:w-auto"
           >
             {loading ? "Processing..." : "Complete Project"}
           </Button>
@@ -170,7 +203,7 @@ export function ProjectComplete({ projectId, projectTitle, partners = [], onComp
       </Card>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-w-[95vw]">
           <DialogHeader>
             <DialogTitle>Review Partner: {currentPartner?.name}</DialogTitle>
             <DialogDescription>

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Project, PartnershipType, Organization } from "@/types";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,6 +9,7 @@ import { Bookmark, BookmarkCheck, Clock, HandshakeIcon, MessageCircle, Users } f
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { ShareButton } from "./ShareButton";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ProjectHeaderProps {
   project: Project;
@@ -53,6 +55,7 @@ export function ProjectHeader({
   onApplySubmit
 }: ProjectHeaderProps) {
   const isCompleted = project.status === 'completed';
+  const isMobile = useIsMobile();
   
   const handleToggleSave = () => {
     setSaved(!saved);
@@ -92,24 +95,29 @@ export function ProjectHeader({
     <>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold truncate max-w-2xl">{project.title}</h1>
+          <h1 className="text-3xl font-bold truncate max-w-full sm:max-w-2xl">{project.title}</h1>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-2">
             {getStatus()}
+            {isCompleted && (
+              <div className="flex items-center text-green-600 font-medium">
+                <span>Completed Project</span>
+              </div>
+            )}
           </div>
         </div>
         
-        <div className="flex items-center gap-2 self-end sm:self-auto">
+        <div className={`flex items-center gap-2 ${isMobile ? 'w-full justify-between mt-2' : 'self-end sm:self-auto'}`}>
           {!isOwner && !isCompleted && !applicationStatus && (
-            <Button onClick={handleApply} className="flex items-center">
-              <HandshakeIcon className="mr-2 h-4 w-4" />
-              Apply to Partner
+            <Button onClick={handleApply} className="flex items-center" size={isMobile ? "sm" : "default"}>
+              <HandshakeIcon className={`${isMobile ? 'mr-1' : 'mr-2'} h-4 w-4`} />
+              {isMobile ? "Apply" : "Apply to Partner"}
             </Button>
           )}
           
           {!isOwner && (
-            <Button variant="outline" onClick={handleContact}>
-              <MessageCircle className="mr-2 h-4 w-4" />
-              Contact
+            <Button variant="outline" onClick={handleContact} size={isMobile ? "sm" : "default"}>
+              <MessageCircle className={`${isMobile ? 'mr-1' : 'mr-2'} h-4 w-4`} />
+              {isMobile ? "Contact" : "Contact"}
             </Button>
           )}
           
@@ -123,7 +131,7 @@ export function ProjectHeader({
             variant="ghost"
             size="icon"
             onClick={handleToggleSave}
-            className="w-10 h-10"
+            className="w-9 h-9 sm:w-10 sm:h-10"
           >
             {saved ? <BookmarkCheck className="h-5 w-5 text-primary" /> : <Bookmark className="h-5 w-5" />}
           </Button>
@@ -132,7 +140,7 @@ export function ProjectHeader({
       
       {/* Application Dialog */}
       <Dialog open={applicationOpen} onOpenChange={setApplicationOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Apply as Partner</DialogTitle>
             <DialogDescription>
@@ -205,7 +213,7 @@ export function ProjectHeader({
             </div>
           </div>
           
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
             <Button variant="outline" onClick={() => setApplicationOpen(false)}>
               Cancel
             </Button>

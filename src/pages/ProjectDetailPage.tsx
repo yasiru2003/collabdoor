@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -18,6 +19,7 @@ import { ProjectProgressContent } from "@/components/project/ProjectProgressCont
 import { ApplicationsTable } from "@/components/project/ApplicationsTable";
 import { ProgressDialog } from "@/components/project/ProgressDialog";
 import { CompletionDialog } from "@/components/project/CompletionDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -36,7 +38,7 @@ export default function ProjectDetailPage() {
   // If id is "create", don't try to fetch project data
   const isValidUuid = id && id !== "create" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
   
-  const { data: project, isLoading, error } = useProject(isValidUuid ? id : undefined);
+  const { data: project, isLoading, error, refetch: refetchProject } = useProject(isValidUuid ? id : undefined);
   const [saved, setSaved] = useState(false);
   const { user } = useAuth();
   const { 
@@ -157,20 +159,61 @@ export default function ProjectDetailPage() {
     setCompleteDialogOpen(true);
   };
   
-  const onProjectCompleted = () => {
+  const onProjectCompleted = async () => {
     setCompleteDialogOpen(false);
     toast({
       title: "Project completed",
       description: "Project has been marked as completed successfully.",
     });
+    
+    // Auto-reject pending applications when project is completed
+    if (projectApplications && projectApplications.length > 0) {
+      const pendingApplications = projectApplications.filter(app => app.status === "pending");
+      
+      if (pendingApplications.length > 0) {
+        try {
+          // Create a batch update for all pending applications
+          const updates = pendingApplications.map(app => ({
+            id: app.id,
+            status: "rejected"
+          }));
+          
+          // Update all pending applications to rejected
+          for (const app of pendingApplications) {
+            await updateApplicationStatus(app.id, "rejected");
+          }
+          
+          toast({
+            title: "Applications updated",
+            description: `${pendingApplications.length} pending applications have been automatically rejected.`,
+          });
+          
+          // Refresh the applications list
+          refetchApplications();
+        } catch (error) {
+          console.error("Error auto-rejecting applications:", error);
+        }
+      }
+    }
+    
     // Refresh the project data
     setTimeout(() => {
-      window.location.reload();
-    }, 1500);
+      refetchProject();
+    }, 1000);
   };
 
   const handleApply = async () => {
     if (!user || !id) return;
+    
+    // Check if project is completed
+    if (project.status === 'completed') {
+      toast({
+        title: "Project is completed",
+        description: "You cannot apply to a completed project.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       // Process the selectedOrganizationId - if it's "individual", pass null
@@ -209,6 +252,17 @@ export default function ProjectDetailPage() {
       navigate("/login", { state: { returnTo: `/projects/${id}` } });
       return;
     }
+    
+    // Check if project is completed
+    if (project.status === 'completed') {
+      toast({
+        title: "Project is completed",
+        description: "You cannot apply to a completed project.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setApplicationOpen(true);
   };
 
@@ -323,7 +377,7 @@ export default function ProjectDetailPage() {
 
   return (
     <Layout>
-      <div>
+      <div className="max-w-full overflow-x-hidden">
         <ProjectHeader 
           project={project}
           isOwner={isOwner}
@@ -347,7 +401,7 @@ export default function ProjectDetailPage() {
         />
 
         <Tabs defaultValue={defaultTab} onValueChange={(value) => setSearchParams({ tab: value })}>
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 w-full max-w-md overflow-x-auto flex-nowrap">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="progress">Progress Tracker</TabsTrigger>
             {isOwner && <TabsTrigger value="applications">Applications</TabsTrigger>}
