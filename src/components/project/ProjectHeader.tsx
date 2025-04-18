@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Bookmark, BookmarkCheck, Clock, HandshakeIcon, MessageCircle, Users } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { ShareButton } from "./ShareButton";
 
 interface ProjectHeaderProps {
   project: Project;
@@ -111,6 +112,12 @@ export function ProjectHeader({
               Contact
             </Button>
           )}
+          
+          <ShareButton 
+            title={project.title}
+            description={project.description}
+            url={window.location.href}
+          />
           
           <Button
             variant="ghost"
