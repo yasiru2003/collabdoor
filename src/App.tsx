@@ -13,6 +13,8 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import DashboardPage from "./pages/DashboardPage";
 import ProjectsPage from "./pages/ProjectsPage";
+import PublicProjectsPage from "./pages/PublicProjectsPage";
+import PublicOrganizationsPage from "./pages/PublicOrganizationsPage";
 import CreateProjectPage from "./pages/CreateProjectPage";
 import PartnersPage from "./pages/PartnersPage";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
@@ -40,6 +42,8 @@ const App = () => (
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/browse/projects" element={<PublicProjectsPage />} />
+            <Route path="/browse/organizations" element={<PublicOrganizationsPage />} />
             
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>

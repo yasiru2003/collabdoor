@@ -1,4 +1,3 @@
-
 import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ProjectCard } from "@/components/project-card";
@@ -7,7 +6,7 @@ import { ArrowRight, Building, CheckCircle2, MessageSquare } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Project } from "@/types";
+import { Project, Organization } from "@/types";
 import { useState, useEffect } from "react";
 import { mapSupabaseProjectToProject } from "@/utils/data-mappers";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function LandingPage() {
   const { user } = useAuth();
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
+  const [featuredOrgs, setFeaturedOrgs] = useState<Organization[]>([]);
   
   // Fetch featured projects - move this before any potential return statements
   const { data: projects, isLoading } = useQuery({
@@ -32,13 +32,30 @@ export default function LandingPage() {
       return (data || []).map(project => mapSupabaseProjectToProject(project));
     },
   });
+
+  // Query for featured organizations
+  const { data: organizations, isLoading: isLoadingOrgs } = useQuery({
+    queryKey: ["featured-organizations"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("organizations")
+        .select("*")
+        .limit(3)
+        .order("created_at", { ascending: false });
+        
+      if (error) throw error;
+      return data as Organization[];
+    },
+  });
   
-  // Set featured projects once data is loaded
   useEffect(() => {
     if (projects) {
       setFeaturedProjects(projects);
     }
-  }, [projects]);
+    if (organizations) {
+      setFeaturedOrgs(organizations);
+    }
+  }, [projects, organizations]);
   
   // If user is logged in, redirect to dashboard
   // This needs to be AFTER all hooks are called
@@ -147,7 +164,7 @@ export default function LandingPage() {
               </p>
             </div>
             <Button variant="ghost" className="gap-1" asChild>
-              <Link to="/projects">
+              <Link to="/browse/projects">
                 <span>View All</span>
                 <ArrowRight className="h-4 w-4" />
               </Link>
@@ -174,6 +191,70 @@ export default function LandingPage() {
               // Fallback for no projects
               <div className="col-span-3 text-center py-8 text-muted-foreground">
                 No featured projects available at the moment.
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Organizations Section */}
+      <section className="py-16 px-4 md:py-24 bg-white">
+        <div className="container mx-auto max-w-6xl">
+          <div className="flex justify-between items-end mb-12">
+            <div>
+              <h2 className="text-3xl font-bold mb-2">Featured Organizations</h2>
+              <p className="text-muted-foreground">
+                Connect with impactful organizations
+              </p>
+            </div>
+            <Button variant="ghost" className="gap-1" asChild>
+              <Link to="/browse/organizations">
+                <span>View All</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {isLoadingOrgs ? (
+              Array(3).fill(0).map((_, index) => (
+                <div key={index} className="border rounded-lg p-4">
+                  <Skeleton className="h-48 w-full mb-4" />
+                  <Skeleton className="h-6 w-3/4 mb-2" />
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              ))
+            ) : featuredOrgs.length > 0 ? (
+              featuredOrgs.map(org => (
+                <div key={org.id} className="bg-card border rounded-lg overflow-hidden shadow-sm">
+                  <div className="p-4">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-lg">
+                        {org.name.substring(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">{org.name}</h3>
+                        {org.location && <p className="text-sm text-muted-foreground">{org.location}</p>}
+                      </div>
+                    </div>
+                    <p className="mt-3 text-sm text-muted-foreground line-clamp-2">
+                      {org.description || "No description provided."}
+                    </p>
+                    <div className="flex justify-between items-center mt-4 pt-3 border-t">
+                      <span className="text-sm">{org.industry || "Other"}</span>
+                      <Button size="sm" asChild>
+                        <Link to={user ? `/organizations/${org.id}` : "/login"}>
+                          View Details
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-8 text-muted-foreground">
+                No featured organizations available at the moment.
               </div>
             )}
           </div>
