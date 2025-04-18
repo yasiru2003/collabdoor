@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Share2, Facebook, Linkedin, Mail, WhatsApp } from "lucide-react";
+import { Share2, Facebook, Linkedin, Mail, MessageSquare } from "lucide-react";
 
 interface ShareButtonProps {
   title: string;
@@ -27,7 +27,7 @@ export function ShareButton({ title, description, url }: ShareButtonProps) {
     },
     {
       name: "WhatsApp",
-      icon: WhatsApp,
+      icon: MessageSquare, // Using MessageSquare as an alternative to WhatsApp
       url: `https://wa.me/?text=${encodedTitle}%20${encodedUrl}`,
     },
     {
