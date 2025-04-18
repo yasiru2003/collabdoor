@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -63,6 +64,7 @@ const App = () => (
               <Route path="/organizations/:id/edit" element={<EditOrganizationPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/users/:userId" element={<UserProfilePage />} />
+              <Route path="/profile/:userId" element={<UserProfilePage />} />
             </Route>
             
             {/* Catch-all route */}
