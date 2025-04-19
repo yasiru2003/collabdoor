@@ -58,7 +58,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
   const sidebarContent = (
     <>
       <div className="px-6 py-4">
-        <Link to="/profile" className="flex items-center space-x-2">
+        <Link to={user ? `/users/${user.id}` : "/profile"} className="flex items-center space-x-2">
           <Avatar>
             <AvatarImage src={user?.user_metadata?.profile_image || ""} />
             <AvatarFallback>
@@ -69,8 +69,6 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
         </Link>
       </div>
 
-      
-      
       <Separator />
 
       <ScrollArea className="flex-1">
@@ -104,7 +102,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
               }`}
               asChild
             >
-              <Link to={item.href} className="w-full">
+              <Link to={item.href === "/profile" && user ? `/users/${user.id}` : item.href} className="w-full">
                 <item.icon className="mr-2 h-4 w-4" />
                 {item.name}
               </Link>
@@ -113,8 +111,6 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
         </div>
       </ScrollArea>
 
-      
-      
       <Separator />
 
       <div className="flex items-center px-6 py-4">

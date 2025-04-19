@@ -17,12 +17,10 @@ export default function UserProfilePage() {
       if (!userId) return null;
       
       try {
+        // Get basic profile data without trying to join with reviews
         const { data, error } = await supabase
           .from("profiles")
-          .select(`
-            *,
-            reviews(count)
-          `)
+          .select("*")
           .eq("id", userId)
           .single();
 
