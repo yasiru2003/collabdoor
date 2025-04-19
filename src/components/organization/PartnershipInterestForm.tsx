@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -55,6 +56,7 @@ export function PartnershipInterestForm({ organizationId, onSuccess, onCancel }:
   
   const createMutation = useMutation({
     mutationFn: async (values: FormValues) => {
+      // Use the typed version to access the organization_partnership_interests table
       const { error } = await supabase
         .from('organization_partnership_interests')
         .insert({

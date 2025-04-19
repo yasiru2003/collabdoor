@@ -92,6 +92,7 @@ export function PartnershipApplicationForm({
     mutationFn: async (values: FormValues) => {
       if (!user) throw new Error('You must be logged in to apply');
       
+      // Use the typed version to access the partnership_applications table
       const { error } = await supabase
         .from('partnership_applications')
         .insert({

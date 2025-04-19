@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Organization, PartnershipType } from "@/types";
 import { useAuth } from "@/hooks/use-auth";
 import { PartnerCard } from "@/components/partner-card";
@@ -30,7 +30,6 @@ export default function PublicOrganizationsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [partnershipFilter, setPartnershipFilter] = useState<string>("all");
   const { user } = useAuth();
-  const navigate = useNavigate();
   
   // Fetch organizations with their partnership interests
   const { data, isLoading } = useQuery({
@@ -43,6 +42,9 @@ export default function PublicOrganizationsPage() {
         .order("name");
       
       if (orgError) throw orgError;
+
+      // Type-cast organizations to the expected type
+      const orgs = organizations as Organization[];
       
       // Then get all partnership interests
       const { data: interests, error: interestsError } = await supabase
@@ -52,7 +54,7 @@ export default function PublicOrganizationsPage() {
       if (interestsError) throw interestsError;
       
       // Combine the data
-      const orgsWithInterests = (organizations as Organization[]).map(org => {
+      const orgsWithInterests = orgs.map(org => {
         const orgInterests = interests
           ? interests.filter(int => int.organization_id === org.id)
                     .map(int => int.partnership_type as PartnershipType)

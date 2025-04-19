@@ -3,26 +3,17 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { Handshake, Plus, PlusCircle } from 'lucide-react';
+import { Handshake, Plus } from 'lucide-react';
 import { PartnershipInterestForm } from './PartnershipInterestForm';
 import { PartnershipApplicationForm } from './PartnershipApplicationForm';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from '@/components/ui/separator';
-import { PartnershipType } from '@/types';
+import { PartnershipType, PartnershipInterest } from '@/types';
 import { EmptyState } from '@/components/empty-state';
-
-interface PartnershipInterest {
-  id: string;
-  organization_id: string;
-  partnership_type: PartnershipType;
-  description: string;
-  created_at: string;
-}
 
 interface PartnershipInterestsTabProps {
   organizationId: string;

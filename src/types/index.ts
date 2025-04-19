@@ -1,3 +1,4 @@
+
 export interface Project {
   id: string;
   title: string;
@@ -118,7 +119,7 @@ export interface SystemSettings {
   updated_at: string;
 }
 
-// New interface for partnership interests
+// Interface for partnership interests
 export interface PartnershipInterest {
   id: string;
   organization_id: string;
@@ -128,7 +129,7 @@ export interface PartnershipInterest {
   updated_at: string;
 }
 
-// New interface for partnership applications
+// Interface for partnership applications
 export interface PartnershipApplication {
   id: string;
   organization_id: string;
