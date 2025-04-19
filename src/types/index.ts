@@ -48,6 +48,8 @@ export interface Organization {
   created_at?: string;
   updated_at?: string;
   founded_year?: number;
+  // Extended properties
+  partnershipInterests?: PartnershipType[];
 }
 
 export interface User {
@@ -113,6 +115,30 @@ export interface SystemSettings {
   key: string;
   value: boolean;
   description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// New interface for partnership interests
+export interface PartnershipInterest {
+  id: string;
+  organization_id: string;
+  partnership_type: PartnershipType;
+  description: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// New interface for partnership applications
+export interface PartnershipApplication {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  interest_id: string;
+  partnership_type: PartnershipType;
+  project_id?: string;
+  message: string;
+  status: "pending" | "approved" | "rejected";
   created_at: string;
   updated_at: string;
 }

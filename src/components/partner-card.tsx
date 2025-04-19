@@ -1,8 +1,8 @@
 
-import { Organization } from "@/types";
+import { Organization, PartnershipType } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
-import { Building, ExternalLink, MapPin, Users, Mail } from "lucide-react";
+import { Building, ExternalLink, MapPin, Users, Mail, Handshake } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Link, useNavigate } from "react-router-dom";
 import { Badge } from "./ui/badge";
@@ -10,9 +10,26 @@ import { useAuth } from "@/hooks/use-auth";
 
 interface PartnerCardProps {
   organization: Organization;
+  partnershipInterests?: PartnershipType[];
 }
 
-export function PartnerCard({ organization }: PartnerCardProps) {
+// Partnership type label mapping
+const partnershipTypeLabels: Record<PartnershipType, string> = {
+  'monetary': 'Financial Support',
+  'knowledge': 'Knowledge Sharing',
+  'skilled': 'Skilled Professionals',
+  'volunteering': 'Volunteering'
+};
+
+// Partnership type color mapping
+const partnershipTypeColors: Record<PartnershipType, string> = {
+  'monetary': 'bg-green-100 text-green-800',
+  'knowledge': 'bg-blue-100 text-blue-800',
+  'skilled': 'bg-purple-100 text-purple-800',
+  'volunteering': 'bg-amber-100 text-amber-800',
+};
+
+export function PartnerCard({ organization, partnershipInterests }: PartnerCardProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   
@@ -88,6 +105,26 @@ export function PartnerCard({ organization }: PartnerCardProps) {
             </div>
           )}
         </div>
+        
+        {partnershipInterests && partnershipInterests.length > 0 && (
+          <div className="mt-4">
+            <div className="flex items-center gap-2 mb-2 text-sm">
+              <Handshake className="h-4 w-4" />
+              <span>Partnership Interests:</span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {partnershipInterests.map((type) => (
+                <Badge 
+                  key={type} 
+                  variant="outline"
+                  className={partnershipTypeColors[type]}
+                >
+                  {partnershipTypeLabels[type]}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
       <CardFooter className="flex justify-between border-t pt-4">
         {organization.website ? (

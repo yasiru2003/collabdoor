@@ -4,36 +4,84 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Organization } from "@/types";
+import { Organization, PartnershipType } from "@/types";
 import { useAuth } from "@/hooks/use-auth";
 import { PartnerCard } from "@/components/partner-card";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+
+// Partnership type mapping for display
+const partnershipTypeLabels: Record<PartnershipType, string> = {
+  'monetary': 'Financial Support',
+  'knowledge': 'Knowledge Sharing',
+  'skilled': 'Skilled Professionals',
+  'volunteering': 'Volunteering'
+};
 
 export default function PublicOrganizationsPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [partnershipFilter, setPartnershipFilter] = useState<string>("all");
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  const { data: organizations, isLoading } = useQuery({
-    queryKey: ["public-organizations"],
+  // Fetch organizations with their partnership interests
+  const { data, isLoading } = useQuery({
+    queryKey: ["public-organizations-with-interests"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get all organizations
+      const { data: organizations, error: orgError } = await supabase
         .from("organizations")
         .select("*")
         .order("name");
       
-      if (error) throw error;
-      return data as Organization[];
+      if (orgError) throw orgError;
+      
+      // Then get all partnership interests
+      const { data: interests, error: interestsError } = await supabase
+        .from("organization_partnership_interests")
+        .select("organization_id, partnership_type");
+      
+      if (interestsError) throw interestsError;
+      
+      // Combine the data
+      const orgsWithInterests = (organizations as Organization[]).map(org => {
+        const orgInterests = interests
+          ? interests.filter(int => int.organization_id === org.id)
+                    .map(int => int.partnership_type as PartnershipType)
+          : [];
+        
+        return {
+          ...org,
+          partnershipInterests: [...new Set(orgInterests)] // Remove duplicates
+        };
+      });
+      
+      return orgsWithInterests;
     },
   });
 
-  const filteredOrganizations = organizations?.filter(org =>
-    !searchQuery ||
-    org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    org.industry?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    org.location?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter organizations based on search query and partnership filter
+  const filteredOrganizations = data?.filter(org => {
+    // Search filter
+    const matchesSearch = !searchQuery ||
+      org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      org.industry?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      org.location?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Partnership type filter
+    const matchesPartnership = partnershipFilter === "all" || 
+      (org.partnershipInterests && org.partnershipInterests.includes(partnershipFilter as PartnershipType));
+    
+    return matchesSearch && matchesPartnership;
+  });
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -51,7 +99,7 @@ export default function PublicOrganizationsPage() {
         )}
       </div>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-col sm:flex-row gap-2 mb-6">
         <div className="relative flex-grow">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -62,7 +110,36 @@ export default function PublicOrganizationsPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+        
+        <div className="w-full sm:w-auto min-w-[200px]">
+          <Select value={partnershipFilter} onValueChange={setPartnershipFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filter by partnership" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Partnerships</SelectItem>
+              <SelectItem value="monetary">Financial Support</SelectItem>
+              <SelectItem value="knowledge">Knowledge Sharing</SelectItem>
+              <SelectItem value="skilled">Skilled Professionals</SelectItem>
+              <SelectItem value="volunteering">Volunteering</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+
+      {partnershipFilter !== "all" && (
+        <div className="mb-4">
+          <Badge variant="outline" className="mr-2">
+            Showing: {partnershipTypeLabels[partnershipFilter as PartnershipType]}
+            <button 
+              className="ml-2 hover:text-destructive" 
+              onClick={() => setPartnershipFilter("all")}
+            >
+              ✕
+            </button>
+          </Badge>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -73,7 +150,11 @@ export default function PublicOrganizationsPage() {
       ) : filteredOrganizations && filteredOrganizations.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredOrganizations.map((org) => (
-            <PartnerCard key={org.id} organization={org} />
+            <PartnerCard 
+              key={org.id} 
+              organization={org} 
+              partnershipInterests={org.partnershipInterests}
+            />
           ))}
         </div>
       ) : (

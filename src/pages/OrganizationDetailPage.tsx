@@ -12,11 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Building, Edit, Globe, MapPin, Users } from "lucide-react";
-import { Organization } from "@/types";
+import { Organization, PartnershipType } from "@/types";
 import { OrganizationReviews } from "@/components/organization/OrganizationReviews";
 import { OrganizationProjects } from "@/components/organization/OrganizationProjects";
 import { OrganizationJoinRequest } from "@/components/organization/OrganizationJoinRequest";
 import { OrganizationRequestsTab } from "@/components/organization/OrganizationRequestsTab";
+import { PartnershipInterestsTab } from "@/components/organization/PartnershipInterestsTab";
 
 export default function OrganizationDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -300,6 +301,7 @@ export default function OrganizationDetailPage() {
               <TabsList>
                 <TabsTrigger value="projects">Projects</TabsTrigger>
                 <TabsTrigger value="members">Members</TabsTrigger>
+                <TabsTrigger value="partnership-interests">Partnership Interests</TabsTrigger>
                 <TabsTrigger value="reviews">Reviews</TabsTrigger>
                 {isOwner && (
                   <TabsTrigger value="requests">Join Requests</TabsTrigger>
@@ -356,6 +358,14 @@ export default function OrganizationDetailPage() {
                     )}
                   </CardContent>
                 </Card>
+              </TabsContent>
+              
+              <TabsContent value="partnership-interests" className="mt-4">
+                <PartnershipInterestsTab 
+                  organizationId={id || ''}
+                  isOwner={isOwner}
+                  isMember={!!isMember}
+                />
               </TabsContent>
               
               <TabsContent value="reviews" className="mt-4">
