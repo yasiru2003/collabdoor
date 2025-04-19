@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +23,84 @@ export function usePartners() {
 
       return (data || []).map(org => mapSupabaseOrgToOrganization(org));
     },
+  });
+}
+
+/**
+ * Hook to fetch partnership interests for an organization
+ */
+export function usePartnershipInterests(organizationId: string | undefined) {
+  const { toast } = useToast();
+  
+  return useQuery({
+    queryKey: ["partnership-interests", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      
+      const { data, error } = await supabase
+        .from("organization_partnership_interests")
+        .select("*")
+        .eq("organization_id", organizationId)
+        .order("created_at", { ascending: false });
+        
+      if (error) {
+        console.error("Error fetching partnership interests:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load partnership interests",
+          variant: "destructive",
+        });
+        return [];
+      }
+      
+      return data;
+    },
+    enabled: !!organizationId,
+  });
+}
+
+/**
+ * Hook to fetch partnership applications for an organization or user
+ */
+export function usePartnershipApplications(params: { 
+  organizationId?: string; 
+  userId?: string;
+}) {
+  const { toast } = useToast();
+  const { organizationId, userId } = params;
+  
+  return useQuery({
+    queryKey: ["partnership-applications", organizationId, userId],
+    queryFn: async () => {
+      if (!organizationId && !userId) return [];
+      
+      let query = supabase
+        .from("partnership_applications")
+        .select("*, organization_partnership_interests(*)");
+        
+      if (organizationId) {
+        query = query.eq("organization_id", organizationId);
+      }
+      
+      if (userId) {
+        query = query.eq("user_id", userId);
+      }
+      
+      const { data, error } = await query.order("created_at", { ascending: false });
+        
+      if (error) {
+        console.error("Error fetching partnership applications:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load partnership applications",
+          variant: "destructive",
+        });
+        return [];
+      }
+      
+      return data;
+    },
+    enabled: !!(organizationId || userId),
   });
 }
 

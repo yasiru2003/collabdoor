@@ -280,6 +280,41 @@ export type Database = {
           },
         ]
       }
+      organization_partnership_interests: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          organization_id: string
+          partnership_type: Database["public"]["Enums"]["partnership_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          organization_id: string
+          partnership_type: Database["public"]["Enums"]["partnership_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          organization_id?: string
+          partnership_type?: Database["public"]["Enums"]["partnership_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_partnership_interests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
@@ -329,6 +364,67 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partnership_applications: {
+        Row: {
+          created_at: string
+          id: string
+          interest_id: string
+          message: string
+          organization_id: string
+          partnership_type: Database["public"]["Enums"]["partnership_type"]
+          project_id: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interest_id: string
+          message: string
+          organization_id: string
+          partnership_type: Database["public"]["Enums"]["partnership_type"]
+          project_id?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interest_id?: string
+          message?: string
+          organization_id?: string
+          partnership_type?: Database["public"]["Enums"]["partnership_type"]
+          project_id?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnership_applications_interest_id_fkey"
+            columns: ["interest_id"]
+            isOneToOne: false
+            referencedRelation: "organization_partnership_interests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_applications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_applications_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
