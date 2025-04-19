@@ -6,28 +6,49 @@ import NotFound from "@/pages/NotFound";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/hooks/use-toast";
 
 export default function UserProfilePage() {
   const { userId } = useParams();
 
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile, isLoading, error } = useQuery({
     queryKey: ["profile", userId],
     queryFn: async () => {
       if (!userId) return null;
       
-      const { data, error } = await supabase
-        .from("profiles")
-        .select(`
-          *,
-          reviews(count)
-        `)
-        .eq("id", userId)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select(`
+            *,
+            reviews(count)
+          `)
+          .eq("id", userId)
+          .single();
 
-      if (error) throw error;
-      return data;
+        if (error) {
+          console.error("Error fetching profile:", error);
+          throw error;
+        }
+        
+        if (!data) {
+          console.error("No profile found for user:", userId);
+          return null;
+        }
+        
+        return data;
+      } catch (error) {
+        console.error("Failed to fetch profile:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load profile data. Please try again.",
+          variant: "destructive"
+        });
+        return null;
+      }
     },
-    enabled: !!userId
+    enabled: !!userId,
+    retry: 1
   });
 
   if (isLoading) {
@@ -37,6 +58,20 @@ export default function UserProfilePage() {
           <div className="space-y-6">
             <Skeleton className="h-32 w-full" />
             <Skeleton className="h-64 w-full" />
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    console.error("Query error:", error);
+    return (
+      <Layout>
+        <div className="container mx-auto py-6 px-4">
+          <div className="bg-red-50 p-4 rounded-md border border-red-200">
+            <h2 className="text-lg font-medium text-red-800 mb-2">Error Loading Profile</h2>
+            <p className="text-red-700">There was a problem loading this profile. Please try again later.</p>
           </div>
         </div>
       </Layout>

@@ -1,4 +1,3 @@
-
 import {
   Layout,
   FolderKanban,
@@ -59,7 +58,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
   const sidebarContent = (
     <>
       <div className="px-6 py-4">
-        <Link to="/dashboard" className="flex items-center space-x-2">
+        <Link to="/profile" className="flex items-center space-x-2">
           <Avatar>
             <AvatarImage src={user?.user_metadata?.profile_image || ""} />
             <AvatarFallback>
@@ -70,6 +69,8 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
         </Link>
       </div>
 
+      
+      
       <Separator />
 
       <ScrollArea className="flex-1">
@@ -112,6 +113,8 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
         </div>
       </ScrollArea>
 
+      
+      
       <Separator />
 
       <div className="flex items-center px-6 py-4">
@@ -129,6 +132,8 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
       </div>
     </>
   );
+
+  
 
   return (
     <>

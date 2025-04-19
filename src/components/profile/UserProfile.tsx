@@ -27,12 +27,20 @@ export function UserProfile({ profile }: UserProfileProps) {
   const userProjects = projects?.filter(p => p.organizerId === profile.id) || [];
   const { getUserReviews } = useReviews();
   const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
   
   // Fetch user reviews
   useEffect(() => {
     const fetchReviews = async () => {
-      const userReviews = await getUserReviews(profile.id);
-      setReviews(userReviews);
+      try {
+        setLoading(true);
+        const userReviews = await getUserReviews(profile.id);
+        setReviews(userReviews);
+      } catch (error) {
+        console.error("Error fetching reviews:", error);
+      } finally {
+        setLoading(false);
+      }
     };
     
     fetchReviews();
@@ -42,7 +50,7 @@ export function UserProfile({ profile }: UserProfileProps) {
     <div className="container mx-auto py-6 px-4">
       <div className="mb-8">
         <ProfileHeader
-          title={profile.name}
+          title={profile.name || "User"}
           description={profile.bio || "No bio provided"}
           image={profile.profile_image}
         />
@@ -62,10 +70,12 @@ export function UserProfile({ profile }: UserProfileProps) {
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Contact</h3>
                   <div className="flex flex-wrap gap-3">
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Mail className="h-4 w-4" />
-                      Email
-                    </Button>
+                    {profile.email && (
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Mail className="h-4 w-4" />
+                        Email
+                      </Button>
+                    )}
                     <Button variant="outline" size="sm" className="gap-2">
                       <Linkedin className="h-4 w-4" />
                       LinkedIn
@@ -110,7 +120,7 @@ export function UserProfile({ profile }: UserProfileProps) {
         <TabsContent value="reviews">
           <ReviewsList 
             reviews={reviews} 
-            title={`Reviews for ${profile.name}`}
+            title={`Reviews for ${profile.name || "User"}`}
             description="See what others have said about working with this user"
             emptyMessage="This user hasn't received any reviews yet" 
           />
