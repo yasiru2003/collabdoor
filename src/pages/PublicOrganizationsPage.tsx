@@ -5,11 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Organization } from "@/types";
+import { useAuth } from "@/hooks/use-auth";
+import { PartnerCard } from "@/components/partner-card";
 
 export default function PublicOrganizationsPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const { user } = useAuth();
+  const navigate = useNavigate();
   
   const { data: organizations, isLoading } = useQuery({
     queryKey: ["public-organizations"],
@@ -40,9 +44,11 @@ export default function PublicOrganizationsPage() {
             Discover organizations making an impact.
           </p>
         </div>
-        <Button asChild>
-          <Link to="/login">Sign in to Join</Link>
-        </Button>
+        {!user && (
+          <Button asChild>
+            <Link to="/login">Sign in to Connect</Link>
+          </Button>
+        )}
       </div>
 
       <div className="flex gap-2 mb-6">
@@ -67,28 +73,7 @@ export default function PublicOrganizationsPage() {
       ) : filteredOrganizations && filteredOrganizations.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredOrganizations.map((org) => (
-            <div key={org.id} className="bg-card border rounded-lg overflow-hidden shadow-sm">
-              <div className="p-4">
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-lg">
-                    {org.name.substring(0, 2).toUpperCase()}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">{org.name}</h3>
-                    {org.location && <p className="text-sm text-muted-foreground">{org.location}</p>}
-                  </div>
-                </div>
-                <p className="mt-3 text-sm text-muted-foreground line-clamp-2">
-                  {org.description || "No description provided."}
-                </p>
-                <div className="flex justify-between items-center mt-4 pt-3 border-t">
-                  <span className="text-sm">{org.industry || "Other"}</span>
-                  <Button size="sm" asChild>
-                    <Link to="/login">View Details</Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
+            <PartnerCard key={org.id} organization={org} />
           ))}
         </div>
       ) : (

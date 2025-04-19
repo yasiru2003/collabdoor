@@ -1,49 +1,36 @@
+
 import { Organization } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
-import { Building, ExternalLink, MapPin, Users } from "lucide-react";
+import { Building, ExternalLink, MapPin, Users, Mail } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Link, useNavigate } from "react-router-dom";
 import { Badge } from "./ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
 interface PartnerCardProps {
   organization: Organization;
-  skills?: string[];
 }
 
-export function PartnerCard({ organization, skills = [] }: PartnerCardProps) {
+export function PartnerCard({ organization }: PartnerCardProps) {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { user } = useAuth();
   
-  // Check if the organization belongs to the current user
-  const isOwnOrganization = user?.id === organization.owner_id;
+  // Check if current user is the organization owner
+  const isOwner = user && user.id === organization.owner_id;
 
-  const handleContact = async () => {
+  // Handle contact button click to message organization owner
+  const handleContact = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please log in to contact organizations.",
-        variant: "destructive",
-      });
-      navigate("/login", { state: { returnTo: "/partners" } });
+      // Redirect to login if not authenticated
+      navigate('/login', { state: { returnTo: `/organizations/${organization.id}` } });
       return;
     }
-
-    // Prevent contacting own organization
-    if (isOwnOrganization) {
-      toast({
-        title: "Cannot contact own organization",
-        description: "You cannot start a conversation with your own organization.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Navigate to messages page with the participant ID
+    
+    // Navigate to messages with the organization owner info
     navigate("/messages", { 
       state: { 
         participantId: organization.owner_id,
@@ -64,7 +51,7 @@ export function PartnerCard({ organization, skills = [] }: PartnerCardProps) {
           </Avatar>
           <div>
             <CardTitle className="text-base">
-              <Link to={`/partners/${organization.id}`} className="hover:text-primary transition-colors">
+              <Link to={`/organizations/${organization.id}`} className="hover:text-primary transition-colors">
                 {organization.name}
               </Link>
             </CardTitle>
@@ -78,41 +65,26 @@ export function PartnerCard({ organization, skills = [] }: PartnerCardProps) {
       </CardHeader>
       <CardContent className="flex-grow">
         <p className="text-sm mb-4 line-clamp-3">
-          {organization.description}
+          {organization.description || "No description provided."}
         </p>
         
-        {skills.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-4">
-            {skills.slice(0, 3).map((skill) => (
-              <Badge key={skill} variant="secondary" className="text-xs">
-                {skill}
-              </Badge>
-            ))}
-            {skills.length > 3 && (
-              <Badge variant="outline" className="text-xs">
-                +{skills.length - 3} more
-              </Badge>
-            )}
-          </div>
-        )}
-        
-        <div className="space-y-2 text-sm text-muted-foreground mt-2">
+        <div className="space-y-2 text-sm text-muted-foreground">
           {organization.location && (
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               <span>{organization.location}</span>
             </div>
           )}
-          {organization.foundedYear && (
-            <div className="flex items-center gap-2">
-              <Building className="h-4 w-4" />
-              <span>Founded {organization.foundedYear}</span>
-            </div>
-          )}
           {organization.size && (
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               <span>{organization.size}</span>
+            </div>
+          )}
+          {organization.industry && (
+            <div className="flex items-center gap-2">
+              <Building className="h-4 w-4" />
+              <span>{organization.industry}</span>
             </div>
           )}
         </div>
@@ -131,15 +103,17 @@ export function PartnerCard({ organization, skills = [] }: PartnerCardProps) {
         ) : (
           <span></span>
         )}
-        <Button 
-          size="sm" 
-          onClick={handleContact}
-          disabled={isOwnOrganization}
-          aria-label={isOwnOrganization ? "Cannot contact your own organization" : "Contact organization"}
-          title={isOwnOrganization ? "Cannot contact your own organization" : "Contact organization"}
-        >
-          Contact
-        </Button>
+        {!isOwner && user && (
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleContact}
+            className="gap-2"
+          >
+            <Mail className="h-4 w-4" />
+            Contact
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );
