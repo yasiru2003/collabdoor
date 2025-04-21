@@ -1,3 +1,4 @@
+
 import { ProfileHeader } from "./ProfileHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -101,7 +102,12 @@ export function UserProfile({ profile }: UserProfileProps) {
                   <h3 className="text-lg font-semibold mb-2">Contact</h3>
                   <div className="flex flex-wrap gap-3">
                     {profile.email && (
-                      <Button variant="outline" size="sm" className="gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="gap-2"
+                        onClick={() => window.location.href = `mailto:${profile.email}`}
+                      >
                         <Mail className="h-4 w-4" />
                         Email
                       </Button>

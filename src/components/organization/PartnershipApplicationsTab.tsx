@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -183,6 +184,11 @@ export function PartnershipApplicationsTab({
     }
   };
 
+  // Function to handle contacting a user
+  const handleContactUser = (profileId: string, profileName: string) => {
+    window.location.href = `/messages?participantId=${profileId}&participantName=${encodeURIComponent(profileName || "User")}`;
+  };
+
   if (!isOwner) {
     return (
       <Card>
@@ -244,15 +250,28 @@ export function PartnershipApplicationsTab({
                     </div>
                   </div>
                   <div className="flex gap-2 shrink-0">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1"
-                      onClick={() => window.location.href = `mailto:${application.profile?.email}`}
-                    >
-                      <Mail className="h-4 w-4" />
-                      Contact
-                    </Button>
+                    {application.profile?.email && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1"
+                        onClick={() => window.location.href = `mailto:${application.profile?.email}`}
+                      >
+                        <Mail className="h-4 w-4" />
+                        Email
+                      </Button>
+                    )}
+                    {application.profile?.id && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1"
+                        onClick={() => handleContactUser(application.profile.id, application.profile.name || "User")}
+                      >
+                        <Mail className="h-4 w-4" />
+                        Message
+                      </Button>
+                    )}
                   </div>
                 </div>
                 
