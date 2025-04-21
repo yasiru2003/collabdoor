@@ -18,6 +18,7 @@ import { OrganizationProjects } from "@/components/organization/OrganizationProj
 import { OrganizationJoinRequest } from "@/components/organization/OrganizationJoinRequest";
 import { OrganizationRequestsTab } from "@/components/organization/OrganizationRequestsTab";
 import { PartnershipInterestsTab } from "@/components/organization/PartnershipInterestsTab";
+import { PartnershipApplicationsTab } from "@/components/organization/PartnershipApplicationsTab";
 
 export default function OrganizationDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -304,7 +305,10 @@ export default function OrganizationDetailPage() {
                 <TabsTrigger value="partnership-interests">Partnership Interests</TabsTrigger>
                 <TabsTrigger value="reviews">Reviews</TabsTrigger>
                 {isOwner && (
-                  <TabsTrigger value="requests">Join Requests</TabsTrigger>
+                  <>
+                    <TabsTrigger value="requests">Join Requests</TabsTrigger>
+                    <TabsTrigger value="partnership-applications">Partnership Applications</TabsTrigger>
+                  </>
                 )}
               </TabsList>
               
@@ -376,13 +380,23 @@ export default function OrganizationDetailPage() {
               </TabsContent>
               
               {isOwner && (
-                <TabsContent value="requests" className="mt-4">
-                  <OrganizationRequestsTab
-                    organizationId={id || ''}
-                    organizationName={organization.name}
-                    isOwner={isOwner}
-                  />
-                </TabsContent>
+                <>
+                  <TabsContent value="requests" className="mt-4">
+                    <OrganizationRequestsTab
+                      organizationId={id || ''}
+                      organizationName={organization.name}
+                      isOwner={isOwner}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="partnership-applications" className="mt-4">
+                    <PartnershipApplicationsTab
+                      organizationId={id || ''}
+                      organizationName={organization.name}
+                      isOwner={isOwner}
+                    />
+                  </TabsContent>
+                </>
               )}
             </Tabs>
           </div>

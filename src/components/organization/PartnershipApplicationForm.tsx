@@ -26,7 +26,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { PartnershipType } from '@/types';
-import { Check } from 'lucide-react';
 
 interface PartnershipApplicationFormProps {
   organizationId: string;
@@ -61,7 +60,7 @@ export function PartnershipApplicationForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       message: '',
-      projectId: '',
+      projectId: 'none',
     },
   });
   
@@ -100,7 +99,7 @@ export function PartnershipApplicationForm({
           user_id: user.id,
           interest_id: interestId,
           partnership_type: partnershipType,
-          project_id: values.projectId || null,
+          project_id: values.projectId !== 'none' ? values.projectId : null,
           message: values.message,
           status: 'pending',
         });
