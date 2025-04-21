@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { PartnershipType, ApplicationWithProfile } from "@/types";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { notifyNewApplicant } from "@/services/notification-service";
 
 // Define and export ApplicationStatus type
@@ -94,6 +94,7 @@ export function useProjectApplicationsQuery(projectId: string | undefined) {
 export function useProjectApplications() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const queryClient = useQueryClient();
 
   // Get user's organization memberships
   const { data: userOrganizations } = useQuery({
@@ -206,6 +207,9 @@ export function useProjectApplications() {
 
       // Send notification to project organizer
       await notifyNewApplicant(project.organizer_id, userId, project.title, organizationName);
+      
+      // Invalidate project applications query to refresh data
+      queryClient.invalidateQueries({ queryKey: ["projectApplications", projectId] });
 
       toast({
         title: "Application submitted",
@@ -231,7 +235,7 @@ export function useProjectApplications() {
       // Get application details before updating
       const { data: application, error: fetchError } = await supabase
         .from("project_applications")
-        .select("*, projects(title, organizer_id)")
+        .select("*, projects(title, organizer_id, id)")
         .eq("id", applicationId)
         .maybeSingle();
 
@@ -322,6 +326,13 @@ export function useProjectApplications() {
       } catch (notificationError) {
         console.error("Exception creating notification:", notificationError);
         // Continue execution even if notification fails
+      }
+
+      // Invalidate queries to refresh data
+      if (application.project_id) {
+        queryClient.invalidateQueries({ queryKey: ["projectApplications", application.project_id] });
+        queryClient.invalidateQueries({ queryKey: ["partnerships"] });
+        queryClient.invalidateQueries({ queryKey: ["project", application.project_id] });
       }
 
       toast({
