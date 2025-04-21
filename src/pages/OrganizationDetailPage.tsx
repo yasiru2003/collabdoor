@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Building, Edit, Globe, MapPin, Users } from "lucide-react";
+import { Building, Edit, Globe, MapPin, Users, Mail } from "lucide-react";
 import { Organization, PartnershipType } from "@/types";
 import { OrganizationReviews } from "@/components/organization/OrganizationReviews";
 import { OrganizationProjects } from "@/components/organization/OrganizationProjects";
@@ -160,6 +159,26 @@ export default function OrganizationDetailPage() {
   }, [isMember, refetchMembers]);
   
   const isOwner = user && organization && user.id === organization.owner_id;
+
+  // Add: determine if current user can contact owner (non-owner, logged in)
+  const canContactOwner =
+    user &&
+    organization &&
+    user.id !== organization.owner_id;
+
+  // Function to message org owner
+  const handleContactOwner = () => {
+    if (!user) {
+      navigate('/login', { state: { returnTo: `/organizations/${id}` } });
+      return;
+    }
+    navigate('/messages', {
+      state: {
+        participantId: organization.owner_id,
+        participantName: organization.name, // Will resolve user name in chat UI
+      },
+    });
+  };
   
   if (isLoading || authLoading) {
     return (
@@ -224,6 +243,18 @@ export default function OrganizationDetailPage() {
                 <Badge variant="outline" className="mt-1">
                   {organization.industry}
                 </Badge>
+              )}
+              {/* Contact owner button for non-owner */}
+              {canContactOwner && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 gap-2"
+                  onClick={handleContactOwner}
+                >
+                  <Mail className="h-4 w-4" />
+                  Contact
+                </Button>
               )}
             </div>
           </div>
@@ -342,8 +373,22 @@ export default function OrganizationDetailPage() {
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-medium">{member.profiles?.name || member.profiles?.email || "Unknown User"}</p>
-                              <p className="text-sm text-muted-foreground">{member.profiles?.email}</p>
+                              {/* Make user name/email a link to user profile */}
+                              <p className="font-medium">
+                                {member.profiles?.id ? (
+                                  <a
+                                    href={`/users/${member.profiles.id}`}
+                                    className="hover:text-primary underline underline-offset-2 transition-colors"
+                                  >
+                                    {member.profiles?.name || member.profiles?.email || "Unknown User"}
+                                  </a>
+                                ) : (
+                                  member.profiles?.name || member.profiles?.email || "Unknown User"
+                                )}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {member.profiles?.email}
+                              </p>
                             </div>
                           </div>
                         ))}

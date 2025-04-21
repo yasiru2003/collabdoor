@@ -1,4 +1,3 @@
-
 import { ProfileHeader } from "./ProfileHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -46,6 +45,24 @@ export function UserProfile({ profile }: UserProfileProps) {
     fetchReviews();
   }, [profile.id, getUserReviews]);
 
+  // Determine current user (to avoid showing contact option for own profile)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Try to get user ID from session (supabase)
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      supabase.auth.getUser().then(({ data }) => {
+        setCurrentUserId(data?.user?.id ?? null);
+      });
+    });
+  }, []);
+
+  // If not yourself, show contact button
+  const isSelf = profile.id === currentUserId;
+  const handleContact = () => {
+    window.location.href = `/messages?participantId=${profile.id}&participantName=${encodeURIComponent(profile.name || "User")}`;
+  };
+
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="mb-8">
@@ -54,6 +71,19 @@ export function UserProfile({ profile }: UserProfileProps) {
           description={profile.bio || "No bio provided"}
           image={profile.profile_image}
         />
+        {/* Contact Button */}
+        {!isSelf && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2 mt-2"
+            onClick={handleContact}
+            data-testid="contact-user-profile"
+          >
+            <Mail className="h-4 w-4" />
+            Contact
+          </Button>
+        )}
       </div>
 
       <Tabs defaultValue="about" className="space-y-6">

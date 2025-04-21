@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -221,7 +220,19 @@ export function PartnershipApplicationsTab({
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium">{application.profile?.name || application.profile?.email || "Unknown User"}</p>
+                      {/* Make applicant's name a link to profile page */}
+                      <p className="font-medium">
+                        {application.profile?.id ? (
+                          <a
+                            href={`/users/${application.profile.id}`}
+                            className="hover:text-primary underline underline-offset-2 transition-colors"
+                          >
+                            {application.profile?.name || application.profile?.email || "Unknown User"}
+                          </a>
+                        ) : (
+                          application.profile?.name || application.profile?.email || "Unknown User"
+                        )}
+                      </p>
                       <p className="text-sm text-muted-foreground">
                         Applied {new Date(application.created_at).toLocaleDateString()}
                       </p>
