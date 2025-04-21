@@ -189,6 +189,19 @@ const DashboardPage = () => {
     applicationFilter === "all" || app.status === applicationFilter
   );
 
+  // Function to get the project status badge variant
+  const getProjectStatusBadge = (status: string) => {
+    switch (status) {
+      case 'published':
+        return { variant: "success", label: 'Active' };
+      case 'completed':
+        return { variant: "secondary", label: 'Completed' };
+      case 'draft':
+      default:
+        return { variant: "secondary", label: 'Draft' };
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -321,44 +334,48 @@ const DashboardPage = () => {
               </div>
             ) : projects.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2">
-                {projects.map((project) => (
-                  <Card key={project.id} className="overflow-hidden">
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg">
-                          <Link to={`/projects/${project.id}`} className="hover:text-primary transition-colors">
-                            {project.title}
-                          </Link>
-                        </CardTitle>
-                        <Badge variant={project.status === 'published' ? "success" : "secondary"}>
-                          {project.status === 'published' ? 'Active' : 'Draft'}
-                        </Badge>
-                      </div>
-                      <CardDescription className="line-clamp-2">
-                        {project.description}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="pb-2">
-                      <div className="text-sm text-muted-foreground space-y-1">
-                        <div className="flex items-center">
-                          <Clock className="mr-2 h-4 w-4" />
-                          Created on {new Date(project.createdAt).toLocaleDateString()}
+                {projects.map((project) => {
+                  const statusBadge = getProjectStatusBadge(project.status);
+                  
+                  return (
+                    <Card key={project.id} className="overflow-hidden">
+                      <CardHeader className="pb-2">
+                        <div className="flex justify-between items-start">
+                          <CardTitle className="text-lg">
+                            <Link to={`/projects/${project.id}`} className="hover:text-primary transition-colors">
+                              {project.title}
+                            </Link>
+                          </CardTitle>
+                          <Badge variant={statusBadge.variant as "success" | "secondary" | "destructive"}>
+                            {statusBadge.label}
+                          </Badge>
                         </div>
-                        {project.location && (
+                        <CardDescription className="line-clamp-2">
+                          {project.description}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="pb-2">
+                        <div className="text-sm text-muted-foreground space-y-1">
                           <div className="flex items-center">
-                            <Users className="mr-2 h-4 w-4" />
-                            Location: {project.location}
+                            <Clock className="mr-2 h-4 w-4" />
+                            Created on {new Date(project.createdAt).toLocaleDateString()}
                           </div>
-                        )}
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <Button asChild variant="secondary" size="sm">
-                        <Link to={`/projects/${project.id}`}>View Details</Link>
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
+                          {project.location && (
+                            <div className="flex items-center">
+                              <Users className="mr-2 h-4 w-4" />
+                              Location: {project.location}
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                      <CardFooter>
+                        <Button asChild variant="secondary" size="sm">
+                          <Link to={`/projects/${project.id}`}>View Details</Link>
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
               <Card className="bg-muted/50">
