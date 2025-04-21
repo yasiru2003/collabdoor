@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Layout } from "@/components/layout";
@@ -18,6 +19,7 @@ const DashboardPage = () => {
   const { user, userProfile } = useAuth();
   const [receivedApplications, setReceivedApplications] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [receivedApplicationFilter, setReceivedApplicationFilter] = useState<ApplicationStatus | "all">("all");
   const { updateApplicationStatus } = useProjectApplications();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -37,94 +39,95 @@ const DashboardPage = () => {
     return user?.email ? user.email.split('@')[0] : 'User';
   };
 
-  useEffect(() => {
-    const fetchReceivedApplications = async () => {
-      if (!user || projects.length === 0) return;
+  // Function to fetch received applications
+  const fetchReceivedApplications = async () => {
+    if (!user || projects.length === 0) return;
+    
+    setIsLoading(true);
+    try {
+      // Fetch received applications for the user's projects
+      const projectIds = projects.map(project => project.id);
       
-      setIsLoading(true);
-      try {
-        // Fetch received applications for the user's projects
-        const projectIds = projects.map(project => project.id);
+      console.log("Fetching applications for projects:", projectIds);
+      
+      // Modified approach: Fetch applications first
+      const { data: applications, error } = await supabase
+        .from("project_applications")
+        .select("*")
+        .in("project_id", projectIds)
+        .order("created_at", { ascending: false });
         
-        console.log("Fetching applications for projects:", projectIds);
+      if (error) {
+        console.error("Error fetching received applications:", error);
+        toast({
+          title: "Error fetching applications",
+          description: error.message,
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      if (applications && applications.length > 0) {
+        // Get all user IDs from applications
+        const userIds = applications.map(app => app.user_id);
         
-        // Modified approach: Fetch applications first
-        const { data: applications, error } = await supabase
-          .from("project_applications")
-          .select("*")
-          .in("project_id", projectIds)
-          .order("created_at", { ascending: false });
+        // Fetch profiles for these users
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, name, email, profile_image")
+          .in("id", userIds);
           
-        if (error) {
-          console.error("Error fetching received applications:", error);
+        if (profilesError) {
+          console.error("Error fetching applicant profiles:", profilesError);
           toast({
-            title: "Error fetching applications",
-            description: error.message,
+            title: "Error fetching applicant profiles",
+            description: profilesError.message,
             variant: "destructive",
           });
-          setIsLoading(false);
-          return;
         }
         
-        if (applications && applications.length > 0) {
-          // Get all user IDs from applications
-          const userIds = applications.map(app => app.user_id);
+        // Fetch project details for these applications
+        const { data: projectDetails, error: projectsError } = await supabase
+          .from("projects")
+          .select("*")
+          .in("id", projectIds);
           
-          // Fetch profiles for these users
-          const { data: profiles, error: profilesError } = await supabase
-            .from("profiles")
-            .select("id, name, email, profile_image")
-            .in("id", userIds);
-            
-          if (profilesError) {
-            console.error("Error fetching applicant profiles:", profilesError);
-            toast({
-              title: "Error fetching applicant profiles",
-              description: profilesError.message,
-              variant: "destructive",
-            });
-          }
-          
-          // Fetch project details for these applications
-          const { data: projectDetails, error: projectsError } = await supabase
-            .from("projects")
-            .select("*")
-            .in("id", projectIds);
-            
-          if (projectsError) {
-            console.error("Error fetching project details:", projectsError);
-          }
-          
-          // Create lookup maps
-          const profilesMap = profiles ? profiles.reduce((map, profile) => {
-            map[profile.id] = profile;
-            return map;
-          }, {} as Record<string, any>) : {};
-          
-          const projectsMap = projectDetails ? projectDetails.reduce((map, project) => {
-            map[project.id] = project;
-            return map;
-          }, {} as Record<string, any>) : {};
-          
-          // Combine the data
-          const combinedApplications = applications.map(application => ({
-            ...application,
-            profiles: profilesMap[application.user_id] || null,
-            projects: projectsMap[application.project_id] || null
-          }));
-          
-          console.log("Combined applications:", combinedApplications);
-          setReceivedApplications(combinedApplications);
-        } else {
-          setReceivedApplications([]);
+        if (projectsError) {
+          console.error("Error fetching project details:", projectsError);
         }
-      } catch (err) {
-        console.error("Error in fetchReceivedApplications:", err);
-      } finally {
-        setIsLoading(false);
+        
+        // Create lookup maps
+        const profilesMap = profiles ? profiles.reduce((map, profile) => {
+          map[profile.id] = profile;
+          return map;
+        }, {} as Record<string, any>) : {};
+        
+        const projectsMap = projectDetails ? projectDetails.reduce((map, project) => {
+          map[project.id] = project;
+          return map;
+        }, {} as Record<string, any>) : {};
+        
+        // Combine the data
+        const combinedApplications = applications.map(application => ({
+          ...application,
+          profiles: profilesMap[application.user_id] || null,
+          projects: projectsMap[application.project_id] || null
+        }));
+        
+        console.log("Combined applications:", combinedApplications);
+        setReceivedApplications(combinedApplications);
+      } else {
+        setReceivedApplications([]);
       }
-    };
+    } catch (err) {
+      console.error("Error in fetchReceivedApplications:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     if (!projectsLoading && projects.length > 0) {
       fetchReceivedApplications();
     } else if (!projectsLoading) {
@@ -150,23 +153,7 @@ const DashboardPage = () => {
       const result = await updateApplicationStatus(applicationId, status);
       if (result) {
         // Refresh the received applications data
-        if (user && projects.length > 0) {
-          const projectIds = projects.map(project => project.id);
-          
-          const { data: receivedApps, error } = await supabase
-            .from("project_applications")
-            .select(`
-              *,
-              projects(*),
-              profiles(*)
-            `)
-            .in("project_id", projectIds)
-            .order("created_at", { ascending: false });
-            
-          if (!error) {
-            setReceivedApplications(receivedApps || []);
-          }
-        }
+        await fetchReceivedApplications();
         
         toast({
           title: "Application Updated",
@@ -188,6 +175,11 @@ const DashboardPage = () => {
   const filteredUserApplications = userApplications.filter(app => 
     applicationFilter === "all" || app.status === applicationFilter
   );
+  
+  // Filter received applications based on status
+  const filteredReceivedApplications = receivedApplicationFilter === "all" 
+    ? receivedApplications
+    : receivedApplications.filter(app => app.status === receivedApplicationFilter);
 
   // Function to get the project status badge variant
   const getProjectStatusBadge = (status: string) => {
@@ -258,7 +250,7 @@ const DashboardPage = () => {
               </div>
             </div>
             
-            {isLoading ? (
+            {applicationsLoading ? (
               <div className="flex items-center justify-center py-10">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
               </div>
@@ -328,7 +320,7 @@ const DashboardPage = () => {
               </Button>
             </div>
 
-            {isLoading ? (
+            {projectsLoading ? (
               <div className="flex items-center justify-center py-10">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
               </div>
@@ -400,14 +392,8 @@ const DashboardPage = () => {
                 <Filter className="h-4 w-4 text-muted-foreground" />
                 <select 
                   className="bg-background text-sm border rounded-md px-2 py-1"
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    const filtered = value === "all" 
-                      ? receivedApplications 
-                      : receivedApplications.filter(app => app.status === value);
-                    setReceivedApplications(filtered);
-                  }}
-                  defaultValue="all"
+                  value={receivedApplicationFilter}
+                  onChange={(e) => setReceivedApplicationFilter(e.target.value as ApplicationStatus | "all")}
                 >
                   <option value="all">All Applications</option>
                   <option value="pending">Pending</option>
@@ -421,9 +407,9 @@ const DashboardPage = () => {
               <div className="flex items-center justify-center py-10">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
               </div>
-            ) : receivedApplications.length > 0 ? (
+            ) : filteredReceivedApplications.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2">
-                {receivedApplications.map((application) => {
+                {filteredReceivedApplications.map((application) => {
                   // Safely extract profile data with null checks
                   const profiles = application.profiles || {};
                   
