@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Layout } from "@/components/layout";
@@ -579,110 +580,109 @@ const DashboardPage = () => {
                 </CardContent>
               </Card>
             )}
-          </div>
-
-          {/* Add Partnership Applications Section */}
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold mb-4">Partnership Interest Applications</h2>
-            {partnershipLoading ? (
-              <Card>
-                <CardContent className="flex justify-center py-6">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-                </CardContent>
-              </Card>
-            ) : partnershipApplications && partnershipApplications.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2">
-                {partnershipApplications.map((application) => (
-                  <Card key={application.id}>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarImage src={application.profiles?.profile_image || ""} />
-                            <AvatarFallback>
-                              {(application.profiles?.name || "?").substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <CardTitle className="text-base">
-                              <a
-                                href={`/users/${application.profiles?.id}`}
-                                className="hover:text-primary underline underline-offset-2 transition-colors"
-                              >
-                                {application.profiles?.name || "Unknown User"}
-                              </a>
-                            </CardTitle>
-                            <p className="text-sm text-muted-foreground">
-                              Applied {new Date(application.created_at).toLocaleDateString()}
-                            </p>
+            
+            {/* Add Partnership Applications Section */}
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold mb-4">Partnership Interest Applications</h2>
+              {partnershipLoading ? (
+                <Card>
+                  <CardContent className="flex justify-center py-6">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                  </CardContent>
+                </Card>
+              ) : partnershipApplications && partnershipApplications.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {partnershipApplications.map((application) => (
+                    <Card key={application.id}>
+                      <CardHeader className="pb-2">
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarImage src={application.profiles?.profile_image || ""} />
+                              <AvatarFallback>
+                                {(application.profiles?.name || "?").substring(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <CardTitle className="text-base">
+                                <a
+                                  href={`/users/${application.profiles?.id}`}
+                                  className="hover:text-primary underline underline-offset-2 transition-colors"
+                                >
+                                  {application.profiles?.name || "Unknown User"}
+                                </a>
+                              </CardTitle>
+                              <p className="text-sm text-muted-foreground">
+                                Applied {new Date(application.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
                           </div>
+                          <Badge>
+                            {application.organization_partnership_interests?.[0]?.partnership_type}
+                          </Badge>
                         </div>
-                        <Badge>
-                          {application.organization_partnership_interests?.[0]?.partnership_type}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      {application.message && (
-                        <p className="text-sm mb-4">{application.message}</p>
-                      )}
-                      {application.profiles?.email && (
-                        <div className="flex gap-2 mb-4">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1"
-                            onClick={() => window.location.href = `mailto:${application.profiles.email}`}
-                          >
-                            <Mail className="h-4 w-4" />
-                            Email
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1"
-                            onClick={() => window.location.href = `/messages?participantId=${application.profiles.id}&participantName=${encodeURIComponent(application.profiles.name || "User")}`}
-                          >
-                            <Mail className="h-4 w-4" />
-                            Message
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                    <CardFooter className="flex justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                        onClick={() => handleRejectPartnership(application.id, application.user_id)}
-                      >
-                        Reject
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => handleApprovePartnership(application.id, application.user_id)}
-                      >
-                        Approve
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-10 text-center">
-                  <Handshake className="h-10 w-10 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No Partnership Applications</h3>
-                  <p className="text-muted-foreground">
-                    You haven't received any partnership interest applications yet.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </TabsContent>
-        
-      </Tabs>
+                      </CardHeader>
+                      <CardContent>
+                        {application.message && (
+                          <p className="text-sm mb-4">{application.message}</p>
+                        )}
+                        {application.profiles?.email && (
+                          <div className="flex gap-2 mb-4">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1"
+                              onClick={() => window.location.href = `mailto:${application.profiles.email}`}
+                            >
+                              <Mail className="h-4 w-4" />
+                              Email
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1"
+                              onClick={() => window.location.href = `/messages?participantId=${application.profiles.id}&participantName=${encodeURIComponent(application.profiles.name || "User")}`}
+                            >
+                              <Mail className="h-4 w-4" />
+                              Message
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                      <CardFooter className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                          onClick={() => handleRejectPartnership(application.id, application.user_id)}
+                        >
+                          Reject
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleApprovePartnership(application.id, application.user_id)}
+                        >
+                          Approve
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+                    <Handshake className="h-10 w-10 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No Partnership Applications</h3>
+                    <p className="text-muted-foreground">
+                      You haven't received any partnership interest applications yet.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
     </Layout>
   );
 };
