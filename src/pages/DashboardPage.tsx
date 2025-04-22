@@ -15,6 +15,36 @@ import { useUserProjects, useUserApplications } from "@/hooks/use-supabase-query
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
+// Define a type for profile data to ensure type safety
+interface ProfileData {
+  id: string;
+  name: string;
+  email: string;
+  profile_image: string;
+}
+
+// Define a type for partnership application data
+interface PartnershipApplication {
+  id: string;
+  user_id: string;
+  organization_id: string;
+  status: string;
+  created_at: string;
+  message?: string;
+  partnership_type: string;
+  project_id?: string;
+  profiles: ProfileData;
+  organization_partnership_interests?: Array<{
+    description?: string;
+    partnership_type?: string;
+  }>;
+  projects?: {
+    id: string;
+    title: string;
+    status: string;
+  };
+}
+
 const DashboardPage = () => {
   const { user, userProfile } = useAuth();
   const [receivedApplications, setReceivedApplications] = useState<any[]>([]);
@@ -231,7 +261,7 @@ const DashboardPage = () => {
       return (applications || []).map(app => ({
         ...app,
         profiles: app.profiles || { id: '', name: 'Unknown', email: '', profile_image: '' }
-      }));
+      })) as PartnershipApplication[];
     },
     enabled: !!user?.id
   });
