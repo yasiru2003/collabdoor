@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Layout } from "@/components/layout";
@@ -6,14 +5,15 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Clock, Folder, LayoutDashboard, Mail, Users, Users2, Filter } from "lucide-react";
+import { CalendarDays, Clock, Folder, LayoutDashboard, Mail, Users, Users2, Filter, Handshake } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { useProjectApplications, type ApplicationStatus } from "@/hooks/use-project-applications";
 import { useUserProjects, useUserApplications } from "@/hooks/use-supabase-query";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const DashboardPage = () => {
   const { user, userProfile } = useAuth();
@@ -191,6 +191,94 @@ const DashboardPage = () => {
       case 'draft':
       default:
         return { variant: "secondary", label: 'Draft' };
+    }
+  };
+
+  // Fetch received partnership applications for organizations where user is owner
+  const { data: partnershipApplications, isLoading: partnershipLoading } = useQuery({
+    queryKey: ["partnership-applications", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+
+      // First get organizations where user is owner
+      const { data: ownedOrgs } = await supabase
+        .from("organizations")
+        .select("id")
+        .eq("owner_id", user.id);
+
+      if (!ownedOrgs?.length) return [];
+
+      const orgIds = ownedOrgs.map(org => org.id);
+
+      // Then fetch partnership applications for these organizations
+      const { data: applications, error } = await supabase
+        .from("partnership_applications")
+        .select(`
+          *,
+          profiles:user_id(id, name, email, profile_image),
+          organization_partnership_interests(
+            description,
+            partnership_type
+          )
+        `)
+        .in("organization_id", orgIds)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return applications || [];
+    },
+    enabled: !!user?.id
+  });
+
+  // Add partnership application handlers
+  const handleApprovePartnership = async (applicationId: string, userId: string) => {
+    try {
+      const { error } = await supabase
+        .from("partnership_applications")
+        .update({ status: "approved" })
+        .eq("id", applicationId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Partnership application approved",
+      });
+
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ["partnership-applications"] });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRejectPartnership = async (applicationId: string, userId: string) => {
+    try {
+      const { error } = await supabase
+        .from("partnership_applications")
+        .update({ status: "rejected" })
+        .eq("id", applicationId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Partnership application rejected",
+      });
+
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ["partnership-applications"] });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -491,9 +579,110 @@ const DashboardPage = () => {
                 </CardContent>
               </Card>
             )}
-          </TabsContent>
-        </Tabs>
-      </div>
+          </div>
+
+          {/* Add Partnership Applications Section */}
+          <div className="mt-8">
+            <h2 className="text-xl font-semibold mb-4">Partnership Interest Applications</h2>
+            {partnershipLoading ? (
+              <Card>
+                <CardContent className="flex justify-center py-6">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                </CardContent>
+              </Card>
+            ) : partnershipApplications && partnershipApplications.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {partnershipApplications.map((application) => (
+                  <Card key={application.id}>
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage src={application.profiles?.profile_image || ""} />
+                            <AvatarFallback>
+                              {(application.profiles?.name || "?").substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <CardTitle className="text-base">
+                              <a
+                                href={`/users/${application.profiles?.id}`}
+                                className="hover:text-primary underline underline-offset-2 transition-colors"
+                              >
+                                {application.profiles?.name || "Unknown User"}
+                              </a>
+                            </CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                              Applied {new Date(application.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge>
+                          {application.organization_partnership_interests?.[0]?.partnership_type}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {application.message && (
+                        <p className="text-sm mb-4">{application.message}</p>
+                      )}
+                      {application.profiles?.email && (
+                        <div className="flex gap-2 mb-4">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1"
+                            onClick={() => window.location.href = `mailto:${application.profiles.email}`}
+                          >
+                            <Mail className="h-4 w-4" />
+                            Email
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1"
+                            onClick={() => window.location.href = `/messages?participantId=${application.profiles.id}&participantName=${encodeURIComponent(application.profiles.name || "User")}`}
+                          >
+                            <Mail className="h-4 w-4" />
+                            Message
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                    <CardFooter className="flex justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                        onClick={() => handleRejectPartnership(application.id, application.user_id)}
+                      >
+                        Reject
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleApprovePartnership(application.id, application.user_id)}
+                      >
+                        Approve
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+                  <Handshake className="h-10 w-10 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Partnership Applications</h3>
+                  <p className="text-muted-foreground">
+                    You haven't received any partnership interest applications yet.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
+        
+      </Tabs>
     </Layout>
   );
 };
