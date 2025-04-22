@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Layout } from "@/components/layout";
@@ -359,6 +358,10 @@ const DashboardPage = () => {
                 <Users2 className="h-4 w-4 mr-2" />
                 <span className="whitespace-nowrap">Received Apps</span>
               </TabsTrigger>
+              <TabsTrigger value="partnerships" className="flex-1 md:flex-none">
+                <Handshake className="h-4 w-4 mr-2" />
+                <span className="whitespace-nowrap">Partnership Interest</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -623,8 +626,12 @@ const DashboardPage = () => {
             )}
             
             {/* Add Partnership Applications Section */}
-            <div className="mt-8">
-              <h2 className="text-xl font-semibold mb-4">Partnership Interest Applications</h2>
+            
+          </TabsContent>
+
+          <TabsContent value="partnerships">
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold">Partnership Interest Applications</h2>
               {partnershipLoading ? (
                 <Card>
                   <CardContent className="flex justify-center py-6">
@@ -659,7 +666,7 @@ const DashboardPage = () => {
                             </div>
                           </div>
                           <Badge>
-                            {application.organization_partnership_interests?.[0]?.partnership_type || "Partnership"}
+                            {application.organization_partnership_interests?.partnership_type || "Partnership"}
                           </Badge>
                         </div>
                       </CardHeader>
@@ -668,12 +675,12 @@ const DashboardPage = () => {
                           <p className="text-sm mb-4">{application.message}</p>
                         )}
                         {application.profiles?.email && (
-                          <div className="flex gap-2 mb-4">
+                          <div className="flex gap-2">
                             <Button
                               size="sm"
                               variant="outline"
                               className="gap-1"
-                              onClick={() => window.location.href = `mailto:${application.profiles.email}`}
+                              onClick={() => window.location.href = `mailto:${application.profiles?.email}`}
                             >
                               <Mail className="h-4 w-4" />
                               Email
@@ -682,7 +689,7 @@ const DashboardPage = () => {
                               size="sm"
                               variant="outline"
                               className="gap-1"
-                              onClick={() => window.location.href = `/messages?participantId=${application.profiles.id}&participantName=${encodeURIComponent(application.profiles.name || "User")}`}
+                              onClick={() => window.location.href = `/messages?participantId=${application.profiles?.id}&participantName=${encodeURIComponent(application.profiles?.name || "User")}`}
                             >
                               <Mail className="h-4 w-4" />
                               Message
