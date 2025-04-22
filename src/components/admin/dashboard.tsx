@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Line, Bar } from "recharts";
+import { LineChart, BarChart, ResponsiveContainer, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, Building2, FileText, MessagesSquare } from "lucide-react";
@@ -129,10 +129,28 @@ export function AdminDashboard() {
                 <TabsTrigger value="bar">Bar</TabsTrigger>
               </TabsList>
               <TabsContent value="line" className="h-64">
-                {/* Import from recharts */}
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={userActivityData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="users" stroke="#8884d8" activeDot={{ r: 8 }} />
+                  </LineChart>
+                </ResponsiveContainer>
               </TabsContent>
               <TabsContent value="bar" className="h-64">
-                {/* Import from recharts */}
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={userActivityData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="users" fill="#8884d8" />
+                  </BarChart>
+                </ResponsiveContainer>
               </TabsContent>
             </Tabs>
           </CardContent>
@@ -145,7 +163,16 @@ export function AdminDashboard() {
           </CardHeader>
           <CardContent className="h-80">
             <div className="h-64">
-              {/* Import from recharts */}
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={projectsData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="count" fill="#82ca9d" />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>

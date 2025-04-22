@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Layout } from "@/components/layout";
@@ -227,7 +226,12 @@ const DashboardPage = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return applications || [];
+      
+      // Apply type safety - ensure each application has a valid profile
+      return (applications || []).map(app => ({
+        ...app,
+        profiles: app.profiles || { id: '', name: 'Unknown', email: '', profile_image: '' }
+      }));
     },
     enabled: !!user?.id
   });
@@ -618,7 +622,7 @@ const DashboardPage = () => {
                             </div>
                           </div>
                           <Badge>
-                            {application.organization_partnership_interests?.[0]?.partnership_type}
+                            {application.organization_partnership_interests?.[0]?.partnership_type || "Partnership"}
                           </Badge>
                         </div>
                       </CardHeader>
