@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Clock, Folder, LayoutDashboard, Mail, Users, Users2, Filter, Handshake } from "lucide-react";
+import { CalendarDays, Clock, Folder, LayoutDashboard, Mail, Users, Users2, Filter, Handshake, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ import { useProjectApplications, type ApplicationStatus } from "@/hooks/use-proj
 import { useUserProjects, useUserApplications } from "@/hooks/use-supabase-query";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { DashboardPartnershipInterests } from "@/components/organization/DashboardPartnershipInterests";
 
 // Define a type for profile data to ensure type safety
 interface ProfileData {
@@ -361,6 +362,10 @@ const DashboardPage = () => {
               <TabsTrigger value="partnerships" className="flex-1 md:flex-none">
                 <Handshake className="h-4 w-4 mr-2" />
                 <span className="whitespace-nowrap">Partnership Interest</span>
+              </TabsTrigger>
+              <TabsTrigger value="organization-interests" className="flex-1 md:flex-none">
+                <Building2 className="h-4 w-4 mr-2" />
+                <span className="whitespace-nowrap">Organization Interests</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -727,6 +732,14 @@ const DashboardPage = () => {
                   </CardContent>
                 </Card>
               )}
+            </div>
+          </TabsContent>
+          <TabsContent value="organization-interests">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">Organization Partnership Interests</h2>
+              </div>
+              <DashboardPartnershipInterests />
             </div>
           </TabsContent>
         </Tabs>
