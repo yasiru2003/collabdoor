@@ -86,51 +86,53 @@ export default function PublicOrganizationsPage() {
   });
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Partner Organizations</h1>
-          <p className="text-muted-foreground">
-            Discover organizations making an impact.
-          </p>
+    <div className="container mx-auto px-4 py-4 md:py-8">
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold">Partner Organizations</h1>
+            <p className="text-muted-foreground text-sm md:text-base">
+              Discover organizations making an impact.
+            </p>
+          </div>
+          {!user && (
+            <Button asChild className="w-full sm:w-auto">
+              <Link to="/login">Sign in to Connect</Link>
+            </Button>
+          )}
         </div>
-        {!user && (
-          <Button asChild>
-            <Link to="/login">Sign in to Connect</Link>
-          </Button>
-        )}
-      </div>
 
-      <div className="flex flex-col sm:flex-row gap-2 mb-6">
-        <div className="relative flex-grow">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search organizations..."
-            className="pl-9"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        
-        <div className="w-full sm:w-auto min-w-[200px]">
-          <Select value={partnershipFilter} onValueChange={setPartnershipFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filter by partnership" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Partnerships</SelectItem>
-              <SelectItem value="monetary">Financial Support</SelectItem>
-              <SelectItem value="knowledge">Knowledge Sharing</SelectItem>
-              <SelectItem value="skilled">Skilled Professionals</SelectItem>
-              <SelectItem value="volunteering">Volunteering</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-grow">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search organizations..."
+              className="pl-9 w-full"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
+          <div className="w-full sm:w-[200px]">
+            <Select value={partnershipFilter} onValueChange={setPartnershipFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by partnership" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Partnerships</SelectItem>
+                <SelectItem value="monetary">Financial Support</SelectItem>
+                <SelectItem value="knowledge">Knowledge Sharing</SelectItem>
+                <SelectItem value="skilled">Skilled Professionals</SelectItem>
+                <SelectItem value="volunteering">Volunteering</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
       {partnershipFilter !== "all" && (
-        <div className="mb-4">
+        <div className="mb-4 flex flex-wrap gap-2">
           <Badge variant="outline" className="mr-2">
             Showing: {partnershipTypeLabels[partnershipFilter as PartnershipType]}
             <button 
@@ -144,13 +146,13 @@ export default function PublicOrganizationsPage() {
       )}
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="h-[200px] bg-muted animate-pulse rounded-lg" />
           ))}
         </div>
       ) : filteredOrganizations && filteredOrganizations.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {filteredOrganizations.map((org) => (
             <PartnerCard 
               key={org.id} 
@@ -160,8 +162,8 @@ export default function PublicOrganizationsPage() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold mb-2">No Organizations Found</h2>
+        <div className="text-center py-8 md:py-12">
+          <h2 className="text-xl md:text-2xl font-bold mb-2">No Organizations Found</h2>
           <p className="text-muted-foreground">
             Try adjusting your search criteria.
           </p>

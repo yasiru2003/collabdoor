@@ -228,28 +228,27 @@ export default function OrganizationDetailPage() {
   
   return (
     <Layout>
-      <div className="container mx-auto py-8">
-        <div className="flex flex-col md:flex-row items-start justify-between mb-8 gap-4">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
+      <div className="container mx-auto px-4 py-4 md:py-8">
+        <div className="flex flex-col md:flex-row items-start justify-between mb-6 gap-4">
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <Avatar className="h-16 w-16 shrink-0">
               <AvatarImage src={organization.logo || ""} alt={organization.name} />
               <AvatarFallback className="bg-primary text-primary-foreground text-xl">
                 {organization.name.substring(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <h1 className="text-3xl font-bold">{organization.name}</h1>
+            <div className="min-w-0">
+              <h1 className="text-2xl md:text-3xl font-bold truncate">{organization.name}</h1>
               {organization.industry && (
                 <Badge variant="outline" className="mt-1">
                   {organization.industry}
                 </Badge>
               )}
-              {/* Contact owner button for non-owner */}
               {canContactOwner && (
                 <Button
                   variant="outline"
                   size="sm"
-                  className="mt-2 gap-2"
+                  className="mt-2 gap-2 w-full md:w-auto"
                   onClick={handleContactOwner}
                 >
                   <Mail className="h-4 w-4" />
@@ -259,21 +258,26 @@ export default function OrganizationDetailPage() {
             </div>
           </div>
           
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 w-full md:w-auto">
             {isOwner ? (
-              <Button onClick={() => navigate(`/organizations/${id}/edit`)}>
+              <Button 
+                onClick={() => navigate(`/organizations/${id}/edit`)}
+                className="w-full md:w-auto"
+              >
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Organization
               </Button>
             ) : (
               !isMember && !isOwner && (
-                <OrganizationJoinRequest 
-                  organizationId={id || ''}
-                  organizationName={organization.name}
-                  ownerId={organization.owner_id}
-                  status={joinRequestStatus}
-                  onStatusChange={status => setJoinRequestStatus(status)}
-                />
+                <div className="w-full md:w-auto">
+                  <OrganizationJoinRequest 
+                    organizationId={id || ''}
+                    organizationName={organization.name}
+                    ownerId={organization.owner_id}
+                    status={joinRequestStatus}
+                    onStatusChange={status => setJoinRequestStatus(status)}
+                  />
+                </div>
               )
             )}
           </div>
@@ -447,7 +451,7 @@ export default function OrganizationDetailPage() {
           </div>
           
           <div className="lg:col-span-1">
-            {/* Sidebar content could go here if needed */}
+            {/* Sidebar content */}
           </div>
         </div>
       </div>
