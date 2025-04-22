@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Layout } from "@/components/layout";
@@ -34,10 +35,10 @@ interface PartnershipApplication {
   partnership_type: string;
   project_id?: string;
   profiles: ProfileData;
-  organization_partnership_interests?: Array<{
+  organization_partnership_interests?: {
     description?: string;
     partnership_type?: string;
-  }>;
+  };
   projects?: {
     id: string;
     title: string;
@@ -258,10 +259,16 @@ const DashboardPage = () => {
       if (error) throw error;
       
       // Apply type safety - ensure each application has a valid profile
-      return (applications || []).map(app => ({
-        ...app,
-        profiles: app.profiles || { id: '', name: 'Unknown', email: '', profile_image: '' }
-      })) as PartnershipApplication[];
+      // First cast to unknown and then to our expected type
+      return (applications || []).map(app => {
+        // Ensure profiles has valid data with expected structure
+        const safeProfiles = app.profiles || { id: '', name: 'Unknown', email: '', profile_image: '' };
+        
+        return {
+          ...app,
+          profiles: safeProfiles
+        };
+      }) as unknown as PartnershipApplication[];
     },
     enabled: !!user?.id
   });
