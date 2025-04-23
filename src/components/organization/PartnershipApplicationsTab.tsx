@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -212,26 +211,25 @@ export function PartnershipApplicationsTab({
         {isLoading ? (
           <p>Loading applications...</p>
         ) : applications && applications.length > 0 ? (
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {applications.map((application: any) => (
               <div
                 key={application.id}
                 className="flex flex-col gap-4 p-4 border rounded-lg bg-background md:flex-row md:items-start md:justify-between"
               >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-1 min-w-0">
-                  <Avatar>
+                  <Avatar className="w-14 h-14 md:w-16 md:h-16">
                     <AvatarImage src={application.profile?.profile_image || ""} />
                     <AvatarFallback>
                       {(application.profile?.name || application.profile?.email || "?").substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
-                    {/* Make applicant's name a link to profile page */}
                     <p className="font-medium truncate">
                       {application.profile?.id ? (
                         <a
                           href={`/users/${application.profile.id}`}
-                          className="hover:text-primary underline underline-offset-2 transition-colors"
+                          className="hover:text-primary underline underline-offset-2 transition-colors break-all"
                         >
                           {application.profile?.name || application.profile?.email || "Unknown User"}
                         </a>
@@ -265,12 +263,11 @@ export function PartnershipApplicationsTab({
                 {application.message && (
                   <div className="mt-2 md:basis-full">
                     <p className="text-sm font-medium">Message:</p>
-                    <p className="mt-1 text-sm border-l-2 pl-2 border-muted">
+                    <p className="mt-1 text-sm border-l-2 pl-2 border-muted break-words">
                       "{application.message}"
                     </p>
                   </div>
                 )}
-
                 {application.project_id && application.projects && (
                   <div className="mt-2 md:basis-full">
                     <p className="text-sm font-medium">Linked Project:</p>
@@ -289,7 +286,6 @@ export function PartnershipApplicationsTab({
                     </div>
                   </div>
                 )}
-
                 <div className="flex flex-row gap-2 mt-2 justify-end md:self-end">
                   <Button
                     size="sm"
