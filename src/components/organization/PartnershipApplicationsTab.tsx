@@ -11,17 +11,15 @@ import { Badge } from '@/components/ui/badge';
 import { Check, X, Handshake, ExternalLink, Mail } from 'lucide-react';
 import { PartnershipType } from '@/types';
 
-interface PartnershipApplicationsTabProps {
-  organizationId: string;
-  organizationName: string;
-  isOwner: boolean;
-}
-
 export function PartnershipApplicationsTab({
   organizationId,
   organizationName,
   isOwner
-}: PartnershipApplicationsTabProps) {
+}: {
+  organizationId: string;
+  organizationName: string;
+  isOwner: boolean;
+}) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [processingIds, setProcessingIds] = useState<string[]>([]);
@@ -216,76 +214,65 @@ export function PartnershipApplicationsTab({
         ) : applications && applications.length > 0 ? (
           <div className="space-y-4">
             {applications.map((application: any) => (
-              <div key={application.id} className="flex flex-col gap-4 p-4 border rounded-lg">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <Avatar>
-                      <AvatarImage src={application.profile?.profile_image || ""} />
-                      <AvatarFallback>
-                        {(application.profile?.name || application.profile?.email || "?").substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      {/* Make applicant's name a link to profile page */}
-                      <p className="font-medium">
-                        {application.profile?.id ? (
-                          <a
-                            href={`/users/${application.profile.id}`}
-                            className="hover:text-primary underline underline-offset-2 transition-colors"
-                          >
-                            {application.profile?.name || application.profile?.email || "Unknown User"}
-                          </a>
-                        ) : (
-                          application.profile?.name || application.profile?.email || "Unknown User"
-                        )}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Applied {new Date(application.created_at).toLocaleDateString()}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className="mt-1">
-                          {partnershipTypeLabels[application.partnership_type as PartnershipType]}
-                        </Badge>
-                      </div>
+              <div
+                key={application.id}
+                className="flex flex-col gap-4 p-4 border rounded-lg bg-background md:flex-row md:items-start md:justify-between"
+              >
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-1 min-w-0">
+                  <Avatar>
+                    <AvatarImage src={application.profile?.profile_image || ""} />
+                    <AvatarFallback>
+                      {(application.profile?.name || application.profile?.email || "?").substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    {/* Make applicant's name a link to profile page */}
+                    <p className="font-medium truncate">
+                      {application.profile?.id ? (
+                        <a
+                          href={`/users/${application.profile.id}`}
+                          className="hover:text-primary underline underline-offset-2 transition-colors"
+                        >
+                          {application.profile?.name || application.profile?.email || "Unknown User"}
+                        </a>
+                      ) : (
+                        application.profile?.name || application.profile?.email || "Unknown User"
+                      )}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Applied {new Date(application.created_at).toLocaleDateString()}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="outline" className="mt-1">
+                        {partnershipTypeLabels[application.partnership_type as PartnershipType]}
+                      </Badge>
                     </div>
                   </div>
-                  <div className="flex gap-2 shrink-0">
-                    {application.profile?.email && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1"
-                        onClick={() => window.location.href = `mailto:${application.profile?.email}`}
-                      >
-                        <Mail className="h-4 w-4" />
-                        Email
-                      </Button>
-                    )}
-                    {application.profile?.id && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1"
-                        onClick={() => handleContactUser(application.profile.id, application.profile.name || "User")}
-                      >
-                        <Mail className="h-4 w-4" />
-                        Message
-                      </Button>
-                    )}
-                  </div>
                 </div>
-                
+                <div className="flex flex-col-reverse sm:flex-row gap-2 md:gap-2 shrink-0 justify-end">
+                  {application.profile?.id && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1"
+                      onClick={() => handleContactUser(application.profile.id, application.profile.name || "User")}
+                    >
+                      <Mail className="h-4 w-4" />
+                      Message
+                    </Button>
+                  )}
+                </div>
                 {application.message && (
-                  <div className="mt-2">
+                  <div className="mt-2 md:basis-full">
                     <p className="text-sm font-medium">Message:</p>
                     <p className="mt-1 text-sm border-l-2 pl-2 border-muted">
                       "{application.message}"
                     </p>
                   </div>
                 )}
-                
+
                 {application.project_id && application.projects && (
-                  <div className="mt-2">
+                  <div className="mt-2 md:basis-full">
                     <p className="text-sm font-medium">Linked Project:</p>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge variant="secondary">
@@ -302,8 +289,8 @@ export function PartnershipApplicationsTab({
                     </div>
                   </div>
                 )}
-                
-                <div className="flex justify-end gap-2 mt-2">
+
+                <div className="flex flex-row gap-2 mt-2 justify-end md:self-end">
                   <Button
                     size="sm"
                     variant="outline"
