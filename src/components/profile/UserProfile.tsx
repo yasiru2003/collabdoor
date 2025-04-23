@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useReviews } from "@/hooks/use-reviews";
 import { useState, useEffect } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface UserProfileProps {
   profile: {
@@ -28,6 +29,7 @@ export function UserProfile({ profile }: UserProfileProps) {
   const { getUserReviews } = useReviews();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const isMobile = useIsMobile();
   
   // Fetch user reviews
   useEffect(() => {
@@ -88,10 +90,10 @@ export function UserProfile({ profile }: UserProfileProps) {
       </div>
 
       <Tabs defaultValue="about" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="about">About</TabsTrigger>
-          <TabsTrigger value="projects">Projects</TabsTrigger>
-          <TabsTrigger value="reviews">Reviews</TabsTrigger>
+        <TabsList className="w-full flex overflow-x-auto">
+          <TabsTrigger value="about" className="flex-1 whitespace-nowrap">About</TabsTrigger>
+          <TabsTrigger value="projects" className="flex-1 whitespace-nowrap">Projects</TabsTrigger>
+          <TabsTrigger value="reviews" className="flex-1 whitespace-nowrap">Reviews</TabsTrigger>
         </TabsList>
 
         <TabsContent value="about">

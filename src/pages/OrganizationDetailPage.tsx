@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
@@ -18,6 +19,7 @@ import { OrganizationJoinRequest } from "@/components/organization/OrganizationJ
 import { OrganizationRequestsTab } from "@/components/organization/OrganizationRequestsTab";
 import { PartnershipInterestsTab } from "@/components/organization/PartnershipInterestsTab";
 import { PartnershipApplicationsTab } from "@/components/organization/PartnershipApplicationsTab";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function OrganizationDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +27,7 @@ export default function OrganizationDetailPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   // Get the tab from URL or default to "projects"
   const defaultTab = searchParams.get("tab") || "projects";
@@ -334,15 +337,15 @@ export default function OrganizationDetailPage() {
             </Card>
             
             <Tabs defaultValue={defaultTab} className="mt-6">
-              <TabsList>
-                <TabsTrigger value="projects">Projects</TabsTrigger>
-                <TabsTrigger value="members">Members</TabsTrigger>
-                <TabsTrigger value="partnership-interests">Partnership Interests</TabsTrigger>
-                <TabsTrigger value="reviews">Reviews</TabsTrigger>
+              <TabsList className="w-full overflow-x-auto flex-nowrap">
+                <TabsTrigger value="projects" className="whitespace-nowrap">Projects</TabsTrigger>
+                <TabsTrigger value="members" className="whitespace-nowrap">Members</TabsTrigger>
+                <TabsTrigger value="partnership-interests" className="whitespace-nowrap">Partnership Interests</TabsTrigger>
+                <TabsTrigger value="reviews" className="whitespace-nowrap">Reviews</TabsTrigger>
                 {isOwner && (
                   <>
-                    <TabsTrigger value="requests">Join Requests</TabsTrigger>
-                    <TabsTrigger value="partnership-applications">Partnership Applications</TabsTrigger>
+                    <TabsTrigger value="requests" className="whitespace-nowrap">Join Requests</TabsTrigger>
+                    <TabsTrigger value="partnership-applications" className="whitespace-nowrap">Partnership Applications</TabsTrigger>
                   </>
                 )}
               </TabsList>
@@ -450,9 +453,11 @@ export default function OrganizationDetailPage() {
             </Tabs>
           </div>
           
-          <div className="lg:col-span-1">
-            {/* Sidebar content */}
-          </div>
+          {!isMobile && (
+            <div className="lg:col-span-1">
+              {/* Sidebar content - hidden on mobile */}
+            </div>
+          )}
         </div>
       </div>
     </Layout>
