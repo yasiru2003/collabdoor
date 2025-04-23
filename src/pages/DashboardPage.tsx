@@ -64,6 +64,27 @@ const DashboardPage = () => {
   // Add application filter state
   const [applicationFilter, setApplicationFilter] = useState<ApplicationStatus | "all">("all");
 
+  // Fetch owned organizations
+  const { data: ownedOrganizations, isLoading: orgsLoading } = useQuery({
+    queryKey: ["owned-organizations", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from("organizations")
+        .select("*")
+        .eq("owner_id", user.id);
+        
+      if (error) {
+        console.error("Error fetching owned organizations:", error);
+        return [];
+      }
+      
+      return data || [];
+    },
+    enabled: !!user?.id
+  });
+
   // Get user's display name (from profile or metadata or email)
   const getUserDisplayName = () => {
     if (userProfile?.name) return userProfile.name;
@@ -634,11 +655,17 @@ const DashboardPage = () => {
           <TabsContent value="partnerships">
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">Partnership Interest Applications</h2>
-              {/* Use most recently owned organization for PartnershipApplicationsTab. If user has no org, show none. */}
-              {userProfile?.organizations?.[0]?.id ? (
+              {orgsLoading ? (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-4"></div>
+                    <p>Loading organizations...</p>
+                  </CardContent>
+                </Card>
+              ) : ownedOrganizations && ownedOrganizations.length > 0 ? (
                 <PartnershipApplicationsTab
-                  organizationId={userProfile.organizations[0].id}
-                  organizationName={userProfile.organizations[0].name}
+                  organizationId={ownedOrganizations[0].id}
+                  organizationName={ownedOrganizations[0].name}
                   isOwner={true}
                 />
               ) : (
@@ -649,6 +676,9 @@ const DashboardPage = () => {
                     <p className="text-muted-foreground">
                       You do not own any organizations to see partnership interest applications.
                     </p>
+                    <Button asChild className="mt-4">
+                      <Link to="/organizations/new">Create an Organization</Link>
+                    </Button>
                   </CardContent>
                 </Card>
               )}
