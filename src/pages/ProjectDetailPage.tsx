@@ -50,14 +50,11 @@ export default function ProjectDetailPage() {
   } = useProjectApplications();
   
   // Transform the organization data to match the Organization type
-  // Only accessing properties that are actually available in the organizations object
   const userOrganizations: Organization[] = rawUserOrganizations ? 
     rawUserOrganizations.map(org => {
-      // Create a default Organization object with required properties
       return {
         id: org.organizations?.id || org.id,
         name: org.organizations?.name || "",
-        // Set all optional properties to empty strings or undefined as default
         description: undefined,
         industry: undefined,
         location: undefined,
@@ -70,7 +67,6 @@ export default function ProjectDetailPage() {
         owner_id: "",
       };
     }) : [];
-  
   
   const { data: projectApplications, refetch: refetchApplications } = useProjectApplicationsQuery(isValidUuid ? id : undefined);
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
@@ -449,7 +445,8 @@ export default function ProjectDetailPage() {
             onProjectUpdated={refetchProject}
           />
         )}
-      
+      </div>
+
       {/* Dialogs */}
       <ProgressDialog 
         open={progressDialogOpen}
