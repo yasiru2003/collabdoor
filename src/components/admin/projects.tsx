@@ -11,15 +11,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Project } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, AlertCircle } from "lucide-react";
+import { CheckCircle, AlertCircle, Trash2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { mapSupabaseProjectToProject } from "@/utils/data-mappers";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export function AdminProjects() {
   const { data: projects, isLoading, refetch } = useProjects();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [pendingPublishProjects, setPendingPublishProjects] = useState<Project[]>([]);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -176,6 +188,41 @@ export function AdminProjects() {
     }
   };
 
+  const handleDeleteProject = async () => {
+    if (!projectToDelete) return;
+    
+    try {
+      // Delete the project - cascade rules will handle deleting related records
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectToDelete.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Project deleted",
+        description: "The project and all related data have been permanently deleted.",
+      });
+      
+      // Refresh the projects list
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      setIsDeleteDialogOpen(false);
+      setProjectToDelete(null);
+    } catch (error: any) {
+      toast({
+        title: "Error deleting project",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const confirmDelete = (project: Project) => {
+    setProjectToDelete(project);
+    setIsDeleteDialogOpen(true);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return 'bg-gray-500';
@@ -275,9 +322,20 @@ export function AdminProjects() {
                             </Badge>
                           </td>
                           <td className="p-2 text-center">
-                            <Button variant="ghost" size="sm" onClick={() => handleEdit(project)}>
-                              Edit
-                            </Button>
+                            <div className="flex justify-center space-x-2">
+                              <Button variant="ghost" size="sm" onClick={() => handleEdit(project)}>
+                                Edit
+                              </Button>
+                              <Button 
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => confirmDelete(project)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -359,6 +417,26 @@ export function AdminProjects() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Delete confirmation dialog */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the project 
+                "{projectToDelete?.title}" and all associated data, including phases, applications, 
+                partnerships, and reviews.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteProject} className="bg-red-600 hover:bg-red-700">
+                Delete Project
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );

@@ -16,8 +16,10 @@ export default function AdminPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   
-  // Check if user has admin role (this is the specific email you mentioned)
-  const isAdmin = user?.email === "yasirubandaraprivate@gmail.com";
+  // Allow access for the specific admin email and any additional admin users
+  // This ensures that users with admin privileges can access the admin panel
+  const adminEmails = ["yasirubandaraprivate@gmail.com"];
+  const isAdmin = user && adminEmails.includes(user.email);
   
   if (!user) {
     return <Navigate to="/login" replace />;
