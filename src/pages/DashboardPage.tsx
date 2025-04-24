@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Clock, Folder, LayoutDashboard, Mail, Users, Users2, Filter, Handshake, Building2 } from "lucide-react";
+import { CalendarDays, Clock, Folder, LayoutDashboard, Mail, Users, Users2, Filter, Handshake, Building2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,15 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { PartnershipInterestsTab } from "@/components/organization/PartnershipInterestsTab";
 import { PartnershipApplicationsTab } from "@/components/organization/PartnershipApplicationsTab";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PartnershipInterestForm } from "@/components/organization/PartnershipInterestForm";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Define a type for profile data to ensure type safety
 interface ProfileData {
@@ -345,6 +354,17 @@ const DashboardPage = () => {
       });
     }
   };
+  
+  // Add state for selected organization
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  const [showAddInterestForm, setShowAddInterestForm] = useState(false);
+
+  // Set initial selected organization when data loads
+  useEffect(() => {
+    if (ownedOrganizations?.length > 0 && !selectedOrgId) {
+      setSelectedOrgId(ownedOrganizations[0].id);
+    }
+  }, [ownedOrganizations]);
 
   return (
     <Layout>
@@ -654,7 +674,38 @@ const DashboardPage = () => {
 
           <TabsContent value="partnerships">
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Partnership Interest Applications</h2>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <h2 className="text-xl font-semibold">Partnership Interest Applications</h2>
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  {ownedOrganizations && ownedOrganizations.length > 0 && (
+                    <>
+                      <Select
+                        value={selectedOrgId || ''}
+                        onValueChange={(value) => setSelectedOrgId(value)}
+                      >
+                        <SelectTrigger className="w-full sm:w-[200px]">
+                          <SelectValue placeholder="Select organization" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ownedOrganizations.map((org) => (
+                            <SelectItem key={org.id} value={org.id}>
+                              {org.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        onClick={() => setShowAddInterestForm(true)}
+                        className="w-full sm:w-auto"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Interest
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+
               {orgsLoading ? (
                 <Card>
                   <CardContent className="flex flex-col items-center justify-center py-10 text-center">
@@ -664,8 +715,8 @@ const DashboardPage = () => {
                 </Card>
               ) : ownedOrganizations && ownedOrganizations.length > 0 ? (
                 <PartnershipApplicationsTab
-                  organizationId={ownedOrganizations[0].id}
-                  organizationName={ownedOrganizations[0].name}
+                  organizationId={selectedOrgId || ownedOrganizations[0].id}
+                  organizationName={ownedOrganizations.find(org => org.id === selectedOrgId)?.name || ownedOrganizations[0].name}
                   isOwner={true}
                 />
               ) : (
@@ -683,7 +734,28 @@ const DashboardPage = () => {
                 </Card>
               )}
             </div>
+
+            {/* Add Partnership Interest Form Dialog */}
+            <Dialog open={showAddInterestForm} onOpenChange={setShowAddInterestForm}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Partnership Interest</DialogTitle>
+                  <DialogDescription>
+                    Specify what type of partnerships your organization is looking for
+                  </DialogDescription>
+                </DialogHeader>
+                
+                {selectedOrgId && (
+                  <PartnershipInterestForm 
+                    organizationId={selectedOrgId}
+                    onSuccess={() => setShowAddInterestForm(false)}
+                    onCancel={() => setShowAddInterestForm(false)}
+                  />
+                )}
+              </DialogContent>
+            </Dialog>
           </TabsContent>
+
           <TabsContent value="organization-interests">
             {/* Organization Interests tab removed as requested */}
            </TabsContent>
