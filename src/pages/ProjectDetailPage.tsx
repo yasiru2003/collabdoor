@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -20,6 +19,7 @@ import { ApplicationsTable } from "@/components/project/ApplicationsTable";
 import { ProgressDialog } from "@/components/project/ProgressDialog";
 import { CompletionDialog } from "@/components/project/CompletionDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { EditProjectDialog } from "@/components/project/EditProjectDialog";
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -101,6 +101,8 @@ export default function ProjectDetailPage() {
   // State for project completion dialog
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
   
+  // Add new state for edit dialog
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   
   const handleContact = () => {
     if (!user) {
@@ -398,6 +400,7 @@ export default function ProjectDetailPage() {
           selectedOrganizationId={selectedOrganizationId}
           setSelectedOrganizationId={setSelectedOrganizationId}
           onApplySubmit={handleApply}
+          onEdit={() => setEditDialogOpen(true)}
         />
 
         <Tabs defaultValue={defaultTab} onValueChange={(value) => setSearchParams({ tab: value })}>
@@ -437,7 +440,15 @@ export default function ProjectDetailPage() {
             />
           </TabsContent>
         </Tabs>
-      </div>
+        
+        {project && (
+          <EditProjectDialog
+            project={project}
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            onProjectUpdated={refetchProject}
+          />
+        )}
       
       {/* Dialogs */}
       <ProgressDialog 
