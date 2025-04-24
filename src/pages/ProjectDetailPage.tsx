@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -118,6 +119,11 @@ export default function ProjectDetailPage() {
         participantName: project.organizerName
       } 
     });
+  };
+
+  // Fix for type error - Create a handler function that converts string to PartnershipType
+  const handlePartnershipTypeChange = (type: string) => {
+    setPartnershipType(type as PartnershipType);
   };
 
   useEffect(() => {
@@ -387,7 +393,7 @@ export default function ProjectDetailPage() {
           handleContact={handleContact}
           applicationLoading={applicationLoading}
           partnershipType={partnershipType}
-          setPartnershipType={setPartnershipType}
+          setPartnershipType={handlePartnershipTypeChange}
           message={message}
           setMessage={setMessage}
           applicationOpen={applicationOpen}
