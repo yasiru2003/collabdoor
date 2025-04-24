@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -381,7 +380,7 @@ export default function ProjectDetailPage() {
 
   return (
     <Layout>
-      <div className="max-w-full overflow-x-hidden">
+      <div className="max-w-full overflow-x-hidden px-4 md:px-0">
         <ProjectHeader 
           project={project}
           isOwner={isOwner}
@@ -405,11 +404,11 @@ export default function ProjectDetailPage() {
           onEdit={() => setEditDialogOpen(true)}
         />
 
-        <Tabs defaultValue={defaultTab} onValueChange={(value) => setSearchParams({ tab: value })}>
-          <TabsList className="mb-6 w-full max-w-md overflow-x-auto flex-nowrap">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="progress">Progress Tracker</TabsTrigger>
-            {isOwner && <TabsTrigger value="applications">Applications</TabsTrigger>}
+        <Tabs defaultValue={defaultTab} onValueChange={(value) => setSearchParams({ tab: value })} className="w-full">
+          <TabsList className="mb-6 w-full max-w-full md:max-w-md overflow-x-auto flex-nowrap">
+            <TabsTrigger value="overview" className="flex-1">Overview</TabsTrigger>
+            <TabsTrigger value="progress" className="flex-1">Progress Tracker</TabsTrigger>
+            {isOwner && <TabsTrigger value="applications" className="flex-1">Applications</TabsTrigger>}
           </TabsList>
           
           <TabsContent value="overview">

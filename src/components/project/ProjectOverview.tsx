@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Project } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Building2, Calendar, CheckCircle2, Clock, FileText, MapPin, User2 } from "lucide-react";
 import { format } from "date-fns";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ProjectOverviewProps {
   project: Project;
@@ -24,6 +24,7 @@ export function ProjectOverview({
   handleCompleteProject 
 }: ProjectOverviewProps) {
   const isCompleted = project.status === 'completed';
+  const isMobile = useIsMobile();
   
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Not specified';
@@ -47,20 +48,20 @@ export function ProjectOverview({
   
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6">
         <Card className="col-span-2">
           <CardHeader>
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <CardTitle className="text-2xl">Project Overview</CardTitle>
+                <CardTitle className="text-xl md:text-2xl">Project Overview</CardTitle>
                 <CardDescription>Details about this project</CardDescription>
               </div>
-              <div className="flex items-center">
+              <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
                 {getStatusBadge(project.status)}
                 
                 {isOwner && !isCompleted && (
                   <Button 
-                    className="ml-4"
+                    className="w-full md:w-auto"
                     onClick={handleCompleteProject}
                   >
                     <CheckCircle2 className="mr-2 h-4 w-4" />
@@ -161,7 +162,7 @@ export function ProjectOverview({
                 <h3 className="text-lg font-medium mb-2">Required Skills</h3>
                 <div className="flex flex-wrap gap-2">
                   {project.requiredSkills.map((skill, index) => (
-                    <Badge key={index} variant="secondary">
+                    <Badge key={index} variant="secondary" className="mb-2">
                       {skill}
                     </Badge>
                   ))}
@@ -174,7 +175,7 @@ export function ProjectOverview({
                 <h3 className="text-lg font-medium mb-2">Partnership Types</h3>
                 <div className="flex flex-wrap gap-2">
                   {project.partnershipTypes.map((type, index) => (
-                    <Badge key={index} variant="outline" className="capitalize">
+                    <Badge key={index} variant="outline" className="capitalize mb-2">
                       {type}
                     </Badge>
                   ))}
