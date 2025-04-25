@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -90,4 +89,88 @@ export function getDefaultImage(type: 'profile' | 'project' | 'organization'): s
   };
   
   return defaults[type];
+}
+
+/**
+ * Upload a project proposal file to Supabase storage
+ */
+export async function uploadProjectProposal(
+  file: File,
+  userId: string
+): Promise<string | null> {
+  try {
+    const fileExt = file.name.split('.').pop();
+    const uniqueId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+    const fileName = `${userId}/${uniqueId}.${fileExt}`;
+
+    console.log(`Uploading proposal to project_proposals bucket: ${fileName}`);
+
+    // Upload the file
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('project_proposals')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) {
+      console.error('Error uploading project proposal:', uploadError);
+      throw uploadError;
+    }
+
+    // Get the public URL
+    const { data } = supabase.storage
+      .from('project_proposals')
+      .getPublicUrl(fileName);
+    
+    if (data) {
+      console.log(`Successfully uploaded proposal, file path: ${fileName}`);
+      return fileName; // Return the file path instead of URL for better management
+    }
+    return null;
+  } catch (error) {
+    console.error('Error uploading project proposal:', error);
+    return null;
+  }
+}
+
+/**
+ * Get a download URL for a project proposal
+ */
+export async function getProjectProposalUrl(filePath: string): Promise<string | null> {
+  if (!filePath) return null;
+  
+  try {
+    const { data } = supabase.storage
+      .from('project_proposals')
+      .getPublicUrl(filePath);
+    
+    return data?.publicUrl || null;
+  } catch (error) {
+    console.error('Error getting proposal URL:', error);
+    return null;
+  }
+}
+
+/**
+ * Remove a project proposal file from storage
+ */
+export async function removeProjectProposal(filePath: string): Promise<boolean> {
+  if (!filePath) return false;
+
+  try {
+    const { error } = await supabase.storage
+      .from('project_proposals')
+      .remove([filePath]);
+
+    if (error) {
+      console.error('Error removing project proposal:', error);
+      throw error;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error removing project proposal:', error);
+    return false;
+  }
 }

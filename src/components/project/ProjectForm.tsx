@@ -34,7 +34,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PartnershipType, Organization } from "@/types";
-import { uploadImage } from "@/utils/upload-utils";
+import { uploadImage, uploadProjectProposal } from "@/utils/upload-utils";
 import { mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -199,17 +199,14 @@ export function ProjectForm() {
       
       // Upload proposal file if selected
       if (values.proposalFile) {
-        const fileExt = values.proposalFile.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `${user.id}/${fileName}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('project_proposals')
-          .upload(filePath, values.proposalFile);
-        
-        if (uploadError) throw uploadError;
-        
-        proposal_file_path = filePath;
+        proposal_file_path = await uploadProjectProposal(values.proposalFile, user.id);
+        if (!proposal_file_path) {
+          toast({
+            title: "File upload failed",
+            description: "Failed to upload project proposal, but proceeding with project creation",
+            variant: "destructive",
+          });
+        }
       }
       
       // Upload project image if selected
