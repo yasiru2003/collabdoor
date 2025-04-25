@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Project } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -57,9 +58,9 @@ export function ProjectOverview({
               <Button variant="link" onClick={navigateToOrganization}>
                 {project.organizationName}
               </Button>
-            </Button>
-          </p>
-        </div>
+            </p>
+          </div>
+        )}
       </div>
 
       <div>
