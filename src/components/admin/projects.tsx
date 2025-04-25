@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProjects } from "@/hooks/use-projects-query";
@@ -201,20 +200,30 @@ export function AdminProjects() {
         .delete()
         .eq('id', projectToDelete.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase delete error:", error);
+        throw error;
+      }
 
+      // Close the dialog and reset state
+      setIsDeleteDialogOpen(false);
+      
+      // Force refresh both the local state and the query cache
+      setPendingPublishProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
+      
       toast({
         title: "Project deleted",
-        description: "The project and all related data have been permanently deleted.",
+        description: "The project has been permanently deleted.",
       });
-      
-      // Close the dialog and clear the selection
-      setIsDeleteDialogOpen(false);
+
+      // Set projectToDelete to null AFTER toast to avoid race conditions
       setProjectToDelete(null);
       
-      // Refresh the projects list
+      // Invalidate the cache and force a refetch
       await queryClient.invalidateQueries({ queryKey: ['projects'] });
-      refetch(); // Make sure to refresh the list after deletion
+      await refetch();
+      
+      console.log("Project deletion completed and UI refreshed");
     } catch (error: any) {
       console.error("Error deleting project:", error);
       toast({
@@ -426,7 +435,10 @@ export function AdminProjects() {
         </Dialog>
 
         {/* Delete confirmation dialog */}
-        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={(open) => {
+        setIsDeleteDialogOpen(open);
+        if (!open) setProjectToDelete(null); // Clear selection when dialog is closed
+      }}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
