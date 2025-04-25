@@ -4,6 +4,7 @@ import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import { BottomNav } from "./bottom-nav";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { FirstTimeGuide } from "./FirstTimeGuide";
 
 interface LayoutProps {
   children: ReactNode;
@@ -25,6 +26,7 @@ export function Layout({ children }: LayoutProps) {
         </main>
       </div>
       {isMobile && <BottomNav />}
+      <FirstTimeGuide />
     </div>
   );
 }
