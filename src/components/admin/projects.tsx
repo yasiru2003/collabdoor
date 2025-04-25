@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProjects } from "@/hooks/use-projects-query";
@@ -192,7 +193,9 @@ export function AdminProjects() {
     if (!projectToDelete) return;
     
     try {
-      // Delete the project - cascade rules will handle deleting related records
+      console.log("Deleting project with ID:", projectToDelete.id);
+      
+      // Delete the project
       const { error } = await supabase
         .from('projects')
         .delete()
@@ -205,11 +208,15 @@ export function AdminProjects() {
         description: "The project and all related data have been permanently deleted.",
       });
       
-      // Refresh the projects list
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      // Close the dialog and clear the selection
       setIsDeleteDialogOpen(false);
       setProjectToDelete(null);
+      
+      // Refresh the projects list
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
+      refetch(); // Make sure to refresh the list after deletion
     } catch (error: any) {
+      console.error("Error deleting project:", error);
       toast({
         title: "Error deleting project",
         description: error.message || "An unexpected error occurred",
