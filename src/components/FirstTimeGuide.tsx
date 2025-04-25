@@ -59,11 +59,21 @@ export function FirstTimeGuide() {
     setOpen(false);
   };
 
+  // Check local storage on component initialization
+  const shouldShowGuide = () => {
+    if (typeof window !== 'undefined') {
+      return !localStorage.getItem("guideSeen");
+    }
+    return true;
+  };
+
   // Don't show if user has seen the guide
-  if (localStorage.getItem("guideSeen")) {
+  if (!shouldShowGuide()) {
     return null;
   }
 
+  const CurrentIcon = steps[currentStep].icon;
+  
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-[500px]">
@@ -79,9 +89,7 @@ export function FirstTimeGuide() {
         <div className="py-8">
           <div className="flex flex-col items-center gap-6">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-              {steps[currentStep].icon && (
-                <steps[currentStep].icon className="w-8 h-8 text-primary" />
-              )}
+              <CurrentIcon className="w-8 h-8 text-primary" />
             </div>
             <p className="text-center text-muted-foreground text-lg">
               {steps[currentStep].description}
