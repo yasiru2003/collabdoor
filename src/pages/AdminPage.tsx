@@ -8,9 +8,13 @@ import { AdminUsers } from "@/components/admin/users";
 import { AdminProjects } from "@/components/admin/projects";
 import { AdminOrganizations } from "@/components/admin/organizations";
 import { AdminSettings } from "@/components/admin/settings";
+import { AdminApprovals } from "@/components/admin/approvals";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, AlertCircle } from "lucide-react";
+import { Shield, AlertCircle, BellRing } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -20,6 +24,32 @@ export default function AdminPage() {
   // This ensures that users with admin privileges can access the admin panel
   const adminEmails = ["yasirubandaraprivate@gmail.com"];
   const isAdmin = user && adminEmails.includes(user.email);
+  
+  // Fetch pending approval counts
+  const { data: pendingApprovals } = useQuery({
+    queryKey: ["admin-pending-approvals"],
+    queryFn: async () => {
+      const [orgResult, projectResult] = await Promise.all([
+        supabase
+          .from('organizations')
+          .select('count', { count: 'exact', head: true })
+          .eq('status', 'pending_approval'),
+        supabase
+          .from('projects')
+          .select('count', { count: 'exact', head: true })
+          .eq('status', 'pending_publish')
+      ]);
+      
+      return {
+        organizations: orgResult.count || 0,
+        projects: projectResult.count || 0,
+        total: (orgResult.count || 0) + (projectResult.count || 0)
+      };
+    },
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+  
+  const totalPendingCount = pendingApprovals?.total || 0;
   
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -58,6 +88,14 @@ export default function AdminPage() {
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
             <TabsTrigger value="organizations">Organizations</TabsTrigger>
+            <TabsTrigger value="approvals" className="relative">
+              Approvals
+              {totalPendingCount > 0 && (
+                <Badge variant="destructive" className="ml-2 absolute -top-2 -right-2 text-xs h-5 min-w-5 flex items-center justify-center rounded-full">
+                  {totalPendingCount}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
           
@@ -75,6 +113,10 @@ export default function AdminPage() {
           
           <TabsContent value="organizations">
             <AdminOrganizations />
+          </TabsContent>
+          
+          <TabsContent value="approvals">
+            <AdminApprovals />
           </TabsContent>
           
           <TabsContent value="settings">

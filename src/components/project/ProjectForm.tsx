@@ -1,562 +1,461 @@
-import { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { useDropzone } from "react-dropzone";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { v4 as uuidv4 } from 'uuid';
+import { Editor } from "@tinymce/tinymce-react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Upload, Image as ImageIcon } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { PartnershipType, Organization } from "@/types";
-import { uploadImage, uploadProjectProposal } from "@/utils/upload-utils";
-import { mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
-import { ProjectImagesUpload } from "./ProjectImagesUpload";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ACCEPTED_FILE_TYPES = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { Project } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
+import { useProfile } from "@/hooks/use-profile-query";
+import { useOrganization } from "@/hooks/use-organization-query";
+import { useLocations } from "@/hooks/use-locations-query";
+import { usePartnershipTypes } from "@/hooks/use-partnership-types-query";
+import { useAuth } from "@/hooks/use-auth";
+import { ImageIcon, Upload, Plus, CheckCircle } from "lucide-react";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { useSystemSettings } from "@/hooks/use-system-settings";
+
 const formSchema = z.object({
-  title: z.string().min(3, {
-    message: "Title must be at least 3 characters"
+  title: z.string().min(2, {
+    message: "Title must be at least 2 characters.",
   }),
-  description: z.string().min(10, {
-    message: "Description must be at least 10 characters"
-  }),
-  category: z.string().min(1, {
-    message: "Please select a category"
-  }),
+  category: z.string().optional(),
   location: z.string().optional(),
-  startDate: z.date(),
-  endDate: z.date(),
-  partnershipTypes: z.array(z.string()).min(1, {
-    message: "Select at least one partnership type"
-  }),
-  requiredSkills: z.array(z.string()).optional(),
-  organizationId: z.string().optional(),
-  proposalFile: z.instanceof(File).optional().refine(file => !file || file.size <= MAX_FILE_SIZE, "File size must be less than 10MB").refine(file => !file || ACCEPTED_FILE_TYPES.includes(file.type), "Only PDF and Word documents are accepted"),
-  projectImage: z.instanceof(File).optional().refine(file => !file || file.size <= MAX_FILE_SIZE, "File size must be less than 10MB").refine(file => !file || ACCEPTED_IMAGE_TYPES.includes(file.type), "Only JPEG, PNG, or WebP images are accepted"),
-  partnershipDetails: z.record(z.string()).optional(),
-  previousProjects: z.array(z.object({
-    name: z.string(),
-    description: z.string()
-  })).optional(),
-  projectImages: z.array(z.string()).optional()
+  description: z.string().optional(),
+  image: z.string().optional(),
+  organization_id: z.string().optional(),
+  partnership_types: z.array(z.string()).optional(),
+  content: z.string().optional(),
 });
-type FormValues = z.infer<typeof formSchema>;
-export function ProjectForm() {
-  const {
-    user
-  } = useAuth();
+
+interface ProjectFormProps {
+  project?: Project | null;
+}
+
+export function ProjectForm({ project }: ProjectFormProps) {
+  const { toast } = useToast();
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [newSkill, setNewSkill] = useState("");
-  const [userOrganizations, setUserOrganizations] = useState<Organization[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [projectImages, setProjectImages] = useState<string[]>([]);
-  const [previousProjects, setPreviousProjects] = useState<Array<{
-    name: string;
-    description: string;
-  }>>([]);
-  const form = useForm<FormValues>({
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { profile } = useProfile();
+  const { organization } = useOrganization();
+  const { locations } = useLocations();
+	const { partnershipTypes } = usePartnershipTypes();
+  const [imageUrl, setImageUrl] = useState<string | null>(project?.image || null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const { autoApproveProjects } = useSystemSettings();
+
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      category: "",
-      location: "",
-      startDate: new Date(),
-      endDate: new Date(new Date().setMonth(new Date().getMonth() + 3)),
-      partnershipTypes: [],
-      requiredSkills: [],
-      organizationId: "",
-      partnershipDetails: {},
-      previousProjects: [],
-      projectImages: []
-    }
+      title: project?.title || "",
+      category: project?.category || "",
+      location: project?.location || "",
+      description: project?.description || "",
+      image: project?.image || "",
+      content: project?.content || "",
+      organization_id: project?.organization_id || organization?.id || "",
+			partnership_types: project?.partnership_types || [],
+    },
   });
 
-  // Fetch user's organizations
-  useEffect(() => {
-    const fetchOrganizations = async () => {
-      if (!user) return;
-      try {
-        setLoading(true);
-        const {
-          data,
-          error
-        } = await supabase.from("organizations").select("*").eq("owner_id", user.id);
-        if (error) throw error;
-        const mappedOrgs = (data || []).map(org => mapSupabaseOrgToOrganization(org));
-        setUserOrganizations(mappedOrgs);
-      } catch (error) {
-        console.error("Error fetching organizations:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchOrganizations();
-  }, [user]);
-  const partnershipTypes: {
-    value: PartnershipType;
-    label: string;
-  }[] = [{
-    value: "monetary",
-    label: "Monetary Support"
-  }, {
-    value: "knowledge",
-    label: "Knowledge Sharing"
-  }, {
-    value: "skilled",
-    label: "Skilled Labor"
-  }, {
-    value: "volunteering",
-    label: "Volunteering"
-  }];
-  const categories = ["Environmental", "Healthcare", "Education", "Business", "Technology", "Arts", "Social", "Community"];
-  const addSkill = () => {
-    if (newSkill.trim() && !form.getValues().requiredSkills?.includes(newSkill.trim())) {
-      form.setValue("requiredSkills", [...(form.getValues().requiredSkills || []), newSkill.trim()]);
-      setNewSkill("");
-    }
-  };
-  const removeSkill = (skill: string) => {
-    form.setValue("requiredSkills", form.getValues().requiredSkills?.filter(s => s !== skill) || []);
-  };
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedFile(file);
-      form.setValue("proposalFile", file);
-    }
-  };
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedImage(file);
-      form.setValue("projectImage", file);
+  const { control, handleSubmit, setValue, getValues } = form;
 
-      // Create preview URL
-      const previewUrl = URL.createObjectURL(file);
-      setImagePreview(previewUrl);
-    }
-  };
-  const handleImagesChange = (urls: string[]) => {
-    setProjectImages(urls);
-    form.setValue('projectImages', urls);
-  };
-  const addPreviousProject = () => {
-    setPreviousProjects([...previousProjects, {
-      name: '',
-      description: ''
-    }]);
-  };
-  const removePreviousProject = (index: number) => {
-    setPreviousProjects(previousProjects.filter((_, i) => i !== index));
-  };
-  const onSubmit = async (values: FormValues) => {
-    if (!user) {
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    
+    if (!file) {
       toast({
-        title: "Authentication required",
-        description: "Please login to create a project",
-        variant: "destructive"
+        title: "Error",
+        description: "Please select a valid image file.",
+        variant: "destructive",
       });
       return;
     }
-    setIsSubmitting(true);
-    try {
-      let proposal_file_path = null;
-      let project_image_url = null;
 
-      // Upload proposal file if selected
-      if (values.proposalFile) {
-        proposal_file_path = await uploadProjectProposal(values.proposalFile, user.id);
-        if (!proposal_file_path) {
-          toast({
-            title: "File upload failed",
-            description: "Failed to upload project proposal, but proceeding with project creation",
-            variant: "destructive"
-          });
-        }
-      }
-
-      // Upload project image if selected
-      if (values.projectImage) {
-        project_image_url = await uploadImage(values.projectImage, 'projects', user.id);
-        if (!project_image_url) {
-          toast({
-            title: "Image upload failed",
-            description: "Failed to upload project image, but proceeding with project creation",
-            variant: "destructive"
-          });
-        }
-      }
-
-      // Get organization name if available
-      let organization_name = null;
-      if (values.organizationId && values.organizationId !== "none") {
-        const selectedOrg = userOrganizations.find(org => org.id === values.organizationId);
-        organization_name = selectedOrg?.name || null;
-      }
-      const projectData = {
-        title: values.title,
-        description: values.description,
-        category: values.category,
-        location: values.location,
-        start_date: values.startDate.toISOString(),
-        end_date: values.endDate.toISOString(),
-        partnership_types: values.partnershipTypes as PartnershipType[],
-        required_skills: values.requiredSkills,
-        organizer_id: user.id,
-        organization_id: values.organizationId === "none" ? null : values.organizationId || null,
-        organization_name: organization_name,
-        status: "published" as "draft" | "published" | "in-progress" | "completed",
-        proposal_file_path: proposal_file_path,
-        image: project_image_url,
-        partnership_details: values.partnershipDetails,
-        previous_projects: values.previousProjects?.reduce((acc: any, project) => {
-          acc[project.name] = project.description;
-          return acc;
-        }, {})
-      };
-      const {
-        data,
-        error
-      } = await supabase.from("projects").insert(projectData).select();
-      if (error) throw error;
+    if (file.size > 5 * 1024 * 1024) {
       toast({
-        title: "Project created successfully",
-        description: "Your project has been created and is now visible to potential partners"
+        title: "Error",
+        description: "File size should be less than 5MB.",
+        variant: "destructive",
       });
+      return;
+    }
 
-      // Navigate to the newly created project
-      if (data && data[0]) {
-        navigate(`/projects/${data[0].id}`);
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${uuidv4()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from('project-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error("Error uploading image: ", error);
+        setUploadError(error.message);
+        toast({
+          title: "Upload failed",
+          description: "Failed to upload image. Please try again.",
+          variant: "destructive",
+        });
       } else {
-        navigate("/projects");
+        const imageUrl = `${supabase.storageUrl}/project-images/${data.path}`;
+        setImageUrl(imageUrl);
+        setValue('image', imageUrl);
+        toast({
+          title: "Upload successful",
+          description: "Image uploaded successfully.",
+        });
       }
     } catch (error: any) {
-      console.error("Error creating project:", error);
+      console.error("Unexpected error during upload: ", error);
+      setUploadError(error.message);
       toast({
-        title: "Failed to create project",
-        description: error.message || "An unexpected error occurred",
-        variant: "destructive"
+        title: "Upload failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsUploading(false);
     }
+  }, [supabase, setValue, toast]);
+
+  const { getRootProps, getInputProps } = useDropzone({
+    onDrop,
+    multiple: false,
+    accept: {
+      'image/*': ['.jpeg', '.png', '.jpg', '.gif', '.svg']
+    },
+    maxSize: 5 * 1024 * 1024, // 5MB
+  });
+
+  const removeImage = () => {
+    setImageUrl(null);
+    setValue('image', "");
   };
-  return <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Create New Project</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField control={form.control} name="title" render={({
-            field
-          }) => <FormItem>
-                  <FormLabel>Project Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter project title" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>} />
-            
-            {/* Project Image Upload */}
-            <FormField control={form.control} name="projectImage" render={({
-            field: {
-              value,
-              onChange,
-              ...fieldProps
-            }
-          }) => <FormItem>
-                  <FormLabel>Project Image</FormLabel>
-                  <FormDescription>
-                    Upload a cover image for your project (optional, JPEG, PNG or WebP, max 10MB)
-                  </FormDescription>
-                  <FormControl>
-                    <div className="flex flex-col space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Input type="file" accept="image/jpeg,image/png,image/webp,image/jpg" onChange={handleImageChange} className="flex-1" {...fieldProps} />
-                      </div>
-                      
-                      {imagePreview && <div className="relative">
-                          <div className="aspect-video w-full max-h-[200px] overflow-hidden rounded-md border border-border">
-                            <img src={imagePreview} alt="Project image preview" className="w-full h-full object-cover" />
-                          </div>
-                          <Button type="button" variant="ghost" size="sm" onClick={() => {
-                    setSelectedImage(null);
-                    setImagePreview(null);
-                    form.setValue("projectImage", undefined);
-                  }} className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background/80 p-0">
-                            ✕
-                          </Button>
-                        </div>}
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>} />
-            
-            <FormField control={form.control} name="description" render={({
-            field
-          }) => <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Describe your project, its goals, and why partners should join" className="min-h-32" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>} />
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField control={form.control} name="category" render={({
-              field
-            }) => <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {categories.map(category => <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>} />
-              
-              <FormField control={form.control} name="location" render={({
-              field
-            }) => <FormItem>
-                    <FormLabel>Location</FormLabel>
+
+  const upsertProject = useMutation(
+    async (values: z.infer<typeof formSchema>) => {
+      if (!user || !profile) {
+        throw new Error("User not authenticated.");
+      }
+
+      const isUpdate = !!project?.id;
+      const projectId = project?.id || uuidv4();
+      const now = new Date().toISOString();
+      const newStatus = autoApproveProjects ? 'published' : 'pending_publish';
+
+      const projectData = {
+        id: projectId,
+        title: values.title,
+        category: values.category,
+        location: values.location,
+        description: values.description,
+        image: values.image,
+        content: values.content,
+        organization_id: values.organization_id,
+        organizer_id: profile.id,
+        updated_at: now,
+        partnership_types: values.partnership_types,
+        status: newStatus,
+      };
+
+      if (isUpdate) {
+        const { data, error } = await supabase
+          .from("projects")
+          .update(projectData)
+          .eq("id", projectId)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Error updating project:", error);
+          throw error;
+        }
+        return data;
+      } else {
+        const { data, error } = await supabase
+          .from("projects")
+          .insert({
+            ...projectData,
+            created_at: now,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Error creating project:", error);
+          throw error;
+        }
+        return data;
+      }
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["projects"] });
+        queryClient.invalidateQueries({ queryKey: ["user-projects"] });
+        toast({
+          title: autoApproveProjects ? "Project Published" : "Project Submitted for Review",
+          description: autoApproveProjects 
+            ? "Your project has been published successfully."
+            : "Your project has been submitted and is awaiting admin approval.",
+        });
+        navigate("/projects");
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    }
+  );
+
+  return (
+    <Form {...form}>
+      <form onSubmit={handleSubmit(upsertProject.mutate)} className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>{project ? "Edit Project" : "Create Project"}</CardTitle>
+            <CardDescription>
+              {project
+                ? "Make changes to your project here. Click save when you're done."
+                : "Create a new project to share with the community."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
                     <FormControl>
-                      <Input placeholder="Project location (optional)" {...field} />
+                      <Input placeholder="Project title" {...field} />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>} />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Technology, Education" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-            
-            {/* Project Proposal File Upload */}
-            <FormField control={form.control} name="proposalFile" render={({
-            field: {
-              value,
-              onChange,
-              ...fieldProps
-            }
-          }) => <FormItem>
-                  <FormLabel>Project Proposal</FormLabel>
-                  <FormDescription>
-                    Upload a detailed project proposal document (optional, PDF or Word, max 10MB)
-                  </FormDescription>
-                  <FormControl>
-                    <div className="flex flex-col space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Input type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} className="flex-1" {...fieldProps} />
-                      </div>
-                      {selectedFile && <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>Selected file: {selectedFile.name}</span>
-                          <Button type="button" variant="ghost" size="sm" onClick={() => {
-                    setSelectedFile(null);
-                    form.setValue("proposalFile", undefined);
-                  }} className="h-auto p-1">
-                            Remove
-                          </Button>
-                        </div>}
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>} />
-            
-            {/* Organization selection */}
-            {userOrganizations.length > 0 && <FormField control={form.control} name="organizationId" render={({
-            field
-          }) => <FormItem>
-                    <FormLabel>Publish as Organization</FormLabel>
-                    <FormDescription>
-                      Select an organization to publish this project under
-                    </FormDescription>
-                    <Select onValueChange={field.onChange} value={field.value || "none"}>
-                      <FormControl>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select an organization (optional)" />
+                          <SelectValue placeholder="Select a location" />
                         </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">Personal Project</SelectItem>
-                        {userOrganizations.map(org => <SelectItem key={org.id} value={org.id}>
-                            {org.name}
-                          </SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                        <SelectContent>
+                          {locations?.map((location) => (
+                            <SelectItem key={location.id} value={location.name}>
+                              {location.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
                     <FormMessage />
-                  </FormItem>} />}
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField control={form.control} name="startDate" render={({
-              field
-            }) => <FormItem className="flex flex-col">
-                    <FormLabel>Start Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>} />
-              
-              <FormField control={form.control} name="endDate" render={({
-              field
-            }) => <FormItem className="flex flex-col">
-                    <FormLabel>End Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>} />
-            </div>
-            
-            <FormField control={form.control} name="partnershipTypes" render={({
-            field
-          }) => <FormItem>
-                  <div className="mb-4">
-                    <FormLabel>Partnership Types</FormLabel>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="organization_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Organization</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Organization ID" {...field} disabled />
+                    </FormControl>
                     <FormDescription>
-                      Select what types of partnerships you're looking for and provide details
+                      This project will be associated with your organization.
                     </FormDescription>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {partnershipTypes.map(type => <div key={type.value} className="space-y-2">
-                        <FormField control={form.control} name="partnershipTypes" render={({
-                  field
-                }) => <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                              <FormControl>
-                                <Checkbox checked={field.value?.includes(type.value)} onCheckedChange={checked => {
-                      const updatedTypes = checked ? [...(field.value || []), type.value] : field.value?.filter(value => value !== type.value) || [];
-                      field.onChange(updatedTypes);
-                    }} />
-                              </FormControl>
-                              <FormLabel className="font-normal">{type.label}</FormLabel>
-                            </FormItem>} />
-                        {field.value?.includes(type.value) && <Textarea placeholder={`Describe what kind of ${type.label.toLowerCase()} you're looking for...`} onChange={e => {
-                  const details = form.getValues('partnershipDetails') || {};
-                  form.setValue('partnershipDetails', {
-                    ...details,
-                    [type.value]: e.target.value
-                  });
-                }} />}
-                      </div>)}
-                  </div>
-                </FormItem>} />
-
-            {/* Previous Projects */}
-            <FormItem>
-              <FormLabel>Previous Projects</FormLabel>
-              <FormDescription>Add details about relevant previous version of this project (optional)</FormDescription>
-              <div className="space-y-4">
-                {previousProjects.map((project, index) => <Card key={index}>
-                    <CardContent className="p-4 space-y-4">
-                      <div className="flex justify-between items-center">
-                        <Input placeholder="Project name" value={project.name} onChange={e => {
-                      const updated = [...previousProjects];
-                      updated[index].name = e.target.value;
-                      setPreviousProjects(updated);
-                    }} />
-                        <Button type="button" variant="destructive" size="sm" onClick={() => removePreviousProject(index)}>
-                          Remove
-                        </Button>
-                      </div>
-                      <Textarea placeholder="Project description" value={project.description} onChange={e => {
-                    const updated = [...previousProjects];
-                    updated[index].description = e.target.value;
-                    setPreviousProjects(updated);
-                  }} />
-                    </CardContent>
-                  </Card>)}
-                <Button type="button" variant="outline" onClick={addPreviousProject}>
-                  Add Previous Project
-                </Button>
-              </div>
-            </FormItem>
-            
-            {user && <ProjectImagesUpload userId={user.id} onImagesChange={handleImagesChange} />}
-
-            <FormItem>
-              <FormLabel>Required Skills</FormLabel>
-              <FormDescription>
-                Add skills that partners should have to contribute to this project
-              </FormDescription>
-              <div className="flex items-center gap-2 mt-2">
-                <Input placeholder="Add a required skill" value={newSkill} onChange={e => setNewSkill(e.target.value)} onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  addSkill();
-                }
-              }} />
-                <Button type="button" variant="outline" onClick={addSkill}>
-                  Add
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-3">
-                {form.getValues().requiredSkills?.map(skill => <div key={skill} className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full flex items-center gap-2">
-                    <span>{skill}</span>
-                    <button type="button" className="text-sm hover:text-destructive" onClick={() => removeSkill(skill)}>
-                      ✕
-                    </button>
-                  </div>)}
-              </div>
-            </FormItem>
-            
-            <div className="flex justify-end gap-4 mt-6">
-              <Button type="button" variant="outline" onClick={() => navigate('/projects')}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </> : <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Create Project
-                  </>}
-              </Button>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>;
+
+						<FormField
+							control={form.control}
+							name="partnership_types"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Partnership Types</FormLabel>
+									<FormControl>
+										<MultiSelect
+											options={partnershipTypes?.map((type) => ({
+												label: type.name,
+												value: type.id,
+											})) || []}
+											value={field.value}
+											onChange={field.onChange}
+											placeholder="Select partnership types"
+										/>
+									</FormControl>
+									<FormDescription>
+										Select the types of partnerships you are looking for.
+									</FormDescription>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
+            <div>
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Project description"
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Describe your project in detail.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div>
+              <FormLabel>Image Upload</FormLabel>
+              <FormDescription>Upload a project image.</FormDescription>
+              <div
+                {...getRootProps()}
+                className="border-dashed border-2 rounded-md p-4 relative cursor-pointer hover:bg-accent"
+              >
+                <input {...getInputProps()} />
+                {isUploading ? (
+                  <div className="absolute inset-0 bg-muted/80 flex items-center justify-center">
+                    <CheckCircle className="h-6 w-6 animate-spin text-primary" />
+                    Uploading...
+                  </div>
+                ) : imageUrl ? (
+                  <div className="relative">
+                    <img
+                      src={imageUrl}
+                      alt="Uploaded"
+                      className="max-h-40 rounded-md object-contain"
+                    />
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="absolute top-2 right-2"
+                      type="button"
+                      onClick={removeImage}
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center">
+                    <Upload className="h-6 w-6 text-muted-foreground" />
+                    <p className="text-sm mt-2 text-muted-foreground">
+                      Click or drag and drop to upload an image
+                    </p>
+                  </div>
+                )}
+              </div>
+              {uploadError && (
+                <p className="text-sm text-red-500 mt-1">{uploadError}</p>
+              )}
+            </div>
+
+            <div>
+              <FormField
+                control={form.control}
+                name="content"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Content</FormLabel>
+                    <FormControl>
+                      <Editor
+                        apiKey="YOUR_TINY_MCE_API_KEY"
+                        value={field.value || ""}
+                        onEditorChange={field.onChange}
+                        init={{
+                          height: 300,
+                          menubar: true,
+                          plugins: [
+                            'advlist autolink lists link image charmap print preview anchor',
+                            'searchreplace visualblocks code fullscreen',
+                            'insertdatetime media table paste code help wordcount'
+                          ],
+                          toolbar:
+                            'undo redo | formatselect | ' +
+                            'bold italic backcolor | alignleft aligncenter ' +
+                            'alignright alignjustify | bullist numlist outdent indent | ' +
+                            'removeformat | help'
+                        }}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Write the content for your project.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <Button variant="ghost" onClick={() => navigate("/projects")}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={upsertProject.isLoading}>
+              {upsertProject.isLoading ? "Loading..." : "Submit"}
+            </Button>
+          </CardFooter>
+        </Card>
+      </form>
+    </Form>
+  );
 }
