@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   email: string;
@@ -22,6 +23,7 @@ export interface Organization {
   owner_id: string;
   created_at?: string;
   updated_at?: string;
+  status?: OrganizationStatus;
 }
 
 export interface Project {
@@ -41,11 +43,23 @@ export interface Project {
   updated_at?: string;
   completed_at?: string;
   profiles?: User;
+  organizerName?: string; // Added for compatibility
 }
 
 export type ProjectStatus = 'draft' | 'published' | 'in-progress' | 'completed' | 'pending_publish';
 
 export type OrganizationStatus = 'active' | 'pending_approval' | 'rejected' | 'inactive';
+
+export type PartnershipType = 'monetary' | 'knowledge' | 'skilled' | 'volunteering';
+
+export interface PartnershipInterest {
+  id: string;
+  organization_id: string;
+  partnership_type: PartnershipType;
+  description: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export interface SystemSettings {
   id: string;

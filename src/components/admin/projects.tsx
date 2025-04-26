@@ -3,12 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useProjects } from "@/hooks/use-projects-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Project } from "@/types";
+import { Project, ProjectStatus } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, AlertCircle, Trash2 } from "lucide-react";
@@ -66,14 +66,19 @@ export function AdminProjects() {
     if (!selectedProject) return;
 
     try {
+      const updateData: Partial<Project> = {
+        title: selectedProject.title,
+        status: selectedProject.status,
+        category: selectedProject.category
+      };
+      
+      if(selectedProject.status === 'completed') {
+        updateData.completed_at = new Date().toISOString();
+      }
+
       const { error } = await supabase
         .from('projects')
-        .update({
-          title: selectedProject.title,
-          status: selectedProject.status,
-          category: selectedProject.category,
-          ...(selectedProject.status === 'completed' && { completed_at: new Date().toISOString() })
-        } as any)
+        .update(updateData)
         .eq('id', selectedProject.id);
 
       if (error) throw error;
@@ -99,7 +104,7 @@ export function AdminProjects() {
       const { error } = await supabase
         .from('projects')
         .update({
-          status: 'published'
+          status: 'published' as ProjectStatus
         })
         .eq('id', projectId);
 
@@ -146,7 +151,7 @@ export function AdminProjects() {
       const { error } = await supabase
         .from('projects')
         .update({
-          status: 'draft'
+          status: 'draft' as ProjectStatus
         })
         .eq('id', projectId);
 
@@ -405,7 +410,7 @@ export function AdminProjects() {
                     onValueChange={(value) => 
                       setSelectedProject({
                         ...selectedProject, 
-                        status: value as "draft" | "published" | "in-progress" | "completed"
+                        status: value as "draft" | "published" | "in-progress" | "completed" | "pending_publish"
                       })
                     }
                   >

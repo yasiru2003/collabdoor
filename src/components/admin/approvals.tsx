@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSystemSettings } from "@/hooks/use-system-settings";
-import { format } from "date-fns";
+import { Organization, Project, OrganizationStatus, ProjectStatus } from "@/types";
 
 export function AdminApprovals() {
   const { toast } = useToast();
@@ -95,7 +94,7 @@ export function AdminApprovals() {
     try {
       const { error } = await supabase
         .from('organizations')
-        .update({ status: 'active' })
+        .update({ status: 'active' as OrganizationStatus })
         .eq('id', orgId);
 
       if (error) throw error;
@@ -135,7 +134,7 @@ export function AdminApprovals() {
     try {
       const { error } = await supabase
         .from('organizations')
-        .update({ status: 'rejected' })
+        .update({ status: 'rejected' as OrganizationStatus })
         .eq('id', orgId);
 
       if (error) throw error;
@@ -173,7 +172,7 @@ export function AdminApprovals() {
     try {
       const { error } = await supabase
         .from('projects')
-        .update({ status: 'published' })
+        .update({ status: 'published' as ProjectStatus })
         .eq('id', projectId);
 
       if (error) throw error;
@@ -213,7 +212,7 @@ export function AdminApprovals() {
     try {
       const { error } = await supabase
         .from('projects')
-        .update({ status: 'draft' })
+        .update({ status: 'draft' as ProjectStatus })
         .eq('id', projectId);
 
       if (error) throw error;

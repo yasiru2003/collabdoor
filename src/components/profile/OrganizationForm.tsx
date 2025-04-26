@@ -1,7 +1,6 @@
+
 import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useDropzone } from "react-dropzone";
-import { useMutation } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -19,7 +18,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
@@ -57,6 +56,7 @@ export function OrganizationForm() {
   const { user } = useAuth();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const { autoApproveOrganizations } = useSystemSettings();
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -71,8 +71,8 @@ export function OrganizationForm() {
     },
   });
 
-  const { mutate: createOrganization, isLoading } = useMutation(
-    async (values: z.infer<typeof formSchema>) => {
+  const { mutate: createOrganization, isPending } = useMutation({
+    mutationFn: async (values: z.infer<typeof formSchema>) => {
       if (!user) {
         throw new Error("You must be logged in to create an organization.");
       }
@@ -81,14 +81,12 @@ export function OrganizationForm() {
 
       const { data, error } = await supabase
         .from("organizations")
-        .insert([
-          {
-            ...values,
-            owner_id: user.id,
-            logo: logoUrl,
-            status: status,
-          },
-        ])
+        .insert({
+          ...values,
+          owner_id: user.id,
+          logo: logoUrl,
+          status: status,
+        })
         .select()
         .single();
 
@@ -98,25 +96,23 @@ export function OrganizationForm() {
 
       return data;
     },
-    {
-      onSuccess: (data) => {
-        toast({
-          title: autoApproveOrganizations ? "Organization Created" : "Organization Submitted for Review",
-          description: autoApproveOrganizations
-            ? "Your organization has been created successfully."
-            : "Your organization has been submitted and is awaiting admin approval.",
-        });
-        navigate(`/organizations/${data.id}`);
-      },
-      onError: (error: any) => {
-        toast({
-          title: "Error creating organization",
-          description: error.message,
-          variant: "destructive",
-        });
-      },
+    onSuccess: (data) => {
+      toast({
+        title: autoApproveOrganizations ? "Organization Created" : "Organization Submitted for Review",
+        description: autoApproveOrganizations
+          ? "Your organization has been created successfully."
+          : "Your organization has been submitted and is awaiting admin approval.",
+      });
+      navigate(`/organizations/${data.id}`);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error creating organization",
+        description: error.message,
+        variant: "destructive",
+      });
     }
-  );
+  });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     createOrganization(values);
@@ -161,15 +157,15 @@ export function OrganizationForm() {
         variant: "destructive",
       });
     }
-  }, []);
+  }, [toast]);
 
-  const { getRootProps, getInputProps } = useDropzone({
-    onDrop,
-    multiple: false,
-    accept: {
-      "image/*": [".jpeg", ".jpg", ".png"],
-    },
-  });
+  // Custom dropzone implementation without react-dropzone dependency
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      onDrop([files[0]]);
+    }
+  };
 
   return (
     <Form {...form}>
@@ -296,12 +292,19 @@ export function OrganizationForm() {
           <FormLabel>Logo</FormLabel>
           <div
             className={cn(
-              "border-dashed border-2 rounded-md flex flex-col items-center justify-center relative aspect-square h-40 cursor-pointer",
+              "border-dashed border-2 rounded-md flex flex-col items-center justify-center relative aspect-square h-40 cursor-pointer overflow-hidden",
               logoUrl ? "border-primary" : "border-muted"
             )}
-            {...getRootProps()}
+            onClick={() => document.getElementById('logo-upload')?.click()}
           >
-            <input {...getInputProps()} />
+            <input
+              id="logo-upload"
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            
             {logoUrl ? (
               <>
                 <Avatar className="absolute h-full w-full">
@@ -310,7 +313,7 @@ export function OrganizationForm() {
                     <ImagePlus className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>
-                <CheckCircle2 className="absolute top-2 right-2 h-5 w-5 text-green-500 stroke-2" />
+                <CheckCircle2 className="absolute top-2 right-2 h-5 w-5 text-green-500 stroke-2 z-10" />
               </>
             ) : (
               <>
@@ -322,8 +325,8 @@ export function OrganizationForm() {
             )}
           </div>
         </div>
-        <Button type="submit" disabled={isLoading}>
-          Create organization
+        <Button type="submit" disabled={isPending}>
+          {isPending ? "Creating..." : "Create organization"}
         </Button>
       </form>
     </Form>
