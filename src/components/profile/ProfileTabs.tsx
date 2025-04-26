@@ -15,16 +15,6 @@ interface ProfileTabsProps {
   profileImage: string;
   newSkill: string;
   loading: boolean;
-  organization: {
-    name: string;
-    description: string;
-    industry: string;
-    location: string;
-    website: string;
-    size: string;
-    foundedYear: string;
-    logo: string;
-  };
   onNameChange: (value: string) => void;
   onBioChange: (value: string) => void;
   onProfileImageRemove: () => void;
@@ -45,7 +35,6 @@ export function ProfileTabs({
   profileImage,
   newSkill,
   loading,
-  organization,
   onNameChange,
   onBioChange,
   onProfileImageRemove,
@@ -111,12 +100,7 @@ export function ProfileTabs({
       </TabsContent>
 
       <TabsContent value="organization">
-        <OrganizationForm 
-          organization={organization}
-          loading={loading}
-          onOrganizationChange={onOrganizationChange}
-          onSubmit={onUpdateOrganization}
-        />
+        <OrganizationForm />
       </TabsContent>
 
       <TabsContent value="account">
@@ -125,3 +109,4 @@ export function ProfileTabs({
     </Tabs>
   );
 }
+

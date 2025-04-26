@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { useMutation } from "@tanstack/react-query";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -71,18 +72,27 @@ export function OrganizationForm() {
     },
   });
 
-  const { mutate: createOrganization, isPending } = useMutation({
+  const createOrganizationMutation = useMutation({
     mutationFn: async (values: z.infer<typeof formSchema>) => {
       if (!user) {
         throw new Error("You must be logged in to create an organization.");
       }
 
       const status = autoApproveOrganizations ? 'active' : 'pending_approval';
+      
+      // Parse founded_year to number
+      const founded_year = values.founded_year ? parseInt(values.founded_year) : null;
 
       const { data, error } = await supabase
         .from("organizations")
         .insert({
-          ...values,
+          name: values.name,
+          description: values.description,
+          industry: values.industry,
+          location: values.location,
+          size: values.size,
+          founded_year: founded_year,
+          website: values.website,
           owner_id: user.id,
           logo: logoUrl,
           status: status,
@@ -115,7 +125,7 @@ export function OrganizationForm() {
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    createOrganization(values);
+    createOrganizationMutation.mutate(values);
   };
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -146,10 +156,12 @@ export function OrganizationForm() {
         throw new Error(error.message);
       }
 
-      const url = `${
-        import.meta.env.VITE_SUPABASE_URL
-      }/storage/v1/object/public/logos/${filePath}`;
-      setLogoUrl(url);
+      // Get the public URL using the storage URL
+      const { data: publicUrlData } = supabase.storage
+        .from("logos")
+        .getPublicUrl(filePath);
+        
+      setLogoUrl(publicUrlData.publicUrl);
     } catch (error: any) {
       toast({
         title: "Error uploading logo",
