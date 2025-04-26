@@ -1,4 +1,5 @@
-
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { ProfileHeader } from "./ProfileHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -65,6 +66,28 @@ export function UserProfile({ profile }: UserProfileProps) {
   const handleContact = () => {
     window.location.href = `/messages?participantId=${profile.id}&participantName=${encodeURIComponent(profile.name || "User")}`;
   };
+
+  // Fetch organizations where the user is a member
+  const { data: userOrganizations } = useQuery({
+    queryKey: ['user-organizations', profile.id],
+    queryFn: async () => {
+      if (!profile.id) return [];
+      
+      const { data, error } = await supabase
+        .from('organization_members')
+        .select('organizations(*)')
+        .eq('user_id', profile.id);
+      
+      if (error) {
+        console.error('Error fetching user organizations:', error);
+        return [];
+      }
+      
+      // Extract organizations from the result
+      return data.map(item => item.organizations);
+    },
+    enabled: !!profile.id
+  });
 
   return (
     <div className="container mx-auto py-6 px-4">
@@ -164,6 +187,24 @@ export function UserProfile({ profile }: UserProfileProps) {
           />
         </TabsContent>
       </Tabs>
+      
+      {/* Add a new section for user's organizations */}
+      {userOrganizations && userOrganizations.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold mb-4">My Organizations</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {userOrganizations.map((org: any) => (
+              <div 
+                key={org.id} 
+                className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+              >
+                <h4 className="font-medium">{org.name}</h4>
+                <p className="text-muted-foreground">{org.industry}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

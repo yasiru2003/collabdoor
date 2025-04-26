@@ -1,5 +1,5 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Dialog,
   DialogContent,
@@ -18,8 +18,18 @@ import {
 } from "lucide-react";
 
 export function FirstTimeGuide() {
-  const [open, setOpen] = useState(true);
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+
+  useEffect(() => {
+    // Check if this is the first time the user is logging in
+    const hasSeenGuide = localStorage.getItem(`guide_seen_${user?.id}`);
+    
+    if (!hasSeenGuide) {
+      setOpen(true);
+    }
+  }, [user]);
 
   const steps = [
     {
@@ -48,29 +58,16 @@ export function FirstTimeGuide() {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Save to localStorage that the guide has been shown
-      localStorage.setItem("guideSeen", "true");
+      // Mark guide as seen for this specific user
+      localStorage.setItem(`guide_seen_${user?.id}`, 'true');
       setOpen(false);
     }
   };
 
   const handleSkip = () => {
-    localStorage.setItem("guideSeen", "true");
+    localStorage.setItem(`guide_seen_${user?.id}`, 'true');
     setOpen(false);
   };
-
-  // Check local storage on component initialization
-  const shouldShowGuide = () => {
-    if (typeof window !== 'undefined') {
-      return !localStorage.getItem("guideSeen");
-    }
-    return true;
-  };
-
-  // Don't show if user has seen the guide
-  if (!shouldShowGuide()) {
-    return null;
-  }
 
   const CurrentIcon = steps[currentStep].icon;
   

@@ -1,15 +1,4 @@
 
-export interface User {
-  id: string;
-  email: string;
-  name?: string;
-  profile_image?: string;
-  role?: string;
-  created_at?: string;
-  updated_at?: string;
-  last_active?: string;
-}
-
 export interface Organization {
   id: string;
   name: string;
@@ -23,7 +12,7 @@ export interface Organization {
   owner_id: string;
   created_at?: string;
   updated_at?: string;
-  status?: OrganizationStatus;
+  status?: OrganizationStatus; // Add status to the type
 }
 
 export interface Project {
@@ -36,18 +25,22 @@ export interface Project {
   start_date?: string;
   end_date?: string;
   status: ProjectStatus;
-  organizer_id: string;
+  organizer_id: string; // Ensure this matches the type used in other files
   organization_id?: string;
   organization_name?: string;
   created_at?: string;
   updated_at?: string;
   completed_at?: string;
   profiles?: User;
-  organizerName?: string; // Added for compatibility
+  organizerName?: string;
+  partnership_types?: string[]; // Add missing properties
+  applications_enabled?: boolean;
+  content?: string;
+  timeline?: any; // Add timeline if used
+  partners?: any; // Add partners if used
 }
 
-export type ProjectStatus = 'draft' | 'published' | 'in-progress' | 'completed' | 'pending_publish';
-
+// Add missing type definitions
 export type OrganizationStatus = 'active' | 'pending_approval' | 'rejected' | 'inactive';
 
 export type PartnershipType = 'monetary' | 'knowledge' | 'skilled' | 'volunteering';
@@ -61,11 +54,11 @@ export interface PartnershipInterest {
   updated_at?: string;
 }
 
-export interface SystemSettings {
+export interface ApplicationWithProfile {
+  // Add properties based on your application requirements
   id: string;
-  key: string;
-  value: boolean;
-  description?: string;
-  created_at: string;
-  updated_at: string;
+  user_id: string;
+  project_id: string;
+  status: string;
+  // Add other relevant properties
 }
