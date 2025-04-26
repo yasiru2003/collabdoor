@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Upload, Image as ImageIcon } from "lucide-react";
 import {
   Select,
@@ -36,6 +35,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { PartnershipType, Organization } from "@/types";
 import { uploadImage, uploadProjectProposal } from "@/utils/upload-utils";
 import { mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
+import { ProjectImagesUpload } from "./ProjectImagesUpload";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_FILE_TYPES = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
@@ -73,6 +75,12 @@ const formSchema = z.object({
       (file) => !file || ACCEPTED_IMAGE_TYPES.includes(file.type),
       "Only JPEG, PNG, or WebP images are accepted"
     ),
+  partnershipDetails: z.record(z.string()).optional(),
+  previousProjects: z.array(z.object({
+    name: z.string(),
+    description: z.string()
+  })).optional(),
+  projectImages: z.array(z.string()).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -87,6 +95,8 @@ export function ProjectForm() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [projectImages, setProjectImages] = useState<string[]>([]);
+  const [previousProjects, setPreviousProjects] = useState<Array<{ name: string; description: string }>>([]);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -100,6 +110,9 @@ export function ProjectForm() {
       partnershipTypes: [],
       requiredSkills: [],
       organizationId: "",
+      partnershipDetails: {},
+      previousProjects: [],
+      projectImages: [],
     },
   });
   
@@ -180,6 +193,19 @@ export function ProjectForm() {
       setImagePreview(previewUrl);
     }
   };
+
+  const handleImagesChange = (urls: string[]) => {
+    setProjectImages(urls);
+    form.setValue('projectImages', urls);
+  };
+
+  const addPreviousProject = () => {
+    setPreviousProjects([...previousProjects, { name: '', description: '' }]);
+  };
+
+  const removePreviousProject = (index: number) => {
+    setPreviousProjects(previousProjects.filter((_, i) => i !== index));
+  };
   
   const onSubmit = async (values: FormValues) => {
     if (!user) {
@@ -243,6 +269,11 @@ export function ProjectForm() {
         status: "published" as "draft" | "published" | "in-progress" | "completed",
         proposal_file_path: proposal_file_path,
         image: project_image_url,
+        partnership_details: values.partnershipDetails,
+        previous_projects: values.previousProjects?.reduce((acc: any, project) => {
+          acc[project.name] = project.description;
+          return acc;
+        }, {}),
       };
       
       const { data, error } = await supabase.from("projects").insert(projectData).select();
@@ -572,54 +603,114 @@ export function ProjectForm() {
             <FormField
               control={form.control}
               name="partnershipTypes"
-              render={() => (
+              render={({ field }) => (
                 <FormItem>
                   <div className="mb-4">
                     <FormLabel>Partnership Types</FormLabel>
                     <FormDescription>
-                      Select what types of partnerships you're looking for
+                      Select what types of partnerships you're looking for and provide details
                     </FormDescription>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {partnershipTypes.map((type) => (
-                      <FormField
-                        key={type.value}
-                        control={form.control}
-                        name="partnershipTypes"
-                        render={({ field }) => {
-                          return (
-                            <FormItem
-                              key={type.value}
-                              className="flex flex-row items-start space-x-3 space-y-0"
-                            >
+                      <div key={type.value} className="space-y-2">
+                        <FormField
+                          control={form.control}
+                          name="partnershipTypes"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                               <FormControl>
                                 <Checkbox
                                   checked={field.value?.includes(type.value)}
                                   onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([...field.value, type.value])
-                                      : field.onChange(
-                                          field.value?.filter(
-                                            (value) => value !== type.value
-                                          )
-                                        )
+                                    const updatedTypes = checked
+                                      ? [...field.value || [], type.value]
+                                      : field.value?.filter((value) => value !== type.value) || [];
+                                    field.onChange(updatedTypes);
                                   }}
                                 />
                               </FormControl>
-                              <FormLabel className="font-normal cursor-pointer">
-                                {type.label}
-                              </FormLabel>
+                              <FormLabel className="font-normal">{type.label}</FormLabel>
                             </FormItem>
-                          )
-                        }}
-                      />
+                          )}
+                        />
+                        {field.value?.includes(type.value) && (
+                          <Textarea
+                            placeholder={`Describe what kind of ${type.label.toLowerCase()} you're looking for...`}
+                            onChange={(e) => {
+                              const details = form.getValues('partnershipDetails') || {};
+                              form.setValue('partnershipDetails', {
+                                ...details,
+                                [type.value]: e.target.value
+                              });
+                            }}
+                          />
+                        )}
+                      </div>
                     ))}
                   </div>
-                  <FormMessage />
                 </FormItem>
               )}
             />
+
+            {/* Previous Projects */}
+            <FormItem>
+              <FormLabel>Previous Projects</FormLabel>
+              <FormDescription>
+                Add details about relevant previous projects (optional)
+              </FormDescription>
+              <div className="space-y-4">
+                {previousProjects.map((project, index) => (
+                  <Card key={index}>
+                    <CardContent className="p-4 space-y-4">
+                      <div className="flex justify-between items-center">
+                        <Input
+                          placeholder="Project name"
+                          value={project.name}
+                          onChange={(e) => {
+                            const updated = [...previousProjects];
+                            updated[index].name = e.target.value;
+                            setPreviousProjects(updated);
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removePreviousProject(index)}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                      <Textarea
+                        placeholder="Project description"
+                        value={project.description}
+                        onChange={(e) => {
+                          const updated = [...previousProjects];
+                          updated[index].description = e.target.value;
+                          setPreviousProjects(updated);
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addPreviousProject}
+                >
+                  Add Previous Project
+                </Button>
+              </div>
+            </FormItem>
             
+            {user && (
+              <ProjectImagesUpload
+                userId={user.id}
+                onImagesChange={handleImagesChange}
+              />
+            )}
+
             <FormItem>
               <FormLabel>Required Skills</FormLabel>
               <FormDescription>

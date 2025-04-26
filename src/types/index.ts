@@ -1,4 +1,3 @@
-
 export interface Project {
   id: string;
   title: string;
@@ -27,6 +26,12 @@ export interface Project {
   completedAt?: string;
   applicationsEnabled?: boolean;
   proposalFilePath?: string;
+  partnership_details?: {
+    [key: string]: string;
+  };
+  previous_projects?: {
+    [key: string]: string;
+  };
 }
 
 export type PartnershipType = "monetary" | "knowledge" | "skilled" | "volunteering";

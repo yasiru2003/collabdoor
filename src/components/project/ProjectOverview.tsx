@@ -4,6 +4,9 @@ import { Project } from "@/types";
 import { Button } from "@/components/ui/button";
 import { getProjectProposalUrl } from "@/utils/upload-utils";
 import { FileDown } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 interface ProjectOverviewProps {
   project: Project;
@@ -20,6 +23,7 @@ export function ProjectOverview({
   navigateToOrganizerProfile,
   handleCompleteProject
 }: ProjectOverviewProps) {
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
 
   const handleDownloadProposal = async () => {
@@ -38,8 +42,40 @@ export function ProjectOverview({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-8">
+      {/* Project Images */}
+      {project.image && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Project Gallery</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Card className="cursor-pointer hover:opacity-90 transition-opacity">
+                  <CardContent className="p-0">
+                    <AspectRatio ratio={16 / 9}>
+                      <img 
+                        src={project.image} 
+                        alt="Project cover" 
+                        className="object-cover w-full h-full rounded-t-lg"
+                      />
+                    </AspectRatio>
+                  </CardContent>
+                </Card>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl">
+                <img 
+                  src={project.image} 
+                  alt="Project cover" 
+                  className="w-full h-auto rounded-lg"
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Organizer Info */}
         <div>
           <h3 className="text-lg font-semibold">Organizer</h3>
           <p>
@@ -50,6 +86,7 @@ export function ProjectOverview({
           </p>
         </div>
 
+        {/* Organization Info */}
         {project.organizationId && project.organizationName && (
           <div>
             <h3 className="text-lg font-semibold">Organization</h3>
@@ -61,8 +98,17 @@ export function ProjectOverview({
             </p>
           </div>
         )}
+
+        {/* Location */}
+        {project.location && (
+          <div>
+            <h3 className="text-lg font-semibold">Location</h3>
+            <p>{project.location}</p>
+          </div>
+        )}
       </div>
 
+      {/* Timeline */}
       <div>
         <h3 className="text-lg font-semibold">Project Timeline</h3>
         <p>
@@ -71,6 +117,7 @@ export function ProjectOverview({
         </p>
       </div>
 
+      {/* Required Skills */}
       <div>
         <h3 className="text-lg font-semibold">Required Skills</h3>
         {project.requiredSkills && project.requiredSkills.length > 0 ? (
@@ -83,7 +130,46 @@ export function ProjectOverview({
           <p>No specific skills required.</p>
         )}
       </div>
+
+      {/* Partnership Types and Details */}
+      <div>
+        <h3 className="text-lg font-semibold">Partnership Types</h3>
+        {project.partnershipTypes && project.partnershipTypes.length > 0 && (
+          <div className="space-y-4">
+            {project.partnershipTypes.map((type, index) => (
+              <Card key={index}>
+                <CardContent className="p-4">
+                  <h4 className="font-semibold capitalize mb-2">{type}</h4>
+                  {project.partnership_details?.[type] && (
+                    <p className="text-muted-foreground">
+                      {project.partnership_details[type]}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Previous Projects */}
+      {project.previous_projects && (
+        <div>
+          <h3 className="text-lg font-semibold">Previous Projects</h3>
+          <div className="space-y-4">
+            {Object.entries(project.previous_projects).map(([name, details], index) => (
+              <Card key={index}>
+                <CardContent className="p-4">
+                  <h4 className="font-semibold">{name}</h4>
+                  <p className="text-muted-foreground">{details as string}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
       
+      {/* Project Proposal Download */}
       {project.proposalFilePath && (
         <div className="mt-4">
           <Button 
@@ -97,6 +183,7 @@ export function ProjectOverview({
         </div>
       )}
 
+      {/* Complete Project Button */}
       {isOwner && project.status !== "completed" && (
         <Button onClick={handleCompleteProject} variant="destructive">
           Mark as Completed
