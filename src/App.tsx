@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -27,11 +28,6 @@ import EditOrganizationPage from "./pages/EditOrganizationPage";
 import AdminPage from "./pages/AdminPage";
 import FeedPage from "./pages/FeedPage";
 import UserProfilePage from "./pages/UserProfilePage";
-import AboutPage from "./pages/AboutPage";
-import HowItWorksPage from "./pages/HowItWorksPage";
-import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
-import TermsOfServicePage from "./pages/TermsOfServicePage";
-import ContactPage from "./pages/ContactPage";
 
 const queryClient = new QueryClient();
 
@@ -49,13 +45,6 @@ const App = () => (
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/browse/projects" element={<PublicProjectsPage />} />
             <Route path="/browse/organizations" element={<PublicOrganizationsPage />} />
-            
-            {/* Add new public routes */}
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/how-it-works" element={<HowItWorksPage />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-            <Route path="/terms-of-service" element={<TermsOfServicePage />} />
-            <Route path="/contact" element={<ContactPage />} />
             
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>

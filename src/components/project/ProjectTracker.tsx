@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useProjectPhases } from "@/hooks/use-supabase-query";
 import { useProjectPhases as useProjectPhasesMutations } from "@/hooks/use-project-phases";
@@ -26,7 +27,7 @@ interface ProjectTrackerProps {
 }
 
 export function ProjectTracker({ projectId, isOwner, readOnly = false }: ProjectTrackerProps) {
-  const { phases, isLoading: phasesLoading, refetch } = useProjectPhases(projectId);
+  const { data: phases, isLoading: phasesLoading, refetch } = useProjectPhases(projectId);
   const { addProjectPhase, updateProjectPhase, deleteProjectPhase, isLoading: mutationLoading } = useProjectPhasesMutations();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);

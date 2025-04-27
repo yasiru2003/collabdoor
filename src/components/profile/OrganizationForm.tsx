@@ -1,346 +1,288 @@
-
-import React, { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { useMutation } from "@tanstack/react-query";
-
-import { cn } from "@/lib/utils";
+import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ImagePlus, Upload, CheckCircle2 } from "lucide-react";
-import { useSystemSettings } from "@/hooks/use-system-settings";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "@/hooks/use-toast";
+import { uploadImage, removeImage } from "@/utils/upload-utils";
+import { Loader2 } from "lucide-react";
 
-const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "Organization name must be at least 2 characters.",
-  }),
-  description: z.string().min(10, {
-    message: "Description must be at least 10 characters.",
-  }),
-  industry: z.string().min(2, {
-    message: "Industry must be at least 2 characters.",
-  }),
-  location: z.string().min(2, {
-    message: "Location must be at least 2 characters.",
-  }),
-  size: z.string().min(2, {
-    message: "Size must be at least 2 characters.",
-  }),
-  founded_year: z.string().min(4, {
-    message: "Founded year must be at least 4 characters.",
-  }),
-  website: z.string().url({
-    message: "Please enter a valid URL.",
-  }),
-  logo: z.string().optional(),
-});
+interface OrganizationFormProps {
+  organization: {
+    name: string;
+    description: string;
+    industry: string;
+    location: string;
+    website: string;
+    size: string;
+    foundedYear: string;
+    logo: string;
+  };
+  loading: boolean;
+  onOrganizationChange: (field: string, value: string) => void;
+  onSubmit: () => void;
+}
 
-export function OrganizationForm() {
-  const navigate = useNavigate();
+export function OrganizationForm({
+  organization,
+  loading,
+  onOrganizationChange,
+  onSubmit
+}: OrganizationFormProps) {
   const { user } = useAuth();
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const { autoApproveOrganizations } = useSystemSettings();
-  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      industry: "",
-      location: "",
-      size: "",
-      founded_year: "",
-      website: "",
-    },
-  });
-
-  const createOrganizationMutation = useMutation({
-    mutationFn: async (values: z.infer<typeof formSchema>) => {
-      if (!user) {
-        throw new Error("You must be logged in to create an organization.");
-      }
-
-      const status = autoApproveOrganizations ? 'active' : 'pending_approval';
-      
-      // Parse founded_year to number
-      const founded_year = values.founded_year ? parseInt(values.founded_year) : null;
-
-      const { data, error } = await supabase
-        .from("organizations")
-        .insert({
-          name: values.name,
-          description: values.description,
-          industry: values.industry,
-          location: values.location,
-          size: values.size,
-          founded_year: founded_year,
-          website: values.website,
-          owner_id: user.id,
-          logo: logoUrl,
-          status: status,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data;
-    },
-    onSuccess: (data) => {
-      toast({
-        title: autoApproveOrganizations ? "Organization Created" : "Organization Submitted for Review",
-        description: autoApproveOrganizations
-          ? "Your organization has been created successfully."
-          : "Your organization has been submitted and is awaiting admin approval.",
-      });
-      navigate(`/organizations/${data.id}`);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error creating organization",
-        description: error.message,
-        variant: "destructive",
-      });
+  const handleUploadClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
     }
-  });
-
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    createOrganizationMutation.mutate(values);
   };
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-
-    if (!file) {
-      toast({
-        title: "Error uploading logo",
-        description: "Please select a logo to upload.",
-        variant: "destructive",
-      });
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !user) {
       return;
     }
 
+    const file = e.target.files[0];
+    setUploading(true);
+    setError(null);
+
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      const { data, error } = await supabase.storage
-        .from("logos")
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (error) {
-        throw new Error(error.message);
+      console.log("Starting organization logo upload...");
+      // Remove old logo if it exists
+      if (organization.logo) {
+        await removeImage(organization.logo, 'organizations');
       }
 
-      // Get the public URL using the storage URL
-      const { data: publicUrlData } = supabase.storage
-        .from("logos")
-        .getPublicUrl(filePath);
-        
-      setLogoUrl(publicUrlData.publicUrl);
+      // Upload new logo
+      const logoUrl = await uploadImage(file, 'organizations', user.id);
+      
+      if (logoUrl) {
+        onOrganizationChange('logo', logoUrl);
+        toast({
+          title: "Organization logo updated",
+          description: "Your organization logo has been updated successfully."
+        });
+      } else {
+        throw new Error("Failed to upload logo. Please try again.");
+      }
     } catch (error: any) {
+      setError(error.message || "An error occurred during upload");
       toast({
-        title: "Error uploading logo",
-        description: error.message,
-        variant: "destructive",
+        title: "Upload failed",
+        description: error.message || "An error occurred during upload",
+        variant: "destructive"
       });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
-  }, [toast]);
+  };
 
-  // Custom dropzone implementation without react-dropzone dependency
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      onDrop([files[0]]);
+  const handleRemoveLogo = async () => {
+    if (organization.logo) {
+      setUploading(true);
+      setError(null);
+      try {
+        await removeImage(organization.logo, 'organizations');
+        onOrganizationChange('logo', '');
+        toast({
+          title: "Logo removed",
+          description: "Your organization logo has been removed successfully."
+        });
+      } catch (error: any) {
+        setError(error.message || "An error occurred while removing the logo");
+        toast({
+          title: "Remove failed",
+          description: error.message || "An error occurred while removing the logo",
+          variant: "destructive"
+        });
+      } finally {
+        setUploading(false);
+      }
     }
   };
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-8 w-full"
-      >
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Organization name</FormLabel>
-              <FormControl>
-                <Input placeholder="CollabDoor" {...field} />
-              </FormControl>
-              <FormDescription>
-                This is the name that will be displayed on your organization
-                page.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Tell us a little bit about your organization"
-                  className="resize-none"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                Write a clear and concise description of your organization.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="flex flex-col md:flex-row gap-4">
-          <FormField
-            control={form.control}
-            name="industry"
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel>Industry</FormLabel>
-                <FormControl>
-                  <Input placeholder="Technology" {...field} />
-                </FormControl>
-                <FormDescription>
-                  What industry does your organization operate in?
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="location"
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel>Location</FormLabel>
-                <FormControl>
-                  <Input placeholder="New York" {...field} />
-                </FormControl>
-                <FormDescription>Where is your organization located?</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <div className="flex flex-col md:flex-row gap-4">
-          <FormField
-            control={form.control}
-            name="size"
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel>Size</FormLabel>
-                <FormControl>
-                  <Input placeholder="11-50 employees" {...field} />
-                </FormControl>
-                <FormDescription>How many employees does your organization have?</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="founded_year"
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel>Founded year</FormLabel>
-                <FormControl>
-                  <Input placeholder="2020" {...field} />
-                </FormControl>
-                <FormDescription>When was your organization founded?</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <FormField
-          control={form.control}
-          name="website"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Website</FormLabel>
-              <FormControl>
-                <Input placeholder="https://collabdoor.com" {...field} />
-              </FormControl>
-              <FormDescription>
-                What is the URL of your organization's website?
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div>
-          <FormLabel>Logo</FormLabel>
-          <div
-            className={cn(
-              "border-dashed border-2 rounded-md flex flex-col items-center justify-center relative aspect-square h-40 cursor-pointer overflow-hidden",
-              logoUrl ? "border-primary" : "border-muted"
-            )}
-            onClick={() => document.getElementById('logo-upload')?.click()}
-          >
-            <input
-              id="logo-upload"
-              type="file"
-              accept="image/*"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-            
-            {logoUrl ? (
-              <>
-                <Avatar className="absolute h-full w-full">
-                  <AvatarImage src={logoUrl} alt="Organization logo" className="object-cover" />
-                  <AvatarFallback>
-                    <ImagePlus className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar>
-                <CheckCircle2 className="absolute top-2 right-2 h-5 w-5 text-green-500 stroke-2 z-10" />
-              </>
-            ) : (
-              <>
-                <Upload className="h-6 w-6 text-muted-foreground" />
-                <Label className="text-sm text-muted-foreground">
-                  Upload a logo
-                </Label>
-              </>
-            )}
+    <Card>
+      <CardHeader>
+        <CardTitle>Organization Information</CardTitle>
+        <CardDescription>Add or update your organization details</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSubmit(); }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="org-name">Organization Name</Label>
+              <Input 
+                id="org-name" 
+                value={organization.name}
+                onChange={(e) => onOrganizationChange("name", e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="industry">Industry</Label>
+              <Select 
+                value={organization.industry || "other"}
+                onValueChange={(value) => onOrganizationChange("industry", value)}
+                disabled={loading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select industry" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="technology">Technology</SelectItem>
+                  <SelectItem value="healthcare">Healthcare</SelectItem>
+                  <SelectItem value="education">Education</SelectItem>
+                  <SelectItem value="financial">Financial Services</SelectItem>
+                  <SelectItem value="nonprofit">Nonprofit</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </div>
-        <Button type="submit" disabled={createOrganizationMutation.isPending}>
-          {createOrganizationMutation.isPending ? "Creating..." : "Create organization"}
-        </Button>
-      </form>
-    </Form>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input 
+                id="location" 
+                value={organization.location}
+                onChange={(e) => onOrganizationChange("location", e.target.value)}
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="website">Website</Label>
+              <Input 
+                id="website" 
+                type="url" 
+                placeholder="https://" 
+                value={organization.website}
+                onChange={(e) => onOrganizationChange("website", e.target.value)}
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="size">Organization Size</Label>
+              <Select 
+                value={organization.size || "1-10"} 
+                onValueChange={(value) => onOrganizationChange("size", value)}
+                disabled={loading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select size" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1-10">1-10 employees</SelectItem>
+                  <SelectItem value="11-50">11-50 employees</SelectItem>
+                  <SelectItem value="51-200">51-200 employees</SelectItem>
+                  <SelectItem value="201-500">201-500 employees</SelectItem>
+                  <SelectItem value="501+">501+ employees</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="founded">Founded Year</Label>
+              <Input 
+                id="founded" 
+                type="number" 
+                min="1900" 
+                max="2025" 
+                value={organization.foundedYear}
+                onChange={(e) => onOrganizationChange("foundedYear", e.target.value)}
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea 
+              id="description" 
+              rows={4} 
+              value={organization.description}
+              onChange={(e) => onOrganizationChange("description", e.target.value)}
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="logo">Organization Logo</Label>
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 border rounded flex items-center justify-center bg-muted overflow-hidden">
+                {organization.logo ? (
+                  <img src={organization.logo} alt="Logo" className="h-full w-full object-contain" />
+                ) : (
+                  <span className="text-xs text-muted-foreground">No Logo</span>
+                )}
+              </div>
+              <div className="space-y-2">
+                {error && (
+                  <div className="text-sm text-destructive">
+                    {error}
+                  </div>
+                )}
+                <input 
+                  type="file" 
+                  id="logo"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <Button 
+                  variant="outline"
+                  disabled={loading || uploading}
+                  onClick={handleUploadClick}
+                  type="button"
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : "Upload Logo"}
+                </Button>
+                {organization.logo && (
+                  <Button 
+                    variant="ghost"
+                    disabled={loading || uploading}
+                    onClick={handleRemoveLogo}
+                    type="button"
+                    size="sm"
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-4">
+            <Button type="submit" disabled={loading || uploading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : "Save Organization"}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

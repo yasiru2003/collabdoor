@@ -208,9 +208,6 @@ export function AdminSettings() {
           title: "Settings saved",
           description: "Your settings have been saved successfully."
         });
-        
-        // Invalidate additional queries to reflect changes
-        queryClient.invalidateQueries({ queryKey: ["admin-pending-approvals"] });
       })
       .catch((error) => {
         toast({

@@ -1,123 +1,307 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Project, ApplicationWithProfile } from "@/types";
-import { mapSupabaseProjectToProject } from "@/utils/data-mappers";
+import { useToast } from "@/hooks/use-toast";
+import { Project } from "@/types";
 
-export const useProjects = () => {
+/**
+ * Hook to fetch all projects
+ */
+export function useProjects() {
+  const { toast } = useToast();
+  
   return useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("*");
-      if (error) {
-        throw new Error(error.message);
-      }
-      return data.map(mapSupabaseProjectToProject);
-    },
-  });
-};
+        .select(`
+          *,
+          profiles!projects_organizer_id_fkey(id, name, email)
+        `)
+        .order("created_at", { ascending: false });
 
-export const usePublicProjects = () => {
+      if (error) {
+        console.error("Error fetching projects:", error);
+        toast({
+          title: "Error fetching projects",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+      
+      // Map the raw data to Project objects
+      return data?.map(project => ({
+        id: project.id,
+        title: project.title,
+        description: project.description,
+        status: project.status,
+        organizerId: project.organizer_id,
+        organizerName: project.profiles?.name || "Unknown",
+        organizationId: project.organization_id,
+        organizationName: project.organization_name,
+        createdAt: project.created_at,
+        updatedAt: project.updated_at,
+        image: project.image,
+        location: project.location,
+        timeline: {
+          start: project.start_date,
+          end: project.end_date
+        },
+        requiredSkills: project.required_skills,
+        partnershipTypes: project.partnership_types,
+        category: project.category,
+        applicationsEnabled: project.applications_enabled,
+        completedAt: project.completed_at
+      })) || [];
+    }
+  });
+}
+
+/**
+ * Hook to fetch a specific project by ID
+ */
+export function useProject(projectId: string | undefined) {
+  const { toast } = useToast();
+  
   return useQuery({
-    queryKey: ["public-projects"],
+    queryKey: ["project", projectId],
     queryFn: async () => {
+      if (!projectId) throw new Error("Project ID is required");
+      
+      // Validate UUID format
+      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId);
+      if (!isValidUuid) {
+        console.error("Error fetching project: Invalid UUID format", projectId);
+        throw new Error("Invalid project ID format");
+      }
+      
       const { data, error } = await supabase
         .from("projects")
-        .select("*")
-        .eq("status", "published");
-      if (error) {
-        throw new Error(error.message);
-      }
-      return data.map(mapSupabaseProjectToProject);
-    },
-  });
-};
-
-export const useUserProjects = (userId: string) => {
-  return useQuery({
-    queryKey: ["user-projects", userId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("projects")
-        .select("*")
-        .eq("organizer_id", userId);
-      if (error) {
-        throw new Error(error.message);
-      }
-      return data.map(mapSupabaseProjectToProject);
-    },
-    enabled: !!userId,
-  });
-};
-
-// Adding this for compatibility with existing code
-export const useActiveProjects = useUserProjects;
-
-export const useProject = (id?: string) => {
-  return useQuery({
-    queryKey: ["project", id],
-    queryFn: async () => {
-      if (!id) return null;
-
-      const { data, error } = await supabase
-        .from("projects")
-        .select(`*, profiles(name)`)
-        .eq("id", id)
+        .select(`
+          *,
+          profiles!projects_organizer_id_fkey(id, name, email)
+        `)
+        .eq("id", projectId)
         .single();
 
       if (error) {
-        console.log("Error fetching project", error);
-        throw new Error(error.message);
+        console.error("Error fetching project:", error);
+        toast({
+          title: "Error fetching project",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
       }
-
-      // Map the Supabase response to your Project type
-      const project = mapSupabaseProjectToProject({
-        ...data,
-        organizer_name: data.profiles?.name, // Populate organizerName from the profiles table
-      });
-
-      return project;
+      
+      // Map the raw data to a Project object
+      return {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        status: data.status,
+        organizerId: data.organizer_id,
+        organizerName: data.profiles?.name || "Unknown",
+        organizationId: data.organization_id,
+        organizationName: data.organization_name,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        image: data.image,
+        location: data.location,
+        timeline: {
+          start: data.start_date,
+          end: data.end_date
+        },
+        requiredSkills: data.required_skills,
+        partnershipTypes: data.partnership_types,
+        category: data.category,
+        applicationsEnabled: data.applications_enabled,
+        completedAt: data.completed_at,
+        proposalFilePath: data.proposal_file_path
+      } as Project;
     },
-    enabled: !!id,
+    enabled: !!projectId
   });
-};
+}
 
-export type ApplicationStatus = "pending" | "approved" | "rejected";
-
-export const useProjectApplications = () => {
-  // Move implementation to use-applications-query.ts
-  // This is just a stub to maintain compatibility with existing code
-  return {
-    checkApplicationStatus: async () => null,
-    applyToProject: async () => null,
-    updateApplicationStatus: async () => null,
-    userOrganizations: null,
-    isLoading: false,
-    error: null,
-  };
-};
-
-// Removed the useProjectApplicationsQuery as it's moved to use-applications-query.ts
-
-// Add useProjectApplicationsQuery as an alias for backward compatibility
-export { useProjectApplicationsQuery } from './use-applications-query';
-
-export const useSavedProjects = (userId: string) => {
+/**
+ * Hook to fetch projects created by a specific user
+ */
+export function useUserProjects(userId: string | undefined) {
+  const { toast } = useToast();
+  
   return useQuery({
-    queryKey: ["saved-projects", userId],
+    queryKey: ["userProjects", userId],
     queryFn: async () => {
+      if (!userId) return [];
+      
+      const { data, error } = await supabase
+        .from("projects")
+        .select(`
+          *,
+          profiles!projects_organizer_id_fkey(id, name, email)
+        `)
+        .eq("organizer_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching user projects:", error);
+        toast({
+          title: "Error fetching projects",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+      
+      // Map the raw data to Project objects
+      return data?.map(project => ({
+        id: project.id,
+        title: project.title,
+        description: project.description,
+        status: project.status,
+        organizerId: project.organizer_id,
+        organizerName: project.profiles?.name || "Unknown",
+        organizationId: project.organization_id,
+        organizationName: project.organization_name,
+        createdAt: project.created_at,
+        updatedAt: project.updated_at,
+        image: project.image,
+        location: project.location,
+        timeline: {
+          start: project.start_date,
+          end: project.end_date
+        },
+        requiredSkills: project.required_skills,
+        partnershipTypes: project.partnership_types,
+        category: project.category,
+        applicationsEnabled: project.applications_enabled,
+        completedAt: project.completed_at
+      })) || [];
+    },
+    enabled: !!userId
+  });
+}
+
+/**
+ * Hook to fetch projects saved by a specific user
+ */
+export function useSavedProjects(userId: string | undefined) {
+  const { toast } = useToast();
+  
+  return useQuery({
+    queryKey: ["savedProjects", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      
       const { data, error } = await supabase
         .from("saved_projects")
-        .select("project_id, projects(*)")
+        .select(`
+          project_id,
+          projects:project_id(
+            *,
+            profiles!projects_organizer_id_fkey(id, name, email)
+          )
+        `)
         .eq("user_id", userId);
-      
+
       if (error) {
-        throw new Error(error.message);
+        console.error("Error fetching saved projects:", error);
+        toast({
+          title: "Error fetching saved projects",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
       }
       
-      return data.map((item) => mapSupabaseProjectToProject(item.projects));
+      // Map the raw data to Project objects
+      return data?.map(item => {
+        const project = item.projects;
+        return {
+          id: project.id,
+          title: project.title,
+          description: project.description,
+          status: project.status,
+          organizerId: project.organizer_id,
+          organizerName: project.profiles?.name || "Unknown",
+          organizationId: project.organization_id,
+          organizationName: project.organization_name,
+          createdAt: project.created_at,
+          updatedAt: project.updated_at,
+          image: project.image,
+          location: project.location,
+          timeline: {
+            start: project.start_date,
+            end: project.end_date
+          },
+          requiredSkills: project.required_skills,
+          partnershipTypes: project.partnership_types,
+          category: project.category,
+          applicationsEnabled: project.applications_enabled,
+          completedAt: project.completed_at
+        };
+      }) || [];
     },
-    enabled: !!userId,
+    enabled: !!userId
   });
-};
+}
+
+/**
+ * Hook to fetch all active (non-completed) projects
+ * This is used for the explore tab to only show active projects
+ */
+export function useActiveProjects() {
+  const { toast } = useToast();
+  
+  return useQuery({
+    queryKey: ["activeProjects"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select(`
+          *,
+          profiles!projects_organizer_id_fkey(id, name, email)
+        `)
+        .neq("status", "completed")
+        .eq("status", "published")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching active projects:", error);
+        toast({
+          title: "Error fetching projects",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+      
+      // Map the raw data to Project objects
+      return data?.map(project => ({
+        id: project.id,
+        title: project.title,
+        description: project.description,
+        status: project.status,
+        organizerId: project.organizer_id,
+        organizerName: project.profiles?.name || "Unknown",
+        organizationId: project.organization_id,
+        organizationName: project.organization_name,
+        createdAt: project.created_at,
+        updatedAt: project.updated_at,
+        image: project.image,
+        location: project.location,
+        timeline: {
+          start: project.start_date,
+          end: project.end_date
+        },
+        requiredSkills: project.required_skills,
+        partnershipTypes: project.partnership_types,
+        category: project.category,
+        applicationsEnabled: project.applications_enabled
+      })) || [];
+    }
+  });
+}

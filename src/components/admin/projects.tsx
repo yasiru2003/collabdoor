@@ -1,117 +1,462 @@
-
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useProjects } from "@/hooks/use-projects-query";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Project } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { CheckCircle, AlertCircle, Trash2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { mapSupabaseProjectToProject } from "@/utils/data-mappers";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-interface ProjectTableProps {
-  data: Project[];
-}
-
-const columns: ColumnDef<Project>[] = [
-  {
-    accessorKey: "id",
-    header: "ID",
-  },
-  {
-    accessorKey: "title",
-    header: "Title",
-  },
-  {
-    accessorKey: "category",
-    header: "Category",
-  },
-  {
-    accessorKey: "location",
-    header: "Location",
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-  },
-  {
-    accessorKey: "organizer_id",
-    header: "Organizer ID",
-  },
-  {
-    accessorKey: "organization_id",
-    header: "Organization ID",
-  },
-  {
-    accessorKey: "organization_name",
-    header: "Organization Name",
-  },
-  {
-    accessorKey: "completed_at",
-    header: "Completed At",
-  },
-];
-
-export function ProjectTable({ data }: ProjectTableProps) {
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
-  return (
-    <div className="w-full">
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                return (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row) => {
-            return (
-              <TableRow key={row.id}>
-                {row.getVisibleCells().map((cell) => {
-                  return (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}
-
-// Add AdminProjects component for compatibility
 export function AdminProjects() {
+  const { data: projects, isLoading, refetch } = useProjects();
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [pendingPublishProjects, setPendingPublishProjects] = useState<Project[]>([]);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Get pending publish projects
+  useEffect(() => {
+    const fetchPendingProjects = async () => {
+      const { data } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          profiles!projects_organizer_id_fkey(id, name, email)
+        `)
+        .eq('status', 'pending_publish')
+        .order('created_at', { ascending: false });
+      
+      if (data) {
+        // Map the raw data to Project objects using the utility function
+        const mappedProjects = data.map(project => mapSupabaseProjectToProject(project)) as Project[];
+        setPendingPublishProjects(mappedProjects);
+      }
+    };
+    
+    fetchPendingProjects();
+  }, []);
+
+  const handleEdit = (project: Project) => {
+    setSelectedProject(project);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!selectedProject) return;
+
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({
+          title: selectedProject.title,
+          status: selectedProject.status,
+          category: selectedProject.category,
+          ...(selectedProject.status === 'completed' && { completed_at: new Date().toISOString() })
+        } as any)
+        .eq('id', selectedProject.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Project updated",
+        description: "The project has been successfully updated.",
+      });
+      
+      setIsEditDialogOpen(false);
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: "Error updating project",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleApprovePublication = async (projectId: string) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({
+          status: 'published'
+        })
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      // Update organization owner notification
+      const { data: projectData } = await supabase
+        .from('projects')
+        .select('title, organizer_id')
+        .eq('id', projectId)
+        .single();
+
+      if (projectData) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: projectData.organizer_id,
+            title: 'Project Published',
+            message: `Your project "${projectData.title}" has been approved and published.`,
+            link: `/projects/${projectId}`,
+            read: false
+          });
+      }
+
+      toast({
+        title: "Project published",
+        description: "The project has been successfully published.",
+      });
+      
+      // Update local state
+      setPendingPublishProjects(prev => prev.filter(p => p.id !== projectId));
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    } catch (error: any) {
+      toast({
+        title: "Error publishing project",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleRejectPublication = async (projectId: string) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({
+          status: 'draft'
+        })
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      // Update organization owner notification
+      const { data: projectData } = await supabase
+        .from('projects')
+        .select('title, organizer_id')
+        .eq('id', projectId)
+        .single();
+
+      if (projectData) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: projectData.organizer_id,
+            title: 'Project Publication Rejected',
+            message: `Your project "${projectData.title}" publication was rejected. Please review and resubmit.`,
+            link: `/projects/${projectId}`,
+            read: false
+          });
+      }
+
+      toast({
+        title: "Publication rejected",
+        description: "The project has been returned to draft status.",
+      });
+      
+      // Update local state
+      setPendingPublishProjects(prev => prev.filter(p => p.id !== projectId));
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    } catch (error: any) {
+      toast({
+        title: "Error rejecting publication",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!projectToDelete) return;
+    
+    try {
+      console.log("Deleting project with ID:", projectToDelete.id);
+      
+      // Delete the project
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectToDelete.id);
+
+      if (error) {
+        console.error("Supabase delete error:", error);
+        throw error;
+      }
+
+      // Close the dialog and reset state
+      setIsDeleteDialogOpen(false);
+      
+      // Force refresh both the local state and the query cache
+      setPendingPublishProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
+      
+      toast({
+        title: "Project deleted",
+        description: "The project has been permanently deleted.",
+      });
+
+      // Set projectToDelete to null AFTER toast to avoid race conditions
+      setProjectToDelete(null);
+      
+      // Invalidate the cache and force a refetch
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
+      await refetch();
+      
+      console.log("Project deletion completed and UI refreshed");
+    } catch (error: any) {
+      console.error("Error deleting project:", error);
+      toast({
+        title: "Error deleting project",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const confirmDelete = (project: Project) => {
+    setProjectToDelete(project);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'draft': return 'bg-gray-500';
+      case 'published': return 'bg-green-500';
+      case 'in-progress': return 'bg-blue-500';
+      case 'completed': return 'bg-purple-500';
+      case 'pending_publish': return 'bg-yellow-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  if (isLoading) {
+    return <div className="flex justify-center p-8">Loading projects...</div>;
+  }
+
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold">Projects Management</h2>
-      <p className="text-muted-foreground">This feature is under construction.</p>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Projects Management</CardTitle>
+        <CardDescription>Manage all projects in the system</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {pendingPublishProjects.length > 0 && (
+          <div className="mb-6 border rounded-md p-4 bg-yellow-50 dark:bg-yellow-900/20">
+            <h3 className="font-semibold mb-2 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-2 text-yellow-600" />
+              Pending Publication Approval ({pendingPublishProjects.length})
+            </h3>
+            <div className="space-y-3">
+              {pendingPublishProjects.map(project => (
+                <div key={project.id} className="border-b pb-3 last:border-b-0 last:pb-0">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium">{project.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Category: {project.category || "Uncategorized"}
+                      </p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700"
+                        onClick={() => handleApprovePublication(project.id)}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Approve
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="border-red-500 text-red-600 hover:bg-red-50 hover:text-red-700"
+                        onClick={() => handleRejectPublication(project.id)}
+                      >
+                        <AlertCircle className="h-4 w-4 mr-1" />
+                        Reject
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        <Tabs defaultValue="all">
+          <TabsList>
+            <TabsTrigger value="all">All Projects</TabsTrigger>
+            <TabsTrigger value="draft">Draft</TabsTrigger>
+            <TabsTrigger value="published">Published</TabsTrigger>
+            <TabsTrigger value="in-progress">In Progress</TabsTrigger>
+            <TabsTrigger value="completed">Completed</TabsTrigger>
+          </TabsList>
+          
+          {["all", "draft", "published", "in-progress", "completed"].map((tab) => (
+            <TabsContent key={tab} value={tab} className="space-y-4">
+              <div className="rounded-md border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/50 text-muted-foreground">
+                      <th className="p-2 text-left">Title</th>
+                      <th className="p-2 text-left">Category</th>
+                      <th className="p-2 text-left">Status</th>
+                      <th className="p-2 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {projects
+                      ?.filter(project => tab === "all" || project.status === tab)
+                      .map((project) => (
+                        <tr key={project.id} className="border-b transition-colors hover:bg-muted/50">
+                          <td className="p-2 font-medium">{project.title}</td>
+                          <td className="p-2">{project.category || "Uncategorized"}</td>
+                          <td className="p-2">
+                            <Badge className={getStatusColor(project.status)}>
+                              {project.status}
+                            </Badge>
+                          </td>
+                          <td className="p-2 text-center">
+                            <div className="flex justify-center space-x-2">
+                              <Button variant="ghost" size="sm" onClick={() => handleEdit(project)}>
+                                Edit
+                              </Button>
+                              <Button 
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => confirmDelete(project)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    {projects?.filter(project => tab === "all" || project.status === tab).length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                          No projects found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </TabsContent>
+          ))}
+        </Tabs>
+        
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Project</DialogTitle>
+              <DialogDescription>
+                Make changes to the project details.
+              </DialogDescription>
+            </DialogHeader>
+            
+            {selectedProject && (
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Title</Label>
+                  <Input
+                    id="title"
+                    value={selectedProject.title}
+                    onChange={(e) => setSelectedProject({...selectedProject, title: e.target.value})}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category</Label>
+                  <Input
+                    id="category"
+                    value={selectedProject.category || ""}
+                    onChange={(e) => setSelectedProject({...selectedProject, category: e.target.value})}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={selectedProject.status}
+                    onValueChange={(value) => 
+                      setSelectedProject({
+                        ...selectedProject, 
+                        status: value as "draft" | "published" | "in-progress" | "completed"
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="published">Published</SelectItem>
+                      <SelectItem value="in-progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave}>
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete confirmation dialog */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={(open) => {
+        setIsDeleteDialogOpen(open);
+        if (!open) setProjectToDelete(null); // Clear selection when dialog is closed
+      }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the project 
+                "{projectToDelete?.title}" and all associated data, including phases, applications, 
+                partnerships, and reviews.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteProject} className="bg-red-600 hover:bg-red-700">
+                Delete Project
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </CardContent>
+    </Card>
   );
 }
