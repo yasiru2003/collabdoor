@@ -7,7 +7,7 @@ import { Organization } from "@/types";
 export function useOrganization(organizationId?: string) {
   const { user } = useAuth();
   
-  const { data, isLoading, error } = useQuery({
+  const result = useQuery({
     queryKey: ["organization", organizationId],
     queryFn: async () => {
       if (!organizationId && !user) return null;
@@ -38,8 +38,9 @@ export function useOrganization(organizationId?: string) {
   });
   
   return {
-    organization: data,
-    isLoading,
-    error,
+    organization: result.data,
+    isLoading: result.isLoading,
+    error: result.error,
+    refetch: result.refetch
   };
 }

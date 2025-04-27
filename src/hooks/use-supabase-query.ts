@@ -10,6 +10,7 @@ export {
   useProjects,
   useProject,
   useUserProjects,
+  useActiveProjects,
   useSavedProjects,
 } from "./use-projects-query";
 
@@ -24,8 +25,8 @@ export {
 } from "./use-messages-query";
 
 export {
-  useProjectApplicationsQuery as useProjectApplications,
-  useProjectApplications as useProjectApplicationsActions,
+  useProjectApplicationsQuery,
+  useProjectApplications,
 } from "./use-applications-query";
 
 export {

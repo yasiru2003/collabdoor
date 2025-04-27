@@ -1,21 +1,18 @@
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ApplicationWithProfile } from "@/types";
-import { useToast } from "@/hooks/use-toast";
 
-export type ApplicationStatus = "pending" | "approved" | "rejected";
-
-export function useProjectApplicationsQuery(projectId?: string) {
+export const useProjectApplicationsQuery = (projectId?: string) => {
   return useQuery({
     queryKey: ["project-applications", projectId],
     queryFn: async () => {
       if (!projectId) return [];
 
+      // Use the correct table name for project applications
       const { data, error } = await supabase
         .from("project_applications")
-        .select(
-          `
+        .select(`
           id,
           user_id,
           project_id,
@@ -23,45 +20,41 @@ export function useProjectApplicationsQuery(projectId?: string) {
           partnership_type,
           created_at,
           organizations(name),
-          profiles (
+          profiles!project_applications_user_id_fkey (
             id,
             name,
             email,
             profile_image
           )
-        `
-        )
+        `)
         .eq("project_id", projectId);
 
       if (error) {
         throw new Error(error.message);
       }
 
-      // Map the data to the ApplicationWithProfile type
-      const applicationsWithProfile: ApplicationWithProfile[] = data.map(
-        (application) => ({
-          id: application.id,
-          user_id: application.user_id,
-          project_id: application.project_id,
-          status: application.status,
-          partnership_type: application.partnership_type,
-          organization_name: application.organizations?.name,
-          created_at: application.created_at,
-          profile: application.profiles, // Assign the profile data
-          profiles: application.profiles, // Assign the profile data
-        })
-      );
+      // Map the data to the ApplicationWithProfile type properly
+      const applicationsWithProfile: ApplicationWithProfile[] = data.map((application) => ({
+        id: application.id,
+        user_id: application.user_id,
+        project_id: application.project_id,
+        status: application.status,
+        partnership_type: application.partnership_type,
+        organization_name: application.organizations?.name,
+        created_at: application.created_at,
+        profile: application.profiles,
+        profiles: application.profiles
+      }));
 
       return applicationsWithProfile;
     },
     enabled: !!projectId,
   });
-}
+};
 
-export function useProjectApplications() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+export type ApplicationStatus = "pending" | "approved" | "rejected";
 
+export const useProjectApplications = () => {
   const checkApplicationStatus = async (projectId: string, userId: string) => {
     try {
       const { data, error } = await supabase
@@ -104,24 +97,16 @@ export function useProjectApplications() {
             partnership_type: partnershipType,
             message: message,
             organization_id: organizationId,
-            status: "pending", // Set initial status to "pending"
+            status: "pending",
           },
         ])
         .select()
         .single();
 
       if (error) {
-        toast({
-          title: "Application error",
-          description: error.message,
-          variant: "destructive",
-        });
         throw new Error(error.message);
       }
 
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ["project-applications"] });
-      
       return data;
     } catch (error: any) {
       console.error("Error applying to project:", error);
@@ -142,17 +127,9 @@ export function useProjectApplications() {
         .single();
 
       if (error) {
-        toast({
-          title: "Update error",
-          description: error.message,
-          variant: "destructive",
-        });
         throw new Error(error.message);
       }
 
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ["project-applications"] });
-      
       return data;
     } catch (error: any) {
       console.error("Error updating application status:", error);
@@ -163,10 +140,15 @@ export function useProjectApplications() {
   const userOrganizations = useQuery({
     queryKey: ["user-organizations"],
     queryFn: async () => {
+      const session = await supabase.auth.getSession();
+      const userId = session?.data?.session?.user?.id;
+      
+      if (!userId) return [];
+      
       const { data, error } = await supabase
         .from("organization_members")
         .select(`*, organizations(*)`)
-        .eq("user_id", supabase.auth.currentUser?.id);
+        .eq("user_id", userId);
 
       if (error) {
         throw new Error(error.message);
@@ -184,4 +166,4 @@ export function useProjectApplications() {
     isLoading: userOrganizations.isLoading,
     error: userOrganizations.error,
   };
-}
+};

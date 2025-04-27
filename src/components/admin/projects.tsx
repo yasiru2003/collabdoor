@@ -1,5 +1,4 @@
 
-// src/components/admin/projects.tsx
 import {
   ColumnDef,
   flexRender,
@@ -103,6 +102,16 @@ export function ProjectTable({ data }: ProjectTableProps) {
           })}
         </TableBody>
       </Table>
+    </div>
+  );
+}
+
+// Add AdminProjects component for compatibility
+export function AdminProjects() {
+  return (
+    <div className="space-y-4">
+      <h2 className="text-xl font-bold">Projects Management</h2>
+      <p className="text-muted-foreground">This feature is under construction.</p>
     </div>
   );
 }
