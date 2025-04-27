@@ -76,19 +76,10 @@ export function useSystemSettings() {
     }
   });
 
-  // Helper function to get a setting value
-  const getSetting = (key: string, defaultValue: boolean = false): boolean => {
-    if (!query.data) return defaultValue;
-    
-    const setting = query.data.find(s => s.key === key);
-    return setting ? setting.value : defaultValue;
-  };
-
   return {
     settings: query.data || [],
     isLoading: query.isLoading,
     refetch: query.refetch,
     updateSetting,
-    getSetting,
   };
 }

@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, AlertCircle, Trash2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { mapProjectData } from "@/utils/data-mappers";
+import { mapSupabaseProjectToProject } from "@/utils/data-mappers";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +49,7 @@ export function AdminProjects() {
       
       if (data) {
         // Map the raw data to Project objects using the utility function
-        const mappedProjects = data.map(project => mapProjectData(project)) as Project[];
+        const mappedProjects = data.map(project => mapSupabaseProjectToProject(project)) as Project[];
         setPendingPublishProjects(mappedProjects);
       }
     };

@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { mapOrganizationData } from "@/utils/data-mappers";
+import { mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
 import { handleSupabaseError } from "./use-supabase-utils";
 import { PartnershipType } from "@/types";
 
@@ -22,7 +22,7 @@ export function usePartners() {
 
       handleSupabaseError(error, "Error fetching partners", toast);
 
-      return (data || []).map(org => mapOrganizationData(org));
+      return (data || []).map(org => mapSupabaseOrgToOrganization(org));
     },
   });
 }

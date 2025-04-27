@@ -1,332 +1,562 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Project, PartnershipType } from "@/types";
-import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
+import { Loader2, Upload, Image as ImageIcon } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CustomPartnershipTypes } from "@/components/project/CustomPartnershipTypes";
-import { useSystemSettings } from "@/hooks/use-system-settings";
-
-const projectFormSchema = z.object({
-  title: z.string().min(2, {
-    message: "Project title must be at least 2 characters.",
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { PartnershipType, Organization } from "@/types";
+import { uploadImage, uploadProjectProposal } from "@/utils/upload-utils";
+import { mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
+import { ProjectImagesUpload } from "./ProjectImagesUpload";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ACCEPTED_FILE_TYPES = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+const formSchema = z.object({
+  title: z.string().min(3, {
+    message: "Title must be at least 3 characters"
   }),
   description: z.string().min(10, {
-    message: "Description must be at least 10 characters.",
+    message: "Description must be at least 10 characters"
   }),
-  category: z.string().optional(),
+  category: z.string().min(1, {
+    message: "Please select a category"
+  }),
   location: z.string().optional(),
-  image: z.string().optional(),
-  proposalFilePath: z.string().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  applicationsEnabled: z.boolean().default(true).optional(),
+  startDate: z.date(),
+  endDate: z.date(),
+  partnershipTypes: z.array(z.string()).min(1, {
+    message: "Select at least one partnership type"
+  }),
+  requiredSkills: z.array(z.string()).optional(),
+  organizationId: z.string().optional(),
+  proposalFile: z.instanceof(File).optional().refine(file => !file || file.size <= MAX_FILE_SIZE, "File size must be less than 10MB").refine(file => !file || ACCEPTED_FILE_TYPES.includes(file.type), "Only PDF and Word documents are accepted"),
+  projectImage: z.instanceof(File).optional().refine(file => !file || file.size <= MAX_FILE_SIZE, "File size must be less than 10MB").refine(file => !file || ACCEPTED_IMAGE_TYPES.includes(file.type), "Only JPEG, PNG, or WebP images are accepted"),
+  partnershipDetails: z.record(z.string()).optional(),
+  previousProjects: z.array(z.object({
+    name: z.string(),
+    description: z.string()
+  })).optional(),
+  projectImages: z.array(z.string()).optional()
 });
-
-interface ProjectFormProps {
-  project?: Project;
-  onSubmit: (data: any) => Promise<void>;
-  isLoading?: boolean;
-}
-
-export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) {
+type FormValues = z.infer<typeof formSchema>;
+export function ProjectForm() {
+  const {
+    user
+  } = useAuth();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [form, setForm] = useState({
-    title: project?.title || "",
-    description: project?.description || "",
-    category: project?.category || "",
-    location: project?.location || "",
-    image: project?.image || "",
-    proposalFilePath: project?.proposalFilePath || "",
-    startDate: project?.timeline?.start || "",
-    endDate: project?.timeline?.end || "",
-    partnershipTypes: project?.partnershipTypes || [] as PartnershipType[],
-    applicationsEnabled: Boolean(project?.applicationsEnabled), // Convert to boolean explicitly
-    status: project?.status || "draft",
-  });
-  const [showCustomTypes, setShowCustomTypes] = useState(false);
-  const { getSetting } = useSystemSettings();
-  const allowCustomTypes = getSetting("allow_custom_partnership_types", true);
-  
-  // Check if user has admin role
-  const isAdmin = user?.role === "admin";
-
-  useEffect(() => {
-    if (!user) {
-      toast({
-        title: "Not authenticated",
-        description: "You must be logged in to create a project.",
-      });
-      navigate("/login");
-    }
-  }, [user, navigate, toast]);
-
-  const formik = useForm<z.infer<typeof projectFormSchema>>({
-    resolver: zodResolver(projectFormSchema),
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newSkill, setNewSkill] = useState("");
+  const [userOrganizations, setUserOrganizations] = useState<Organization[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [projectImages, setProjectImages] = useState<string[]>([]);
+  const [previousProjects, setPreviousProjects] = useState<Array<{
+    name: string;
+    description: string;
+  }>>([]);
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      title: project?.title || "",
-      description: project?.description || "",
-      category: project?.category || "",
-      location: project?.location || "",
-      image: project?.image || "",
-      startDate: project?.timeline?.start || "",
-      endDate: project?.timeline?.end || "",
-      applicationsEnabled: Boolean(project?.applicationsEnabled),
-    },
-    mode: "onChange",
+      title: "",
+      description: "",
+      category: "",
+      location: "",
+      startDate: new Date(),
+      endDate: new Date(new Date().setMonth(new Date().getMonth() + 3)),
+      partnershipTypes: [],
+      requiredSkills: [],
+      organizationId: "",
+      partnershipDetails: {},
+      previousProjects: [],
+      projectImages: []
+    }
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      formik.handleSubmit(async (values) => {
-        // Validate start and end dates
-        if (form.startDate && form.endDate && new Date(form.startDate) > new Date(form.endDate)) {
-          toast({
-            title: "Invalid date range",
-            description: "Start date must be before end date.",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        // Check if approval is required
-        const requireApproval = getSetting("require_project_approval", true);
-        const initialStatus = requireApproval && !isAdmin ? "pending_publish" : "published";
-
-        // Use Boolean constructor to ensure boolean type
-        const applicationsEnabled = Boolean(form.applicationsEnabled);
-
-        const formData = {
-          ...values,
-          startDate: form.startDate,
-          endDate: form.endDate,
-          partnershipTypes: form.partnershipTypes,
-          applicationsEnabled,
-          status: form.status || initialStatus,
-        };
-
-        await onSubmit(formData);
-      })();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create project.",
-        variant: "destructive",
-      });
+  // Fetch user's organizations
+  useEffect(() => {
+    const fetchOrganizations = async () => {
+      if (!user) return;
+      try {
+        setLoading(true);
+        const {
+          data,
+          error
+        } = await supabase.from("organizations").select("*").eq("owner_id", user.id);
+        if (error) throw error;
+        const mappedOrgs = (data || []).map(org => mapSupabaseOrgToOrganization(org));
+        setUserOrganizations(mappedOrgs);
+      } catch (error) {
+        console.error("Error fetching organizations:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrganizations();
+  }, [user]);
+  const partnershipTypes: {
+    value: PartnershipType;
+    label: string;
+  }[] = [{
+    value: "monetary",
+    label: "Monetary Support"
+  }, {
+    value: "knowledge",
+    label: "Knowledge Sharing"
+  }, {
+    value: "skilled",
+    label: "Skilled Labor"
+  }, {
+    value: "volunteering",
+    label: "Volunteering"
+  }];
+  const categories = ["Environmental", "Healthcare", "Education", "Business", "Technology", "Arts", "Social", "Community"];
+  const addSkill = () => {
+    if (newSkill.trim() && !form.getValues().requiredSkills?.includes(newSkill.trim())) {
+      form.setValue("requiredSkills", [...(form.getValues().requiredSkills || []), newSkill.trim()]);
+      setNewSkill("");
     }
   };
+  const removeSkill = (skill: string) => {
+    form.setValue("requiredSkills", form.getValues().requiredSkills?.filter(s => s !== skill) || []);
+  };
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      form.setValue("proposalFile", file);
+    }
+  };
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedImage(file);
+      form.setValue("projectImage", file);
 
-  return (
-    
-    <Form {...formik}>
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <FormField
-          control={formik.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Project Title</FormLabel>
-              <FormControl>
-                <Input placeholder="Name this project" {...field} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+    }
+  };
+  const handleImagesChange = (urls: string[]) => {
+    setProjectImages(urls);
+    form.setValue('projectImages', urls);
+  };
+  const addPreviousProject = () => {
+    setPreviousProjects([...previousProjects, {
+      name: '',
+      description: ''
+    }]);
+  };
+  const removePreviousProject = (index: number) => {
+    setPreviousProjects(previousProjects.filter((_, i) => i !== index));
+  };
+  const onSubmit = async (values: FormValues) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please login to create a project",
+        variant: "destructive"
+      });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      let proposal_file_path = null;
+      let project_image_url = null;
 
-        <FormField
-          control={formik.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Describe this project"
-                  {...field}
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      // Upload proposal file if selected
+      if (values.proposalFile) {
+        proposal_file_path = await uploadProjectProposal(values.proposalFile, user.id);
+        if (!proposal_file_path) {
+          toast({
+            title: "File upload failed",
+            description: "Failed to upload project proposal, but proceeding with project creation",
+            variant: "destructive"
+          });
+        }
+      }
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={formik.control}
-            name="category"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Category</FormLabel>
-                <FormControl>
-                  <Input placeholder="Add category" {...field} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+      // Upload project image if selected
+      if (values.projectImage) {
+        project_image_url = await uploadImage(values.projectImage, 'projects', user.id);
+        if (!project_image_url) {
+          toast({
+            title: "Image upload failed",
+            description: "Failed to upload project image, but proceeding with project creation",
+            variant: "destructive"
+          });
+        }
+      }
 
-          <FormField
-            control={formik.control}
-            name="location"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Location</FormLabel>
-                <FormControl>
-                  <Input placeholder="Add location" {...field} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+      // Get organization name if available
+      let organization_name = null;
+      if (values.organizationId && values.organizationId !== "none") {
+        const selectedOrg = userOrganizations.find(org => org.id === values.organizationId);
+        organization_name = selectedOrg?.name || null;
+      }
+      const projectData = {
+        title: values.title,
+        description: values.description,
+        category: values.category,
+        location: values.location,
+        start_date: values.startDate.toISOString(),
+        end_date: values.endDate.toISOString(),
+        partnership_types: values.partnershipTypes as PartnershipType[],
+        required_skills: values.requiredSkills,
+        organizer_id: user.id,
+        organization_id: values.organizationId === "none" ? null : values.organizationId || null,
+        organization_name: organization_name,
+        status: "published" as "draft" | "published" | "in-progress" | "completed",
+        proposal_file_path: proposal_file_path,
+        image: project_image_url,
+        partnership_details: values.partnershipDetails,
+        previous_projects: values.previousProjects?.reduce((acc: any, project) => {
+          acc[project.name] = project.description;
+          return acc;
+        }, {})
+      };
+      const {
+        data,
+        error
+      } = await supabase.from("projects").insert(projectData).select();
+      if (error) throw error;
+      toast({
+        title: "Project created successfully",
+        description: "Your project has been created and is now visible to potential partners"
+      });
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="startDate">Start Date</Label>
-            <Input
-              type="date"
-              id="startDate"
-              value={form.startDate}
-              onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="endDate">End Date</Label>
-            <Input
-              type="date"
-              id="endDate"
-              value={form.endDate}
-              onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <Label className="block mb-2">Partnership Types</Label>
-            <p className="text-sm text-muted-foreground mb-4">
-              Select the types of partnerships your project is looking for
-            </p>
-
-            <div className="space-y-2">
-              {['monetary', 'knowledge', 'skilled', 'volunteering'].map((type) => (
-                <div key={type} className="flex items-center">
-                  <Checkbox
-                    id={`type-${type}`}
-                    checked={form.partnershipTypes.includes(type as PartnershipType)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setForm({ ...form, partnershipTypes: [...form.partnershipTypes, type as PartnershipType] });
-                      } else {
-                        setForm({ ...form, partnershipTypes: form.partnershipTypes.filter(t => t !== type) });
-                      }
-                    }}
-                  />
-                  <Label htmlFor={`type-${type}`} className="ml-2 capitalize">
-                    {type}
-                  </Label>
-                </div>
-              ))}
+      // Navigate to the newly created project
+      if (data && data[0]) {
+        navigate(`/projects/${data[0].id}`);
+      } else {
+        navigate("/projects");
+      }
+    } catch (error: any) {
+      console.error("Error creating project:", error);
+      toast({
+        title: "Failed to create project",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  return <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Create New Project</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField control={form.control} name="title" render={({
+            field
+          }) => <FormItem>
+                  <FormLabel>Project Title</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter project title" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>} />
+            
+            {/* Project Image Upload */}
+            <FormField control={form.control} name="projectImage" render={({
+            field: {
+              value,
+              onChange,
+              ...fieldProps
+            }
+          }) => <FormItem>
+                  <FormLabel>Project Image</FormLabel>
+                  <FormDescription>
+                    Upload a cover image for your project (optional, JPEG, PNG or WebP, max 10MB)
+                  </FormDescription>
+                  <FormControl>
+                    <div className="flex flex-col space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Input type="file" accept="image/jpeg,image/png,image/webp,image/jpg" onChange={handleImageChange} className="flex-1" {...fieldProps} />
+                      </div>
+                      
+                      {imagePreview && <div className="relative">
+                          <div className="aspect-video w-full max-h-[200px] overflow-hidden rounded-md border border-border">
+                            <img src={imagePreview} alt="Project image preview" className="w-full h-full object-cover" />
+                          </div>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => {
+                    setSelectedImage(null);
+                    setImagePreview(null);
+                    form.setValue("projectImage", undefined);
+                  }} className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background/80 p-0">
+                            ✕
+                          </Button>
+                        </div>}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>} />
+            
+            <FormField control={form.control} name="description" render={({
+            field
+          }) => <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Describe your project, its goals, and why partners should join" className="min-h-32" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>} />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField control={form.control} name="category" render={({
+              field
+            }) => <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories.map(category => <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>} />
+              
+              <FormField control={form.control} name="location" render={({
+              field
+            }) => <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Project location (optional)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>} />
             </div>
+            
+            {/* Project Proposal File Upload */}
+            <FormField control={form.control} name="proposalFile" render={({
+            field: {
+              value,
+              onChange,
+              ...fieldProps
+            }
+          }) => <FormItem>
+                  <FormLabel>Project Proposal</FormLabel>
+                  <FormDescription>
+                    Upload a detailed project proposal document (optional, PDF or Word, max 10MB)
+                  </FormDescription>
+                  <FormControl>
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Input type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} className="flex-1" {...fieldProps} />
+                      </div>
+                      {selectedFile && <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span>Selected file: {selectedFile.name}</span>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => {
+                    setSelectedFile(null);
+                    form.setValue("proposalFile", undefined);
+                  }} className="h-auto p-1">
+                            Remove
+                          </Button>
+                        </div>}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>} />
+            
+            {/* Organization selection */}
+            {userOrganizations.length > 0 && <FormField control={form.control} name="organizationId" render={({
+            field
+          }) => <FormItem>
+                    <FormLabel>Publish as Organization</FormLabel>
+                    <FormDescription>
+                      Select an organization to publish this project under
+                    </FormDescription>
+                    <Select onValueChange={field.onChange} value={field.value || "none"}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select an organization (optional)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">Personal Project</SelectItem>
+                        {userOrganizations.map(org => <SelectItem key={org.id} value={org.id}>
+                            {org.name}
+                          </SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>} />}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField control={form.control} name="startDate" render={({
+              field
+            }) => <FormItem className="flex flex-col">
+                    <FormLabel>Start Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>} />
+              
+              <FormField control={form.control} name="endDate" render={({
+              field
+            }) => <FormItem className="flex flex-col">
+                    <FormLabel>End Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>} />
+            </div>
+            
+            <FormField control={form.control} name="partnershipTypes" render={({
+            field
+          }) => <FormItem>
+                  <div className="mb-4">
+                    <FormLabel>Partnership Types</FormLabel>
+                    <FormDescription>
+                      Select what types of partnerships you're looking for and provide details
+                    </FormDescription>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {partnershipTypes.map(type => <div key={type.value} className="space-y-2">
+                        <FormField control={form.control} name="partnershipTypes" render={({
+                  field
+                }) => <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox checked={field.value?.includes(type.value)} onCheckedChange={checked => {
+                      const updatedTypes = checked ? [...(field.value || []), type.value] : field.value?.filter(value => value !== type.value) || [];
+                      field.onChange(updatedTypes);
+                    }} />
+                              </FormControl>
+                              <FormLabel className="font-normal">{type.label}</FormLabel>
+                            </FormItem>} />
+                        {field.value?.includes(type.value) && <Textarea placeholder={`Describe what kind of ${type.label.toLowerCase()} you're looking for...`} onChange={e => {
+                  const details = form.getValues('partnershipDetails') || {};
+                  form.setValue('partnershipDetails', {
+                    ...details,
+                    [type.value]: e.target.value
+                  });
+                }} />}
+                      </div>)}
+                  </div>
+                </FormItem>} />
 
-            {allowCustomTypes && (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => setShowCustomTypes(!showCustomTypes)}
-                >
-                  {showCustomTypes ? "Hide Custom Types" : "Show Custom Types"}
+            {/* Previous Projects */}
+            <FormItem>
+              <FormLabel>Previous Projects</FormLabel>
+              <FormDescription>Add details about relevant previous version of this project (optional)</FormDescription>
+              <div className="space-y-4">
+                {previousProjects.map((project, index) => <Card key={index}>
+                    <CardContent className="p-4 space-y-4">
+                      <div className="flex justify-between items-center">
+                        <Input placeholder="Project name" value={project.name} onChange={e => {
+                      const updated = [...previousProjects];
+                      updated[index].name = e.target.value;
+                      setPreviousProjects(updated);
+                    }} />
+                        <Button type="button" variant="destructive" size="sm" onClick={() => removePreviousProject(index)}>
+                          Remove
+                        </Button>
+                      </div>
+                      <Textarea placeholder="Project description" value={project.description} onChange={e => {
+                    const updated = [...previousProjects];
+                    updated[index].description = e.target.value;
+                    setPreviousProjects(updated);
+                  }} />
+                    </CardContent>
+                  </Card>)}
+                <Button type="button" variant="outline" onClick={addPreviousProject}>
+                  Add Previous Project
                 </Button>
-
-                {showCustomTypes && (
-                  <CustomPartnershipTypes
-                    projectId={project?.id}
-                    existingTypes={form.partnershipTypes as string[]}
-                    onTypesChange={(types) => setForm({ ...form, partnershipTypes: types as PartnershipType[] })}
-                    className="mt-4"
-                  />
-                )}
-              </>
-            )}
-          </div>
-        </div>
-
-        <FormField
-          control={formik.control}
-          name="image"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Image URL</FormLabel>
-              <FormControl>
-                <Input placeholder="Add image URL" {...field} value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} />
-              </FormControl>
-              <FormMessage />
+              </div>
             </FormItem>
-          )}
-        />
+            
+            {user && <ProjectImagesUpload userId={user.id} onImagesChange={handleImagesChange} />}
 
-        <FormField
-          control={formik.control}
-          name="proposalFilePath"
-          render={({ field }) => (
             <FormItem>
-              <FormLabel>Proposal File Path</FormLabel>
-              <FormControl>
-                <Input placeholder="Add proposal file path" {...field} value={form.proposalFilePath} onChange={(e) => setForm({ ...form, proposalFilePath: e.target.value })} />
-              </FormControl>
-              <FormMessage />
+              <FormLabel>Required Skills</FormLabel>
+              <FormDescription>
+                Add skills that partners should have to contribute to this project
+              </FormDescription>
+              <div className="flex items-center gap-2 mt-2">
+                <Input placeholder="Add a required skill" value={newSkill} onChange={e => setNewSkill(e.target.value)} onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addSkill();
+                }
+              }} />
+                <Button type="button" variant="outline" onClick={addSkill}>
+                  Add
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-3">
+                {form.getValues().requiredSkills?.map(skill => <div key={skill} className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full flex items-center gap-2">
+                    <span>{skill}</span>
+                    <button type="button" className="text-sm hover:text-destructive" onClick={() => removeSkill(skill)}>
+                      ✕
+                    </button>
+                  </div>)}
+              </div>
             </FormItem>
-          )}
-        />
-
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="applicationsEnabled"
-            checked={form.applicationsEnabled}
-            onCheckedChange={(checked) => setForm({ ...form, applicationsEnabled: Boolean(checked) })}
-          />
-          <Label htmlFor="applicationsEnabled">Enable Applications</Label>
-        </div>
-
-        {getSetting("require_project_approval", true) && !isAdmin && (
-          <div className="bg-yellow-50 p-4 rounded-md text-yellow-800 text-sm mb-6">
-            <p className="font-medium">Admin Approval Required</p>
-            <p className="mt-1">
-              Your project will need to be approved by an administrator before it becomes publicly visible.
-            </p>
-          </div>
-        )}
-
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Submitting..." : "Submit"}
-        </Button>
-      </form>
-    </Form>
-  );
+            
+            <div className="flex justify-end gap-4 mt-6">
+              <Button type="button" variant="outline" onClick={() => navigate('/projects')}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </> : <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Create Project
+                  </>}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>;
 }

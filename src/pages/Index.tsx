@@ -10,8 +10,8 @@ const Index = () => {
     return <div className="h-screen w-full flex items-center justify-center">Loading...</div>;
   }
   
-  // Redirect authenticated users to the dashboard, others to the landing page
-  return user ? <Navigate to="/dashboard" replace /> : <Navigate to="/" replace />;
+  // Redirect authenticated users to the dashboard, others to the login page
+  return user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
 };
 
 export default Index;

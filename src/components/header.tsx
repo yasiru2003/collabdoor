@@ -1,144 +1,151 @@
-import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "./ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { Bell, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useClickOutside } from "@/hooks/use-click-outside";
-import { Menu, Building } from "lucide-react";
+import { 
+  Popover, 
+  PopoverContent, 
+  PopoverTrigger 
+} from "./ui/popover";
+import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/use-notifications";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { NotificationsList } from "./notifications/NotificationsList";
+
 export function Header() {
-  const {
-    user,
-    signOut,
-    userProfile
-  } = useAuth();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const mobileMenuRef = useRef(null);
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
+  const { 
+    notifications, 
+    markAsRead, 
+    markAllAsRead, 
+    unreadCount 
+  } = useNotifications();
   const isMobile = useIsMobile();
 
-  // Check if user exists to determine authentication status
-  const isAuthenticated = !!user;
-  useClickOutside(mobileMenuRef, () => {
-    if (isMobileMenuOpen) {
-      setIsMobileMenuOpen(false);
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
     }
-  });
+  };
 
-  // Get display name and profile image from user or userProfile
-  const displayName = userProfile?.name || user?.email || "User";
-  const profileImage = userProfile?.profile_image || "";
-  const displayInitials = (displayName || "??").substring(0, 2).toUpperCase();
-  return <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="font-bold text-xl bg-primary text-primary-foreground px-2 py-1 rounded">
-            CD
-          </div>
-          <span className="font-bold text-xl hidden sm:inline-flex">CollabDoor</span>
-        </Link>
-        
-        <div className="ml-4 hidden md:flex items-center gap-6">
-          
-          
-          
-          
-          
+  // Check if user is admin - based on email for now
+  const isAdmin = user?.email === "yasirubandaraprivate@gmail.com";
+
+  return (
+    <header className="border-b border-border bg-background sticky top-0 z-50">
+      <div className="container flex items-center justify-between h-14 md:h-16 mx-auto px-4">
+        <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
+            <div className="font-bold text-lg md:text-xl bg-primary text-primary-foreground px-2 py-1 rounded">
+              CD
+            </div>
+            {!isMobile && <span className="font-bold text-xl">CollabDoor</span>}
+          </Link>
         </div>
-        
-        <div className="flex-1"></div>
-        {isAuthenticated ? <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={profileImage} alt={displayName} />
-                  <AvatarFallback>{displayInitials}</AvatarFallback>
-                </Avatar>
+
+        <div className="flex items-center gap-2 md:gap-4">
+          {user ? (
+            <>
+              {/* Message button - visible only on desktop */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="relative h-8 w-8 md:h-10 md:w-10 hidden md:flex"
+                asChild
+              >
+                <Link to="/messages">
+                  <MessageSquare className="h-4 w-4 md:h-5 md:w-5" />
+                </Link>
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{displayName}</p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {user?.email}
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to="/profile">Profile</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/dashboard">Dashboard</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/settings">Settings</Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={signOut}>Logout</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu> : <div className="flex items-center gap-3">
-            <Link to="/login" className="text-sm font-medium hover:text-primary">
-              Log in
-            </Link>
-            <Button asChild size="sm">
-              <Link to="/signup">Sign up</Link>
-            </Button>
-          </div>}
-        
-        {/* Mobile menu button and dropdown */}
-        {isMobile && <>
-            <Button variant="ghost" className="ml-2 h-8 w-8 p-0" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-              <Menu className="h-4 w-4" />
-              <span className="sr-only">Open mobile menu</span>
-            </Button>
-            
-            {/* Mobile Menu */}
-            {isMobileMenuOpen && <div ref={mobileMenuRef} className="absolute top-16 right-0 mt-2 w-48 rounded-md shadow-md bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="menu-button" tabIndex={-1}>
-                <div className="py-1" role="none">
-                  <Link to="/browse/projects" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" onClick={() => setIsMobileMenuOpen(false)}>
-                    Projects
-                  </Link>
-                  <Link to="/browse/organizations" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" onClick={() => setIsMobileMenuOpen(false)}>
-                    Organizations
-                  </Link>
-                  <Link to="/how-it-works" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" onClick={() => setIsMobileMenuOpen(false)}>
-                    How It Works
-                  </Link>
-                  <Link to="/about" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" onClick={() => setIsMobileMenuOpen(false)}>
-                    About
-                  </Link>
-                  <Link to="/contact" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" onClick={() => setIsMobileMenuOpen(false)}>
-                    Contact
-                  </Link>
-                  {isAuthenticated ? <>
-                      <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" onClick={() => setIsMobileMenuOpen(false)}>
-                        Profile
-                      </Link>
-                      <Link to="/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" onClick={() => setIsMobileMenuOpen(false)}>
-                        Dashboard
-                      </Link>
-                      <Link to="/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" onClick={() => setIsMobileMenuOpen(false)}>
-                        Settings
-                      </Link>
-                      <button onClick={() => {
-                signOut();
-                setIsMobileMenuOpen(false);
-              }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem">
-                        Logout
-                      </button>
-                    </> : <>
-                      <Link to="/login" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" onClick={() => setIsMobileMenuOpen(false)}>
-                        Log in
-                      </Link>
-                      <Link to="/signup" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" onClick={() => setIsMobileMenuOpen(false)}>
-                        Sign up
-                      </Link>
-                    </>}
-                </div>
-              </div>}
-          </>}
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative h-8 w-8 md:h-10 md:w-10">
+                    <Bell className="h-4 w-4 md:h-5 md:w-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full"></span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 md:w-80 p-0" align="end">
+                  <div className="flex items-center justify-between p-3 md:p-4 border-b">
+                    <h3 className="font-semibold text-sm md:text-base">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={markAllAsRead}
+                        className="text-xs h-7 md:h-8"
+                      >
+                        Mark all as read
+                      </Button>
+                    )}
+                  </div>
+                  <NotificationsList 
+                    notifications={notifications}
+                    loading={false}
+                    markAsRead={markAsRead}
+                    onClose={() => document.body.click()} // Close popover
+                  />
+                </PopoverContent>
+              </Popover>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Avatar className="cursor-pointer h-8 w-8 md:h-10 md:w-10">
+                    <AvatarImage src={user.user_metadata?.profile_image || ""} alt={user.user_metadata?.name || "User"} />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs md:text-sm">
+                      {(user.user_metadata?.name || user.email || "User")?.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="text-sm md:text-base">{user.user_metadata?.name || user.email}</DropdownMenuLabel>
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">{user.email}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to={`/users/${user.id}`} className="cursor-pointer w-full">Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard" className="cursor-pointer w-full">Dashboard</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="cursor-pointer w-full">Settings</Link>
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin" className="cursor-pointer w-full">Admin Panel</Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" size={isMobile ? "sm" : "default"} asChild>
+                <Link to="/login">Log In</Link>
+              </Button>
+              <Button size={isMobile ? "sm" : "default"} asChild>
+                <Link to="/signup">Sign Up</Link>
+              </Button>
+            </>
+          )}
+        </div>
       </div>
-    </header>;
+    </header>
+  );
 }

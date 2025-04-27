@@ -1,4 +1,3 @@
-
 import { Organization, Project, User } from "@/types";
 
 export const mockUsers: User[] = [
@@ -50,7 +49,7 @@ export const mockOrganizations: Organization[] = [
     size: "11-50 employees",
     foundedYear: 2005,
     website: "https://example.com/greenearth",
-    ownerId: "1",
+    owner_id: "1",
     createdAt: "2023-01-15T12:00:00Z",
     updatedAt: "2023-02-20T15:30:00Z",
   },
@@ -63,7 +62,7 @@ export const mockOrganizations: Organization[] = [
     size: "11-50 employees",
     foundedYear: 2010,
     website: "https://example.com/urbanrenewal",
-    ownerId: "2",
+    owner_id: "2",
     createdAt: "2023-01-20T14:00:00Z",
     updatedAt: "2023-02-25T09:15:00Z",
   },
@@ -76,7 +75,7 @@ export const mockOrganizations: Organization[] = [
     size: "51-200 employees",
     foundedYear: 2015,
     website: "https://example.com/tech4good",
-    ownerId: "3",
+    owner_id: "3",
     createdAt: "2023-01-25T16:00:00Z",
     updatedAt: "2023-03-01T11:00:00Z",
   },
@@ -89,7 +88,7 @@ export const mockOrganizations: Organization[] = [
     size: "1-10 employees",
     foundedYear: 2012,
     website: "https://example.com/datakinddc",
-    ownerId: "4",
+    owner_id: "4",
     createdAt: "2023-02-01T08:00:00Z",
     updatedAt: "2023-03-05T14:45:00Z",
   },
@@ -102,7 +101,7 @@ export const mockOrganizations: Organization[] = [
     size: "11-50 employees",
     foundedYear: 2018,
     website: "https://example.com/ecoinnovate",
-    ownerId: "1",
+    owner_id: "1",
     createdAt: "2023-02-05T10:00:00Z",
     updatedAt: "2023-03-10T16:20:00Z",
   },
@@ -115,7 +114,7 @@ export const mockOrganizations: Organization[] = [
     size: "51-200 employees",
     foundedYear: 2010,
     website: "https://example.com/globalimpact",
-    ownerId: "2",
+    owner_id: "2",
     createdAt: "2023-02-10T12:00:00Z",
     updatedAt: "2023-03-15T09:30:00Z",
   },

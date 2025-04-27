@@ -34,7 +34,7 @@ export function PartnerCard({ organization, partnershipInterests }: PartnerCardP
   const { user } = useAuth();
   
   // Check if current user is the organization owner
-  const isOwner = user && user.id === organization.ownerId;
+  const isOwner = user && user.id === organization.owner_id;
 
   // Handle contact button click to message organization owner
   const handleContact = (e: React.MouseEvent) => {
@@ -50,7 +50,7 @@ export function PartnerCard({ organization, partnershipInterests }: PartnerCardP
     // Navigate to messages with the organization owner info
     navigate("/messages", { 
       state: { 
-        participantId: organization.ownerId,
+        participantId: organization.owner_id,
         participantName: organization.name
       } 
     });

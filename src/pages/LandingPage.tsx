@@ -1,215 +1,334 @@
-
-import { Layout } from "@/components/layout";
-import { ProjectCard } from "@/components/project-card";
-import { PartnerCard } from "@/components/partner-card";
+import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Organization, Project } from "@/types";
-import { useEffect, useState } from "react";
+import { ProjectCard } from "@/components/project-card";
+import { Header } from "@/components/header";
+import { ArrowRight, Building, CheckCircle2, MessageSquare } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Link } from "react-router-dom";
-import { mapProjectsData, mapOrganizationsData } from "@/utils/data-mappers";
-import { CheckCircle, Users, Briefcase, Star, ArrowRight } from "lucide-react";
+import { Project, Organization } from "@/types";
+import { useState, useEffect } from "react";
+import { mapSupabaseProjectToProject } from "@/utils/data-mappers";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function LandingPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [partners, setPartners] = useState<Organization[]>([]);
+  const { user } = useAuth();
+  const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
+  const [featuredOrgs, setFeaturedOrgs] = useState<Organization[]>([]);
+  
+  // Fetch featured projects - move this before any potential return statements
+  const { data: projects, isLoading } = useQuery({
+    queryKey: ["featured-projects"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("status", "published")
+        .order("created_at", { ascending: false })
+        .limit(3);
+        
+      if (error) throw error;
+      
+      return (data || []).map(project => mapSupabaseProjectToProject(project));
+    },
+  });
+
+  // Query for featured organizations
+  const { data: organizations, isLoading: isLoadingOrgs } = useQuery({
+    queryKey: ["featured-organizations"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("organizations")
+        .select("*")
+        .limit(3)
+        .order("created_at", { ascending: false });
+        
+      if (error) throw error;
+      return data as Organization[];
+    },
+  });
   
   useEffect(() => {
-    const fetchFeaturedProjects = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('projects')
-          .select('*')
-          .eq('status', 'published')
-          .order('created_at', { ascending: false })
-          .limit(6);
-          
-        if (error) throw error;
-        
-        if (data) {
-          const mappedProjects = mapProjectsData(data);
-          setProjects(mappedProjects);
-        }
-      } catch (error) {
-        console.error('Error fetching featured projects:', error);
-      }
-    };
-    
-    const fetchPartners = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('organizations')
-          .select('*')
-          .limit(3);
-          
-        if (error) throw error;
-        
-        if (data) {
-          const mappedOrganizations = mapOrganizationsData(data);
-          setPartners(mappedOrganizations);
-        }
-      } catch (error) {
-        console.error('Error fetching partners:', error);
-      }
-    };
-    
-    fetchFeaturedProjects();
-    fetchPartners();
-  }, []);
+    if (projects) {
+      setFeaturedProjects(projects);
+    }
+    if (organizations) {
+      setFeaturedOrgs(organizations);
+    }
+  }, [projects, organizations]);
+  
+  // If user is logged in, redirect to dashboard
+  // This needs to be AFTER all hooks are called
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
-    <Layout>
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary/20 to-secondary/20 py-20 md:py-32">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
-            Connect, Collaborate, Create Impact
-          </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto">
-            CollabDoor connects organizations with skilled partners to bring impactful projects to life.
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button asChild size="lg" className="text-lg px-8">
-              <Link to="/browse/projects">Find Projects</Link>
-            </Button>
-            <Button asChild variant="outline" size="lg" className="text-lg px-8">
-              <Link to="/signup">Join CollabDoor</Link>
-            </Button>
+      <section className="py-16 px-4 md:py-24 bg-gradient-to-br from-primary/5 to-accent/5">
+        <div className="container mx-auto max-w-6xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">
+                Connect, Collaborate, <span className="text-primary">Create Impact</span>
+              </h1>
+              <p className="text-xl text-muted-foreground mb-8">
+                CollabDoor brings project organizers and potential partners together 
+                to build meaningful collaborations that drive positive change.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Button size="lg" asChild>
+                  <Link to="/signup">Get Started</Link>
+                </Button>
+                <Button size="lg" variant="outline" asChild>
+                  <Link to="/projects">Explore Projects</Link>
+                </Button>
+              </div>
+            </div>
+            <div className="flex justify-center">
+              <div className="relative">
+                <div className="absolute -top-6 -left-6 w-64 h-64 bg-secondary/20 rounded-lg transform rotate-3"></div>
+                <div className="absolute -bottom-6 -right-6 w-64 h-64 bg-primary/20 rounded-lg transform -rotate-6"></div>
+                <div className="relative z-10 bg-white border p-6 rounded-lg shadow-xl">
+                  <div className="w-72 h-72 bg-gradient-to-r from-primary/30 to-accent/20 rounded-lg flex items-center justify-center">
+                    <div className="text-center p-6">
+                      <Building className="w-16 h-16 mx-auto mb-4 text-primary" />
+                      <h3 className="text-xl font-bold mb-2">Project Collaboration</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Connect with partners, track progress, and achieve goals together
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
-
+      
       {/* Features Section */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-4 text-center">Why Choose CollabDoor?</h2>
-          <p className="text-lg text-muted-foreground mb-12 text-center max-w-3xl mx-auto">
-            Our platform offers everything you need to find partners and manage successful collaborations.
-          </p>
+      <section className="py-16 px-4 md:py-24 bg-white">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold mb-4">How CollabDoor Works</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Our platform streamlines the collaboration process, making it easy to find and manage partnerships.
+            </p>
+          </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="bg-card p-6 rounded-lg shadow-sm border flex flex-col items-center text-center">
-              <CheckCircle className="h-12 w-12 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Verified Partners</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center p-6">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Building className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Create Projects</h3>
               <p className="text-muted-foreground">
-                All organizations and partners on our platform go through a verification process.
+                Organizers publish projects and specify partnership needs, from funding to knowledge sharing.
               </p>
             </div>
             
-            <div className="bg-card p-6 rounded-lg shadow-sm border flex flex-col items-center text-center">
-              <Users className="h-12 w-12 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Community Network</h3>
+            <div className="text-center p-6">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Find Partners</h3>
               <p className="text-muted-foreground">
-                Connect with a diverse community of professionals and organizations.
+                Partners browse projects and apply with resources they can contribute to make projects succeed.
               </p>
             </div>
             
-            <div className="bg-card p-6 rounded-lg shadow-sm border flex flex-col items-center text-center">
-              <Briefcase className="h-12 w-12 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Project Management</h3>
+            <div className="text-center p-6">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <MessageSquare className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Collaborate</h3>
               <p className="text-muted-foreground">
-                Comprehensive tools to manage projects from start to completion.
-              </p>
-            </div>
-            
-            <div className="bg-card p-6 rounded-lg shadow-sm border flex flex-col items-center text-center">
-              <Star className="h-12 w-12 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Success Stories</h3>
-              <p className="text-muted-foreground">
-                Browse through successful collaborations and learn from the best.
+                Connect through messaging, track project progress, and build long-term partnerships.
               </p>
             </div>
           </div>
         </div>
       </section>
-
+      
       {/* Featured Projects Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center mb-10">
+      <section className="py-16 px-4 md:py-24 bg-muted/30">
+        <div className="container mx-auto max-w-6xl">
+          <div className="flex justify-between items-end mb-12">
             <div>
               <h2 className="text-3xl font-bold mb-2">Featured Projects</h2>
-              <p className="text-muted-foreground">Discover the latest opportunities for collaboration</p>
+              <p className="text-muted-foreground">
+                Discover active collaboration opportunities
+              </p>
             </div>
-            <Button asChild variant="outline" className="hidden sm:flex items-center">
+            <Button variant="ghost" className="gap-1" asChild>
               <Link to="/browse/projects">
-                View All Projects <ArrowRight className="ml-2 h-4 w-4" />
+                <span>View All</span>
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.length > 0 ? (
-              projects.slice(0, 3).map((project) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {isLoading ? (
+              // Loading skeletons while fetching project data
+              Array(3).fill(0).map((_, index) => (
+                <div key={index} className="border rounded-lg p-4">
+                  <Skeleton className="h-48 w-full mb-4" />
+                  <Skeleton className="h-6 w-3/4 mb-2" />
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              ))
+            ) : featuredProjects.length > 0 ? (
+              // Display actual projects
+              featuredProjects.map(project => (
                 <ProjectCard key={project.id} project={project} />
               ))
             ) : (
-              [...Array(3)].map((_, index) => (
-                <div key={index} className="h-[300px] bg-muted rounded-lg animate-pulse" />
-              ))
+              // Fallback for no projects
+              <div className="col-span-3 text-center py-8 text-muted-foreground">
+                No featured projects available at the moment.
+              </div>
             )}
-          </div>
-          
-          <div className="mt-8 text-center sm:hidden">
-            <Button asChild>
-              <Link to="/browse/projects">View All Projects</Link>
-            </Button>
           </div>
         </div>
       </section>
 
       {/* Featured Organizations Section */}
-      <section className="py-16 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center mb-10">
+      <section className="py-16 px-4 md:py-24 bg-white">
+        <div className="container mx-auto max-w-6xl">
+          <div className="flex justify-between items-end mb-12">
             <div>
               <h2 className="text-3xl font-bold mb-2">Featured Organizations</h2>
-              <p className="text-muted-foreground">Connect with leading organizations in your field</p>
+              <p className="text-muted-foreground">
+                Connect with impactful organizations
+              </p>
             </div>
-            <Button asChild variant="outline" className="hidden sm:flex items-center">
+            <Button variant="ghost" className="gap-1" asChild>
               <Link to="/browse/organizations">
-                View All Organizations <ArrowRight className="ml-2 h-4 w-4" />
+                <span>View All</span>
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {partners.length > 0 ? (
-              partners.map((organization) => (
-                <PartnerCard key={organization.id} organization={organization} />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {isLoadingOrgs ? (
+              Array(3).fill(0).map((_, index) => (
+                <div key={index} className="border rounded-lg p-4">
+                  <Skeleton className="h-48 w-full mb-4" />
+                  <Skeleton className="h-6 w-3/4 mb-2" />
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              ))
+            ) : featuredOrgs.length > 0 ? (
+              featuredOrgs.map(org => (
+                <div key={org.id} className="bg-card border rounded-lg overflow-hidden shadow-sm">
+                  <div className="p-4">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-lg">
+                        {org.name.substring(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">{org.name}</h3>
+                        {org.location && <p className="text-sm text-muted-foreground">{org.location}</p>}
+                      </div>
+                    </div>
+                    <p className="mt-3 text-sm text-muted-foreground line-clamp-2">
+                      {org.description || "No description provided."}
+                    </p>
+                    <div className="flex justify-between items-center mt-4 pt-3 border-t">
+                      <span className="text-sm">{org.industry || "Other"}</span>
+                      <Button size="sm" asChild>
+                        <Link to={user ? `/organizations/${org.id}` : "/login"}>
+                          View Details
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               ))
             ) : (
-              [...Array(3)].map((_, index) => (
-                <div key={index} className="h-[250px] bg-muted rounded-lg animate-pulse" />
-              ))
+              <div className="col-span-3 text-center py-8 text-muted-foreground">
+                No featured organizations available at the moment.
+              </div>
             )}
           </div>
-          
-          <div className="mt-8 text-center sm:hidden">
-            <Button asChild>
-              <Link to="/browse/organizations">View All Organizations</Link>
-            </Button>
-          </div>
         </div>
       </section>
-
-      {/* Call to Action Section */}
-      <section className="py-20 bg-primary/10">
-        <div className="container mx-auto px-4 text-center">
+      
+      {/* CTA Section */}
+      <section className="py-16 px-4 md:py-24 bg-primary text-primary-foreground">
+        <div className="container mx-auto max-w-6xl text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Start Collaborating?</h2>
-          <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-            Join CollabDoor today and connect with the perfect partners for your next project.
+          <p className="text-xl mb-8 max-w-2xl mx-auto opacity-90">
+            Join CollabDoor today and connect with partners who can help bring your projects to life.
           </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button asChild size="lg">
-              <Link to="/signup">Create an Account</Link>
+          <div className="flex flex-wrap gap-4 justify-center">
+            <Button size="lg" variant="secondary" asChild>
+              <Link to="/signup">Sign Up Now</Link>
             </Button>
-            <Button asChild variant="outline" size="lg">
-              <Link to="/how-it-works">Learn How It Works</Link>
+            <Button size="lg" variant="outline" className="bg-transparent" asChild>
+              <Link to="/projects">Explore Projects</Link>
             </Button>
           </div>
         </div>
       </section>
-    </Layout>
+      
+      {/* Footer */}
+      <footer className="py-12 px-4 bg-muted/50 border-t">
+        <div className="container mx-auto max-w-6xl">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="font-bold text-xl bg-primary text-primary-foreground px-2 py-1 rounded">
+                  CD
+                </div>
+                <span className="font-bold text-xl">CollabDoor</span>
+              </div>
+              <p className="text-muted-foreground mb-4">
+                Connecting project organizers with potential partners for meaningful collaboration.
+              </p>
+            </div>
+            
+            <div>
+              <h3 className="font-bold mb-4">Platform</h3>
+              <ul className="space-y-2">
+                <li><Link to="/projects" className="text-muted-foreground hover:text-foreground">Browse Projects</Link></li>
+                <li><Link to="/partners" className="text-muted-foreground hover:text-foreground">Find Partners</Link></li>
+                <li><Link to="/dashboard" className="text-muted-foreground hover:text-foreground">Dashboard</Link></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-bold mb-4">Company</h3>
+              <ul className="space-y-2">
+                <li><a href="#" className="text-muted-foreground hover:text-foreground">About Us</a></li>
+                <li><a href="#" className="text-muted-foreground hover:text-foreground">How It Works</a></li>
+                <li><a href="#" className="text-muted-foreground hover:text-foreground">Privacy Policy</a></li>
+                <li><a href="#" className="text-muted-foreground hover:text-foreground">Terms of Service</a></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-bold mb-4">Contact</h3>
+              <ul className="space-y-2">
+                <li><a href="#" className="text-muted-foreground hover:text-foreground">Support</a></li>
+                <li><a href="#" className="text-muted-foreground hover:text-foreground">Partnerships</a></li>
+                <li><a href="#" className="text-muted-foreground hover:text-foreground">Feedback</a></li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="mt-12 pt-8 border-t border-muted text-center text-muted-foreground">
+            <p>&copy; {new Date().getFullYear()} CollabDoor. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }

@@ -1,233 +1,174 @@
 
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Organization } from "@/types";
-import { useToast } from "@/hooks/use-toast";
-import { mapOrganizationsData } from "@/utils/data-mappers";
-import { Layout } from "@/components/layout";
-import { PartnerCard } from "@/components/partner-card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Organization, PartnershipType } from "@/types";
+import { useAuth } from "@/hooks/use-auth";
+import { PartnerCard } from "@/components/partner-card";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Building } from "lucide-react";
-import { EmptyState } from "@/components/empty-state";
 
-interface Filters {
-  industry?: string;
-  size?: string;
-  search?: string;
-}
+// Partnership type mapping for display
+const partnershipTypeLabels: Record<PartnershipType, string> = {
+  'monetary': 'Financial Support',
+  'knowledge': 'Knowledge Sharing',
+  'skilled': 'Skilled Professionals',
+  'volunteering': 'Volunteering'
+};
 
 export default function PublicOrganizationsPage() {
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<Filters>({});
   const [searchQuery, setSearchQuery] = useState("");
-  const { toast } = useToast();
-  const [industryOptions, setIndustryOptions] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
+  const [partnershipFilter, setPartnershipFilter] = useState<string>("all");
+  const { user } = useAuth();
+  
+  // Fetch organizations with their partnership interests
+  const { data, isLoading } = useQuery({
+    queryKey: ["public-organizations-with-interests"],
+    queryFn: async () => {
+      // First get all organizations
+      const { data: organizations, error: orgError } = await supabase
+        .from("organizations")
+        .select("*")
+        .order("name");
+      
+      if (orgError) throw orgError;
 
-  useEffect(() => {
-    const fetchOrganizations = async () => {
-      try {
-        setLoading(true);
+      // Type-cast organizations to the expected type
+      const orgs = organizations as Organization[];
+      
+      // Then get all partnership interests
+      const { data: interests, error: interestsError } = await supabase
+        .from("organization_partnership_interests")
+        .select("organization_id, partnership_type");
+      
+      if (interestsError) throw interestsError;
+      
+      // Combine the data
+      const orgsWithInterests = orgs.map(org => {
+        const orgInterests = interests
+          ? interests.filter(int => int.organization_id === org.id)
+                    .map(int => int.partnership_type as PartnershipType)
+          : [];
         
-        let query = supabase
-          .from("organizations")
-          .select("*")
-          .eq("status", "active");
-          
-        // Apply filters if provided
-        if (filters.industry) {
-          query = query.eq("industry", filters.industry);
-        }
-        
-        if (filters.size) {
-          query = query.eq("size", filters.size);
-        }
-        
-        if (filters.search) {
-          query = query.ilike("name", `%${filters.search}%`);
-        }
-        
-        const { data, error } = await query.order("created_at", { ascending: false });
-        
-        if (error) throw error;
-        
-        const mappedOrgs = mapOrganizationsData(data || []);
-        setOrganizations(mappedOrgs);
-        
-        // Extract unique industry values for filter options
-        if (data) {
-          const industries = [...new Set(data.map(org => org.industry).filter(Boolean))];
-          setIndustryOptions(industries);
-        }
-      } catch (error) {
-        console.error("Error fetching organizations:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load organizations",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+        return {
+          ...org,
+          partnershipInterests: [...new Set(orgInterests)] // Remove duplicates
+        };
+      });
+      
+      return orgsWithInterests;
+    },
+  });
+
+  // Filter organizations based on search query and partnership filter
+  const filteredOrganizations = data?.filter(org => {
+    // Search filter
+    const matchesSearch = !searchQuery ||
+      org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      org.industry?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      org.location?.toLowerCase().includes(searchQuery.toLowerCase());
     
-    fetchOrganizations();
-  }, [filters, toast]);
-
-  const handleSearch = () => {
-    setFilters({...filters, search: searchQuery});
-  }
-
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
-
-  const clearFilters = () => {
-    setFilters({});
-    setSearchQuery("");
-  };
-
-  const filteredOrganizations = organizations;
+    // Partnership type filter
+    const matchesPartnership = partnershipFilter === "all" || 
+      (org.partnershipInterests && org.partnershipInterests.includes(partnershipFilter as PartnershipType));
+    
+    return matchesSearch && matchesPartnership;
+  });
 
   return (
-    <Layout>
-      <div className="container mx-auto py-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+    <div className="container mx-auto px-4 py-4 md:py-8">
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Browse Organizations</h1>
-            <p className="text-muted-foreground">
-              Find and connect with organizations to collaborate on projects
+            <h1 className="text-2xl md:text-3xl font-bold">Partner Organizations</h1>
+            <p className="text-muted-foreground text-sm md:text-base">
+              Discover organizations making an impact.
             </p>
           </div>
-        </div>
-        
-        {/* Search and Filters */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row gap-4 mb-4">
-            <div className="relative flex-grow">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search organizations..."
-                className="pl-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={handleKeyPress}
-              />
-            </div>
-            <Button onClick={handleSearch}>Search</Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2"
-            >
-              <Filter className="h-4 w-4" /> Filters
+          {!user && (
+            <Button asChild className="w-full sm:w-auto">
+              <Link to="/login">Sign in to Connect</Link>
             </Button>
-          </div>
-          
-          {showFilters && (
-            <Card className="mb-4">
-              <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Industry</label>
-                    <Select 
-                      value={filters.industry || ""} 
-                      onValueChange={(value) => setFilters({...filters, industry: value || undefined})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select industry" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">All Industries</SelectItem>
-                        {industryOptions.map(industry => (
-                          <SelectItem key={industry} value={industry}>{industry}</SelectItem>
-                        ))}
-                        <SelectItem value="technology">Technology</SelectItem>
-                        <SelectItem value="healthcare">Healthcare</SelectItem>
-                        <SelectItem value="education">Education</SelectItem>
-                        <SelectItem value="nonprofit">Non-Profit</SelectItem>
-                        <SelectItem value="finance">Finance</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Size</label>
-                    <Select 
-                      value={filters.size || ""} 
-                      onValueChange={(value) => setFilters({...filters, size: value || undefined})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select size" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">All Sizes</SelectItem>
-                        <SelectItem value="small">Small (1-50)</SelectItem>
-                        <SelectItem value="medium">Medium (51-200)</SelectItem>
-                        <SelectItem value="large">Large (201-1000)</SelectItem>
-                        <SelectItem value="enterprise">Enterprise (1000+)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="flex items-end">
-                    <Button variant="ghost" onClick={clearFilters} className="text-sm">
-                      Clear Filters
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-          
-          {Object.keys(filters).length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {filters.industry && (
-                <Badge variant="outline" className="flex items-center gap-1">
-                  Industry: {filters.industry}
-                </Badge>
-              )}
-              {filters.size && (
-                <Badge variant="outline" className="flex items-center gap-1">
-                  Size: {filters.size}
-                </Badge>
-              )}
-              {filters.search && (
-                <Badge variant="outline" className="flex items-center gap-1">
-                  Search: {filters.search}
-                </Badge>
-              )}
-            </div>
           )}
         </div>
 
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-[250px] bg-muted animate-pulse rounded-lg" />
-            ))}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-grow">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search organizations..."
+              className="pl-9 w-full"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-        ) : filteredOrganizations.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {filteredOrganizations.map((org) => (
-              <PartnerCard key={org.id} organization={org} />
-            ))}
+          
+          <div className="w-full sm:w-[200px]">
+            <Select value={partnershipFilter} onValueChange={setPartnershipFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by partnership" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Partnerships</SelectItem>
+                <SelectItem value="monetary">Financial Support</SelectItem>
+                <SelectItem value="knowledge">Knowledge Sharing</SelectItem>
+                <SelectItem value="skilled">Skilled Professionals</SelectItem>
+                <SelectItem value="volunteering">Volunteering</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        ) : (
-          <EmptyState
-            icon={Building}
-            title="No organizations found"
-            description="Try adjusting your filters or search query"
-          />
-        )}
+        </div>
       </div>
-    </Layout>
+
+      {partnershipFilter !== "all" && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          <Badge variant="outline" className="mr-2">
+            Showing: {partnershipTypeLabels[partnershipFilter as PartnershipType]}
+            <button 
+              className="ml-2 hover:text-destructive" 
+              onClick={() => setPartnershipFilter("all")}
+            >
+              ✕
+            </button>
+          </Badge>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-[200px] bg-muted animate-pulse rounded-lg" />
+          ))}
+        </div>
+      ) : filteredOrganizations && filteredOrganizations.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          {filteredOrganizations.map((org) => (
+            <PartnerCard 
+              key={org.id} 
+              organization={org} 
+              partnershipInterests={org.partnershipInterests}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8 md:py-12">
+          <h2 className="text-xl md:text-2xl font-bold mb-2">No Organizations Found</h2>
+          <p className="text-muted-foreground">
+            Try adjusting your search criteria.
+          </p>
+        </div>
+      )}
+    </div>
   );
 }

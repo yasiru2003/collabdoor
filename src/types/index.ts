@@ -1,4 +1,3 @@
-
 export interface Project {
   id: string;
   title: string;
@@ -49,9 +48,11 @@ export interface Organization {
   logo?: string;
   createdAt: string;
   updatedAt: string;
-  ownerId: string;
-  email?: string;
-  phone?: string;
+  owner_id: string;
+  // Adding these for compatibility with raw DB objects
+  created_at?: string;
+  updated_at?: string;
+  founded_year?: number;
   // Extended properties
   partnershipInterests?: PartnershipType[];
 }
@@ -60,7 +61,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: "partner" | "organizer" | "admin";
+  role: "partner" | "organizer";
   profile_image?: string;
   bio?: string;
   skills?: string[];
