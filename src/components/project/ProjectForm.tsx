@@ -120,7 +120,7 @@ export function ProjectForm({ project }: ProjectFormProps) {
           variant: "destructive",
         });
       } else {
-        // Get the public URL - we need to use the publicUrl method instead of storageUrl directly
+        // Get the public URL
         const { data: { publicUrl } } = supabase.storage
           .from('project-images')
           .getPublicUrl(data.path);
@@ -159,6 +159,7 @@ export function ProjectForm({ project }: ProjectFormProps) {
     setValue('image', "");
   };
 
+  // Updated to use the v5 API correctly
   const upsertProject = useMutation({
     mutationFn: async (values: z.infer<typeof formSchema>) => {
       if (!user || !profile) {

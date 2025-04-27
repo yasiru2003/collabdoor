@@ -1,69 +1,138 @@
-
-import { useActiveProjects } from "@/hooks/use-projects-query";
-import { ProjectCard } from "@/components/project-card";
+import { useEffect, useState } from "react";
+import { Layout } from "@/components/layout";
+import { ProjectCard } from "@/components/project/ProjectCard";
+import { Project } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, Filter } from "lucide-react";
-import { useState } from "react";
 import { Link } from "react-router-dom";
-import { EmptyState } from "@/components/empty-state";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useLocations } from "@/hooks/use-locations-query";
+import { usePartnershipTypes } from "@/hooks/use-partnership-types-query";
 
 export default function PublicProjectsPage() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const { data: projects, isLoading } = useActiveProjects();
-  
-  const filteredProjects = projects?.filter(project => 
-    !searchQuery || 
-    project.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    project.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedPartnershipType, setSelectedPartnershipType] = useState("");
+  const { locations } = useLocations();
+  const { partnershipTypes } = usePartnershipTypes();
+
+  useEffect(() => {
+    fetchProjects();
+  }, [selectedLocation, selectedPartnershipType, searchQuery]);
+
+  const fetchProjects = async () => {
+    setLoading(true);
+    try {
+      let query = supabase
+        .from("projects")
+        .select("*")
+        .eq("status", "published");
+
+      if (selectedLocation) {
+        query = query.eq("location", selectedLocation);
+      }
+
+      if (selectedPartnershipType) {
+        query = query.contains("partnership_types", [selectedPartnershipType]);
+      }
+
+      if (searchQuery) {
+        query = query.ilike("title", `%${searchQuery}%`);
+      }
+
+      const { data, error } = await query.order("created_at", {
+        ascending: false,
+      });
+
+      if (error) {
+        console.error("Error fetching projects:", error);
+      } else {
+        // Ensure that the data is properly cast to the Project type
+        setProjects(data as Project[]);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredProjects = projects.filter((project) =>
+    project.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Discover Projects</h1>
-          <p className="text-muted-foreground">
-            Browse through active collaboration opportunities.
-          </p>
-        </div>
-        <Button asChild>
-          <Link to="/login">Sign in to Apply</Link>
-        </Button>
-      </div>
+    <Layout>
+      <div className="container mx-auto py-8">
+        <h1 className="text-3xl font-bold mb-6">
+          Explore Collaboration Projects
+        </h1>
 
-      <div className="flex gap-2 mb-6">
-        <div className="relative flex-grow">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Input
-            type="search"
+            type="text"
             placeholder="Search projects..."
-            className="pl-9"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-        </div>
-      </div>
 
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-[360px] bg-muted animate-pulse rounded-lg" />
-          ))}
+          <Select onValueChange={setSelectedLocation}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a location" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All Locations</SelectItem>
+              {locations?.map((location) => (
+                <SelectItem key={location.id} value={location.name}>
+                  {location.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select onValueChange={setSelectedPartnershipType}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select partnership type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All Partnership Types</SelectItem>
+              {partnershipTypes?.map((type) => (
+                <SelectItem key={type.id} value={type.id}>
+                  {type.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      ) : filteredProjects && filteredProjects.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
-          ))}
-        </div>
-      ) : (
-        <EmptyState
-          icon={Search}
-          title="No projects found"
-          description="Try adjusting your search criteria."
-        />
-      )}
-    </div>
+
+        {loading ? (
+          <p>Loading projects...</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {filteredProjects.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))}
+          </div>
+        )}
+
+        {user && (
+          <div className="mt-8 text-center">
+            <Button asChild>
+              <Link to="/projects/new">Create a Project</Link>
+            </Button>
+          </div>
+        )}
+      </div>
+    </Layout>
   );
 }

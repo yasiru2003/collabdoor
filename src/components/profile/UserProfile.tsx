@@ -1,212 +1,98 @@
-
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { ProfileHeader } from "./ProfileHeader";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ReviewsList } from "@/components/reviews/ReviewsList";
-import { ProjectCard } from "@/components/project-card";
-import { useProjects } from "@/hooks/use-supabase-query";
-import { Mail, Linkedin, Github } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useReviews } from "@/hooks/use-reviews";
-import { useState, useEffect } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { mapSupabaseProjectToProject } from "@/utils/data-mappers";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { CalendarIcon, MapPinIcon } from "lucide-react";
 
 interface UserProfileProps {
   profile: {
     id: string;
     name: string;
     email: string;
-    bio?: string;
     profile_image?: string;
-    skills?: string[];
+    location?: string;
+    created_at?: string;
+    bio?: string;
+    website?: string;
   };
 }
 
 export function UserProfile({ profile }: UserProfileProps) {
-  const { data: projects } = useProjects();
-  const userProjects = projects?.filter(p => p.organizer_id === profile.id) || [];
-  const { getUserReviews } = useReviews();
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const isMobile = useIsMobile();
-  
-  // Fetch user reviews
-  useEffect(() => {
-    const fetchReviews = async () => {
-      try {
-        setLoading(true);
-        const userReviews = await getUserReviews(profile.id);
-        setReviews(userReviews);
-      } catch (error) {
-        console.error("Error fetching reviews:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchReviews();
-  }, [profile.id, getUserReviews]);
-
-  // Determine current user (to avoid showing contact option for own profile)
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Try to get user ID from session (supabase)
-    import("@/integrations/supabase/client").then(({ supabase }) => {
-      supabase.auth.getUser().then(({ data }) => {
-        setCurrentUserId(data?.user?.id ?? null);
-      });
-    });
-  }, []);
-
-  // If not yourself, show contact button
-  const isSelf = profile.id === currentUserId;
-  const handleContact = () => {
-    window.location.href = `/messages?participantId=${profile.id}&participantName=${encodeURIComponent(profile.name || "User")}`;
-  };
-
-  // Fetch organizations where the user is a member
-  const { data: userOrganizations } = useQuery({
-    queryKey: ['user-organizations', profile.id],
-    queryFn: async () => {
-      if (!profile.id) return [];
-      
-      const { data, error } = await supabase
-        .from('organization_members')
-        .select('organizations(*)')
-        .eq('user_id', profile.id);
-      
-      if (error) {
-        console.error('Error fetching user organizations:', error);
-        return [];
-      }
-      
-      // Extract organizations from the result
-      return data.map(item => item.organizations);
-    },
-    enabled: !!profile.id
-  });
+  const profileCreatedAt = profile.created_at
+    ? new Date(profile.created_at).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+      })
+    : "N/A";
 
   return (
     <div className="container mx-auto py-6 px-4">
-      <div className="mb-8">
-        <ProfileHeader
-          title={profile.name || "User"}
-          description={profile.bio || "No bio provided"}
-          image={profile.profile_image}
-        />
-        {/* Contact Button */}
-        {!isSelf && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-2 mt-2"
-            onClick={handleContact}
-            data-testid="contact-user-profile"
-          >
-            <Mail className="h-4 w-4" />
-            Contact
+      <Card className="w-full max-w-4xl mx-auto">
+        <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+          <CardTitle className="text-2xl font-bold">
+            {profile.name} <VerifiedBadge />
+          </CardTitle>
+          <Button asChild>
+            <Link to="/">Back to Projects</Link>
           </Button>
-        )}
-      </div>
-
-      <Tabs defaultValue="about" className="space-y-6">
-        <TabsList className="w-full flex overflow-x-auto">
-          <TabsTrigger value="about" className="flex-1 whitespace-nowrap">About</TabsTrigger>
-          <TabsTrigger value="projects" className="flex-1 whitespace-nowrap">Projects</TabsTrigger>
-          <TabsTrigger value="reviews" className="flex-1 whitespace-nowrap">Reviews</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="about">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Contact</h3>
-                  <div className="flex flex-wrap gap-3">
-                    {profile.email && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="gap-2"
-                        onClick={() => window.location.href = `mailto:${profile.email}`}
-                      >
-                        <Mail className="h-4 w-4" />
-                        Email
-                      </Button>
-                    )}
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Linkedin className="h-4 w-4" />
-                      LinkedIn
-                    </Button>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Github className="h-4 w-4" />
-                      Github
-                    </Button>
-                  </div>
-                </div>
-
-                {profile.skills && profile.skills.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Skills</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {profile.skills.map((skill) => (
-                        <Badge key={skill} variant="secondary">
-                          {skill}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid sm:grid-cols-4 gap-4">
+            {/* Avatar and User Info */}
+            <div className="sm:col-span-1 flex flex-col items-center sm:items-start">
+              <Avatar className="h-32 w-32">
+                {profile.profile_image ? (
+                  <AvatarImage src={profile.profile_image} alt={profile.name} />
+                ) : (
+                  <AvatarFallback>{profile.name.charAt(0).toUpperCase()}</AvatarFallback>
                 )}
+              </Avatar>
+              <div className="mt-4 text-center sm:text-left">
+                <p className="font-semibold">{profile.name}</p>
+                <p className="text-sm text-muted-foreground">{profile.email}</p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
 
-        <TabsContent value="projects">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {userProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
-            {userProjects.length === 0 && (
-              <p className="text-muted-foreground col-span-full text-center py-8">
-                No projects found
-              </p>
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="reviews">
-          <ReviewsList 
-            reviews={reviews} 
-            title={`Reviews for ${profile.name || "User"}`}
-            description="See what others have said about working with this user"
-            emptyMessage="This user hasn't received any reviews yet" 
-          />
-        </TabsContent>
-      </Tabs>
-      
-      {/* Add a new section for user's organizations */}
-      {userOrganizations && userOrganizations.length > 0 && (
-        <div className="mt-8">
-          <h3 className="text-lg font-semibold mb-4">My Organizations</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {userOrganizations.map((org: any) => (
-              <div 
-                key={org.id} 
-                className="border rounded-lg p-4 hover:shadow-md transition-shadow"
-              >
-                <h4 className="font-medium">{org.name}</h4>
-                <p className="text-muted-foreground">{org.industry}</p>
+            {/* Profile Details */}
+            <div className="sm:col-span-3 space-y-4">
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">About</h3>
+                <p className="text-muted-foreground">{profile.bio || "No bio provided."}</p>
               </div>
-            ))}
+
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Details</h3>
+                <div className="text-muted-foreground space-y-1">
+                  {profile.location && (
+                    <p className="flex items-center gap-2">
+                      <MapPinIcon className="h-4 w-4" />
+                      <span>{profile.location}</span>
+                    </p>
+                  )}
+                  <p className="flex items-center gap-2">
+                    <CalendarIcon className="h-4 w-4" />
+                    <span>Joined: {profileCreatedAt}</span>
+                  </p>
+                  {profile.website && (
+                    <p>
+                      Website:{" "}
+                      <a
+                        href={profile.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline text-primary hover:text-primary-foreground"
+                      >
+                        {profile.website}
+                      </a>
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -2,46 +2,44 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
 import { Organization } from "@/types";
-import { mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
 
-export function useOrganization() {
+export function useOrganization(organizationId?: string) {
   const { user } = useAuth();
-  const { toast } = useToast();
-
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["organization", user?.id],
+  
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["organization", organizationId],
     queryFn: async () => {
-      if (!user) return null;
-
-      const { data, error } = await supabase
+      if (!organizationId && !user) return null;
+      
+      let query = supabase
         .from("organizations")
-        .select("*")
-        .eq("owner_id", user.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Error fetching organization:", error);
-        toast({
-          title: "Error fetching organization",
-          description: error.message,
-          variant: "destructive",
-        });
-        return null;
+        .select("*");
+        
+      if (organizationId) {
+        query = query.eq("id", organizationId);
+      } else if (user) {
+        query = query.eq("owner_id", user.id);
       }
-
-      if (!data) return null;
-
-      return mapSupabaseOrgToOrganization(data);
+      
+      const { data, error } = await query.single();
+      
+      if (error) {
+        // If no organization is found, return null instead of throwing
+        if (error.code === "PGRST116") {
+          return null;
+        }
+        throw error;
+      }
+      
+      return data as Organization;
     },
-    enabled: !!user?.id,
+    enabled: !!(organizationId || user),
   });
-
-  return { 
-    organization: data as Organization | null, 
-    isLoading, 
+  
+  return {
+    organization: data,
+    isLoading,
     error,
-    refetch
   };
 }
