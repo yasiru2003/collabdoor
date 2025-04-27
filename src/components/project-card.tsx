@@ -404,7 +404,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             <Avatar className="h-7 w-7 flex-shrink-0">
               {hasOrganization ? (
                 <>
-                  <AvatarImage src={project.logo || project.image} alt={project.organizationName} />
+                  <AvatarImage src={project.image} alt={project.organizationName} />
                   <AvatarFallback className="text-xs bg-blue-100 text-blue-800">
                     {project.organizationName?.substring(0, 2).toUpperCase() || "OR"}
                   </AvatarFallback>

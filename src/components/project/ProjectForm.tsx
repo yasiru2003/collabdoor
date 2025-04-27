@@ -112,12 +112,15 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
         const requireApproval = getSetting("require_project_approval", true);
         const initialStatus = requireApproval && !isAdmin ? "pending_publish" : "published";
 
+        // Ensure applicationsEnabled is a boolean
+        const applicationsEnabled = form.applicationsEnabled === true;
+
         const formData = {
           ...values,
           startDate: form.startDate,
           endDate: form.endDate,
           partnershipTypes: form.partnershipTypes,
-          applicationsEnabled: form.applicationsEnabled === true,
+          applicationsEnabled,
           status: form.status || initialStatus,
         };
 

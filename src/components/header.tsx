@@ -17,7 +17,7 @@ import { Menu, Building } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export function Header() {
-  const { user, signOut, loading } = useAuth();
+  const { user, signOut } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef(null);
   const isMobile = useIsMobile();
@@ -55,17 +55,17 @@ export function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.profile_image} alt={user?.name || "Avatar"} />
-                  <AvatarFallback>{user?.name?.substring(0, 2).toUpperCase() || "??"}</AvatarFallback>
+                  <AvatarImage src={user.profile_image} alt={user.name || "Avatar"} />
+                  <AvatarFallback>{(user.name?.substring(0, 2) || "??").toUpperCase()}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user?.name}</p>
+                  <p className="text-sm font-medium leading-none">{user.name}</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {user?.email}
+                    {user.email}
                   </p>
                 </div>
               </DropdownMenuLabel>
