@@ -1,3 +1,4 @@
+
 import { Project, PartnershipType } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
@@ -60,6 +61,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const [message, setMessage] = useState("");
   const [userOrganizations, setUserOrganizations] = useState<{id: string, name: string}[]>([]);
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
+  const [partnerCount, setPartnerCount] = useState<number>(0);
   
   // Check if current user is the project owner
   const isOwner = user && user.id === project.organizerId;
@@ -91,6 +93,32 @@ export function ProjectCard({ project }: ProjectCardProps) {
     
     fetchUserOrganizations();
   }, [user]);
+
+  // Get actual partner count
+  useEffect(() => {
+    const fetchPartnerCount = async () => {
+      if (!project.id) return;
+
+      try {
+        // Query the partnerships table to get actual partner count
+        const { data, error, count } = await supabase
+          .from("partnerships")
+          .select("id", { count: 'exact' })
+          .eq("project_id", project.id)
+          .eq("status", "approved");
+          
+        if (error) throw error;
+        
+        setPartnerCount(count || 0);
+      } catch (error) {
+        console.error("Error fetching partner count:", error);
+        // Fallback to project.partners length if available
+        setPartnerCount(project.partners?.length || 0);
+      }
+    };
+    
+    fetchPartnerCount();
+  }, [project.id]);
 
   // Check if the user has already applied
   useEffect(() => {
@@ -179,6 +207,21 @@ export function ProjectCard({ project }: ProjectCardProps) {
     }
     
     setApplicationOpen(true);
+  };
+
+  // Handle click on organizer name or organization
+  const handleOrganizerClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate(`/users/${project.organizerId}`);
+  };
+  
+  const handleOrganizationClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (project.organizationId) {
+      navigate(`/organizations/${project.organizationId}`);
+    }
   };
 
   // Render apply button based on conditions
@@ -304,13 +347,13 @@ export function ProjectCard({ project }: ProjectCardProps) {
           )}
         </div>
         <CardHeader className="pb-2">
-          <div className="flex justify-between items-start">
-            <CardTitle>
+          <div className="flex justify-between items-start gap-2">
+            <CardTitle className="text-lg md:text-xl">
               <Link to={`/projects/${project.id}`} className="hover:text-primary transition-colors">
                 {project.title}
               </Link>
             </CardTitle>
-            <Badge variant={project.status === 'published' ? "default" : "outline"}>
+            <Badge variant={project.status === 'published' ? "default" : "outline"} className="whitespace-nowrap">
               {project.status === 'published' ? 'Active' : 'Completed'}
             </Badge>
           </div>
@@ -319,64 +362,97 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex-grow">
-          <div className="flex flex-wrap gap-2 mb-4">
-            {project.partnershipTypes && project.partnershipTypes.map((type) => (
-              <Badge key={type} variant="outline" className={partnershipTypeColors[type as keyof typeof partnershipTypeColors]}>
-                {partnershipTypeLabels[type as keyof typeof partnershipTypeLabels]}
+          <div className="flex flex-wrap gap-2 mb-4 overflow-hidden">
+            {project.partnershipTypes && project.partnershipTypes.map((type: string) => (
+              <Badge 
+                key={type} 
+                variant="outline" 
+                className={
+                  type in partnershipTypeColors
+                    ? partnershipTypeColors[type as keyof typeof partnershipTypeColors]
+                    : "bg-muted text-muted-foreground"
+                }
+              >
+                {type in partnershipTypeLabels
+                  ? partnershipTypeLabels[type as keyof typeof partnershipTypeLabels]
+                  : type}
               </Badge>
             ))}
           </div>
           
           <div className="space-y-2 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span>
+              <Calendar className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate">
                 {project.timeline && project.timeline.start ? new Date(project.timeline.start).toLocaleDateString() : "No start date"} - 
                 {project.timeline && project.timeline.end ? new Date(project.timeline.end).toLocaleDateString() : "No end date"}
               </span>
             </div>
             {project.location && (
               <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                <span>{project.location}</span>
+                <MapPin className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">{project.location}</span>
               </div>
             )}
             <div className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              <span>{project.partners?.length || 0} partners</span>
+              <Users className="h-4 w-4 flex-shrink-0" />
+              <span>{partnerCount} partner{partnerCount !== 1 ? 's' : ''}</span>
             </div>
           </div>
         </CardContent>
         <CardFooter className="flex justify-between border-t pt-4">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-7 w-7">
+          <div className="flex items-center gap-2 min-w-0">
+            <Avatar className="h-7 w-7 flex-shrink-0">
               {hasOrganization ? (
-                <AvatarFallback className="text-xs bg-blue-100 text-blue-800">
-                  {project.organizationName?.substring(0, 2).toUpperCase() || "OR"}
-                </AvatarFallback>
+                <>
+                  <AvatarImage src={project.organizationImage} alt={project.organizationName} />
+                  <AvatarFallback className="text-xs bg-blue-100 text-blue-800">
+                    {project.organizationName?.substring(0, 2).toUpperCase() || "OR"}
+                  </AvatarFallback>
+                </>
               ) : (
-                <AvatarFallback className="text-xs bg-muted">
-                  {project.organizerName ? project.organizerName.substring(0, 2).toUpperCase() : "??"}
-                </AvatarFallback>
+                <>
+                  <AvatarImage src={project.organizerImage} alt={project.organizerName} />
+                  <AvatarFallback className="text-xs bg-muted">
+                    {project.organizerName ? project.organizerName.substring(0, 2).toUpperCase() : "??"}
+                  </AvatarFallback>
+                </>
               )}
             </Avatar>
-            <div className="flex flex-col">
-              <span className="text-sm">
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm truncate">
                 {hasOrganization ? (
-                  <Link to={`/organizations/${project.organizationId}`} className="flex items-center hover:text-primary">
-                    <Building className="inline-block h-3 w-3 mr-1" />
-                    {project.organizationName}
-                  </Link>
+                  <button 
+                    onClick={handleOrganizationClick}
+                    className="flex items-center hover:text-primary truncate"
+                  >
+                    <Building className="inline-block h-3 w-3 mr-1 flex-shrink-0" />
+                    <span className="truncate">{project.organizationName}</span>
+                  </button>
                 ) : (
-                  project.organizerName || "Unknown"
+                  <button 
+                    onClick={handleOrganizerClick}
+                    className="hover:text-primary truncate"
+                  >
+                    {project.organizerName || "Unknown"}
+                  </button>
                 )}
               </span>
               {hasOrganization && (
-                <span className="text-xs text-muted-foreground">from {project.organizerName}</span>
+                <span className="text-xs text-muted-foreground truncate">
+                  from <button 
+                    onClick={handleOrganizerClick}
+                    className="hover:text-primary"
+                  >
+                    {project.organizerName}
+                  </button>
+                </span>
               )}
             </div>
           </div>
-          {renderApplyButton()}
+          <div className="ml-2 flex-shrink-0">
+            {renderApplyButton()}
+          </div>
         </CardFooter>
       </Card>
 
@@ -403,7 +479,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 <SelectContent>
                   {project.partnershipTypes.map((type) => (
                     <SelectItem key={type} value={type} className="capitalize">
-                      {type} partnership
+                      {type in partnershipTypeLabels 
+                        ? partnershipTypeLabels[type as keyof typeof partnershipTypeLabels]
+                        : type}
                     </SelectItem>
                   ))}
                 </SelectContent>

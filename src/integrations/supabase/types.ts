@@ -327,6 +327,7 @@ export type Database = {
           name: string
           owner_id: string
           size: string | null
+          status: string | null
           updated_at: string
           website: string | null
         }
@@ -341,6 +342,7 @@ export type Database = {
           name: string
           owner_id: string
           size?: string | null
+          status?: string | null
           updated_at?: string
           website?: string | null
         }
@@ -355,6 +357,7 @@ export type Database = {
           name?: string
           owner_id?: string
           size?: string | null
+          status?: string | null
           updated_at?: string
           website?: string | null
         }

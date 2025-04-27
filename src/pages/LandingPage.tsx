@@ -298,28 +298,28 @@ export default function LandingPage() {
             <div>
               <h3 className="font-bold mb-4">Platform</h3>
               <ul className="space-y-2">
-                <li><Link to="/projects" className="text-muted-foreground hover:text-foreground">Browse Projects</Link></li>
-                <li><Link to="/partners" className="text-muted-foreground hover:text-foreground">Find Partners</Link></li>
-                <li><Link to="/dashboard" className="text-muted-foreground hover:text-foreground">Dashboard</Link></li>
+                <li><Link to="/browse/projects" className="text-muted-foreground hover:text-foreground">Browse Projects</Link></li>
+                <li><Link to="/browse/organizations" className="text-muted-foreground hover:text-foreground">Find Partners</Link></li>
+                <li><Link to="/how-it-works" className="text-muted-foreground hover:text-foreground">How It Works</Link></li>
               </ul>
             </div>
             
             <div>
               <h3 className="font-bold mb-4">Company</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="text-muted-foreground hover:text-foreground">About Us</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-foreground">How It Works</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-foreground">Privacy Policy</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-foreground">Terms of Service</a></li>
+                <li><Link to="/about" className="text-muted-foreground hover:text-foreground">About Us</Link></li>
+                <li><Link to="/contact" className="text-muted-foreground hover:text-foreground">Contact</Link></li>
+                <li><Link to="/privacy-policy" className="text-muted-foreground hover:text-foreground">Privacy Policy</Link></li>
+                <li><Link to="/terms-of-service" className="text-muted-foreground hover:text-foreground">Terms of Service</Link></li>
               </ul>
             </div>
             
             <div>
-              <h3 className="font-bold mb-4">Contact</h3>
+              <h3 className="font-bold mb-4">Support</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="text-muted-foreground hover:text-foreground">Support</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-foreground">Partnerships</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-foreground">Feedback</a></li>
+                <li><Link to="/contact" className="text-muted-foreground hover:text-foreground">Help Center</Link></li>
+                <li><Link to="/contact" className="text-muted-foreground hover:text-foreground">Report an Issue</Link></li>
+                <li><a href="mailto:support@collabdoor.com" className="text-muted-foreground hover:text-foreground">Email Support</a></li>
               </ul>
             </div>
           </div>
