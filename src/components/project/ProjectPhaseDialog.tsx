@@ -19,7 +19,8 @@ interface ProjectPhaseDialogProps {
 export function ProjectPhaseDialog({ projectId, open, onOpenChange, onPhaseAdded }: ProjectPhaseDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<"planned" | "in_progress" | "completed">("planned");
+  // Fix: Use the correct status type
+  const [status, setStatus] = useState<"not-started" | "in-progress" | "completed">("not-started");
   const [dueDate, setDueDate] = useState("");
   
   const { createPhase, isCreating } = useProjectPhaseActions(projectId);
@@ -47,7 +48,7 @@ export function ProjectPhaseDialog({ projectId, open, onOpenChange, onPhaseAdded
   const resetForm = () => {
     setTitle("");
     setDescription("");
-    setStatus("planned");
+    setStatus("not-started");
     setDueDate("");
   };
 
@@ -85,14 +86,14 @@ export function ProjectPhaseDialog({ projectId, open, onOpenChange, onPhaseAdded
               <Label htmlFor="status">Status</Label>
               <Select
                 value={status}
-                onValueChange={(value: "planned" | "in_progress" | "completed") => setStatus(value)}
+                onValueChange={(value: "not-started" | "in-progress" | "completed") => setStatus(value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="planned">Planned</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="not-started">Planned</SelectItem>
+                  <SelectItem value="in-progress">In Progress</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                 </SelectContent>
               </Select>

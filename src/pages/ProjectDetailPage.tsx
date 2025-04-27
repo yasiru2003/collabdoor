@@ -22,10 +22,11 @@ import { toast } from "@/hooks/use-toast";
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { project, isLoading, error, refetch } = useProject(id);
+  // Fix: Access data as a separate property from the query result
+  const { data: project, isLoading, error, refetch } = useProject(id);
   const { phases, isLoading: phasesLoading, error: phasesError, refetch: refetchPhases } = useProjectPhases(id);
   
+  // ... keep existing code (state setup)
   const [activeTab, setActiveTab] = useState("details");
   const [phaseDialogOpen, setPhaseDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -43,6 +44,7 @@ export default function ProjectDetailPage() {
     return null;
   }
 
+  // ... keep existing code (rest of the component)
   if (isLoading) {
     return (
       <Layout>
@@ -66,7 +68,8 @@ export default function ProjectDetailPage() {
     );
   }
 
-  const isOwner = user && project.owner_id === user.id;
+  // ... keep existing code (rest of the component)
+  const isOwner = user && project.organizerId === user.id;
   const isAdmin = user && user.email === "yasirubandaraprivate@gmail.com";
   const canEdit = isOwner || isAdmin;
 

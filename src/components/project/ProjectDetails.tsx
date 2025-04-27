@@ -17,12 +17,7 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
           <h2 className="text-xl font-semibold mb-2">Project Description</h2>
           <p className="text-muted-foreground">{project.description}</p>
           
-          {project.goals && (
-            <div className="mt-4">
-              <h3 className="font-medium mb-2">Goals</h3>
-              <p className="text-muted-foreground">{project.goals}</p>
-            </div>
-          )}
+          {/* Remove the check for 'goals' property since it doesn't exist in the Project type */}
         </CardContent>
       </Card>
 

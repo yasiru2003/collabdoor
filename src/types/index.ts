@@ -1,3 +1,4 @@
+
 export interface Organization {
   id: string;
   name: string;
@@ -50,6 +51,7 @@ export interface Project {
   previous_projects?: Record<string, string>;
   // Add completedAt for camelCase compatibility
   completedAt?: string;
+  owner_id?: string;  // Add for backwards compatibility
 }
 
 // Add missing type definitions

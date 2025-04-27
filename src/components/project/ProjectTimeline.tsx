@@ -57,7 +57,7 @@ export function ProjectTimeline({ project, phases, isOwner, onAddPhase, isLoadin
                 <div className="flex justify-between items-center mt-2">
                   <span className="text-xs text-muted-foreground">
                     {phase.status === "completed" ? "Completed" : 
-                     phase.status === "in_progress" ? "In Progress" : "Planned"}
+                     phase.status === "in-progress" ? "In Progress" : "Planned"}
                   </span>
                   {phase.dueDate && (
                     <span className="text-xs bg-muted px-2 py-1 rounded">

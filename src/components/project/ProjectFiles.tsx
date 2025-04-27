@@ -12,7 +12,8 @@ interface ProjectFilesProps {
 
 export function ProjectFiles({ project }: ProjectFilesProps) {
   const { user } = useAuth();
-  const isOwner = user && project.owner_id === user.id;
+  // Fix: Use organizerId instead of owner_id
+  const isOwner = user && project.organizerId === user.id;
 
   return (
     <div className="space-y-6">

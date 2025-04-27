@@ -18,11 +18,11 @@ export function ProjectTeam({ project }: ProjectTeamProps) {
           <div className="flex items-center space-x-4">
             <Avatar>
               <AvatarFallback>
-                {(project.organizer_name || "").substring(0, 2).toUpperCase()}
+                {(project.organizerName || "").substring(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-medium">{project.organizer_name || "Unknown"}</p>
+              <p className="font-medium">{project.organizerName || "Unknown"}</p>
               <p className="text-sm text-muted-foreground">Project Owner</p>
             </div>
           </div>

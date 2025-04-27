@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -89,10 +90,10 @@ export default function OrganizationDetailPage() {
             <h2 className="text-xl font-semibold mb-2">Contact Information</h2>
             <ul>
               <li>
-                <strong>Contact Email:</strong> {organization.email || "N/A"}
+                <strong>Contact Email:</strong> {/* Remove email property access */}N/A
               </li>
               <li>
-                <strong>Contact Phone:</strong> {organization.phone || "N/A"}
+                <strong>Contact Phone:</strong> {/* Remove phone property access */}N/A
               </li>
             </ul>
           </div>
