@@ -6,6 +6,7 @@ import { Organization, Project } from "@/types";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
+import { mapProjectsData, mapOrganizationsData } from "@/utils/data-mappers";
 
 export default function LandingPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -24,29 +25,9 @@ export default function LandingPage() {
         if (error) throw error;
         
         if (data) {
-          const mappedProjects = data.map(project => ({
-            id: project.id,
-            title: project.title,
-            description: project.description,
-            category: project.category,
-            location: project.location,
-            image: project.image,
-            status: project.status,
-            timeline: {
-              start: project.start_date,
-              end: project.end_date
-            },
-            partnershipTypes: project.partnership_types || [],
-            organizerId: project.organizer_id,
-            organizerName: project.organizer_name,
-            organizationId: project.organization_id,
-            organizationName: project.organization_name,
-            applicationsEnabled: project.applications_enabled,
-            createdAt: project.created_at,
-            updatedAt: project.updated_at
-          }));
-          
-          setProjects(mappedProjects as Project[]);
+          // Use the data mapper to transform the DB format to our app format
+          const mappedProjects = mapProjectsData(data);
+          setProjects(mappedProjects);
         }
       } catch (error) {
         console.error('Error fetching featured projects:', error);
@@ -62,7 +43,11 @@ export default function LandingPage() {
           
         if (error) throw error;
         
-        setPartners(data as Organization[]);
+        if (data) {
+          // Use the data mapper to transform the DB format to our app format
+          const mappedOrganizations = mapOrganizationsData(data);
+          setPartners(mappedOrganizations);
+        }
       } catch (error) {
         console.error('Error fetching partners:', error);
       }

@@ -120,7 +120,7 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
           startDate: form.startDate,
           endDate: form.endDate,
           partnershipTypes: form.partnershipTypes,
-          applicationsEnabled,
+          applicationsEnabled: Boolean(form.applicationsEnabled), // Explicitly convert to boolean
           status: form.status || initialStatus,
         };
 

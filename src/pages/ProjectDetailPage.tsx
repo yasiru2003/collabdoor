@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { Project, Organization } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar, MapPin, Users, Building } from "lucide-react";
+import { mapProjectData, mapOrganizationsData } from "@/utils/data-mappers";
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -29,7 +30,14 @@ export default function ProjectDetailPage() {
 
         if (error) throw error;
 
-        setProject(data || null);
+        // Map the raw data to our Project type
+        if (data) {
+          const mappedProject = mapProjectData(data);
+          setProject(mappedProject);
+        } else {
+          setProject(null);
+        }
+        
         setLoading(false);
       } catch (error) {
         console.error('Error fetching project:', error);
@@ -48,22 +56,9 @@ export default function ProjectDetailPage() {
         if (error) throw error;
         
         if (data) {
-          const mappedOrganizations = data.map(org => ({
-            id: org.id,
-            name: org.name,
-            description: org.description,
-            industry: org.industry,
-            location: org.location,
-            size: org.size,
-            logo: org.logo,
-            website: org.website,
-            foundedYear: org.founded_year,
-            ownerId: org.owner_id,
-            createdAt: org.created_at,
-            updatedAt: org.updated_at
-          }));
-          
-          setRelatedOrganizations(mappedOrganizations as Organization[]);
+          // Map the raw data to our Organization type
+          const mappedOrganizations = mapOrganizationsData(data);
+          setRelatedOrganizations(mappedOrganizations);
         }
       } catch (error) {
         console.error('Error loading related organizations:', error);
