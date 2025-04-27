@@ -49,6 +49,8 @@ export interface Project {
   required_skills?: string[];
   partnership_details?: Record<string, string>;
   previous_projects?: Record<string, string>;
+  // Add completedAt for camelCase compatibility
+  completedAt?: string;
 }
 
 // Add missing type definitions
@@ -95,4 +97,27 @@ export interface SystemSettings {
   description?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+// Add ProjectPhase interface
+export interface ProjectPhase {
+  id: string;
+  project_id: string;
+  title: string;
+  description?: string;
+  status: 'not-started' | 'in-progress' | 'completed';
+  order: number;
+  dueDate?: string;
+  completedDate?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Add User interface for mockData
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  role?: string;
 }

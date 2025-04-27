@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProjects } from "@/hooks/use-projects-query";
@@ -335,33 +334,48 @@ export function AdminProjects() {
                   <tbody>
                     {projects
                       ?.filter(project => tab === "all" || project.status === tab)
-                      .map((project) => (
-                        <tr key={project.id} className="border-b transition-colors hover:bg-muted/50">
-                          <td className="p-2 font-medium">{project.title}</td>
-                          <td className="p-2">{project.category || "Uncategorized"}</td>
-                          <td className="p-2">
-                            <Badge className={getStatusColor(project.status)}>
-                              {project.status}
-                            </Badge>
-                          </td>
-                          <td className="p-2 text-center">
-                            <div className="flex justify-center space-x-2">
-                              <Button variant="ghost" size="sm" onClick={() => handleEdit(project)}>
-                                Edit
-                              </Button>
-                              <Button 
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => confirmDelete(project)}
-                              >
-                                <Trash2 className="h-4 w-4 mr-1" />
-                                Delete
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      .map((project) => {
+                        // Ensure each project has both camelCase and snake_case properties
+                        const fullProject: Project = {
+                          ...project,
+                          organizer_id: project.organizer_id || project.organizerId || "",
+                          organizerId: project.organizerId || project.organizer_id || "",
+                          organization_id: project.organization_id || project.organizationId,
+                          organizationId: project.organizationId || project.organization_id,
+                          organization_name: project.organization_name || project.organizationName,
+                          organizationName: project.organizationName || project.organization_name,
+                          completed_at: project.completed_at || project.completedAt,
+                          completedAt: project.completedAt || project.completed_at
+                        };
+                        
+                        return (
+                          <tr key={fullProject.id} className="border-b transition-colors hover:bg-muted/50">
+                            <td className="p-2 font-medium">{fullProject.title}</td>
+                            <td className="p-2">{fullProject.category || "Uncategorized"}</td>
+                            <td className="p-2">
+                              <Badge className={getStatusColor(fullProject.status)}>
+                                {fullProject.status}
+                              </Badge>
+                            </td>
+                            <td className="p-2 text-center">
+                              <div className="flex justify-center space-x-2">
+                                <Button variant="ghost" size="sm" onClick={() => handleEdit(fullProject)}>
+                                  Edit
+                                </Button>
+                                <Button 
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => confirmDelete(fullProject)}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-1" />
+                                  Delete
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     {projects?.filter(project => tab === "all" || project.status === tab).length === 0 && (
                       <tr>
                         <td colSpan={4} className="p-4 text-center text-muted-foreground">

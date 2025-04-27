@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDropzone } from "react-dropzone";
@@ -16,7 +17,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Project } from "@/types";
+import { Project, PartnershipType } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/use-profile-query";
 import { useOrganization } from "@/hooks/use-organization-query";
@@ -52,7 +53,7 @@ export function ProjectForm({ project }: ProjectFormProps) {
   const { profile } = useProfile();
   const { organization } = useOrganization();
   const { locations } = useLocations();
-	const { partnershipTypes } = usePartnershipTypes();
+  const { partnershipTypes } = usePartnershipTypes();
   const [imageUrl, setImageUrl] = useState<string | null>(project?.image || null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -68,7 +69,7 @@ export function ProjectForm({ project }: ProjectFormProps) {
       image: project?.image || "",
       content: project?.content || "",
       organization_id: project?.organization_id || organization?.id || "",
-			partnership_types: project?.partnership_types || [],
+      partnership_types: project?.partnership_types || [],
     },
   });
 
@@ -119,9 +120,13 @@ export function ProjectForm({ project }: ProjectFormProps) {
           variant: "destructive",
         });
       } else {
-        const imageUrl = `${supabase.storageUrl}/project-images/${data.path}`;
-        setImageUrl(imageUrl);
-        setValue('image', imageUrl);
+        // Get the public URL - we need to use the publicUrl method instead of storageUrl directly
+        const { data: { publicUrl } } = supabase.storage
+          .from('project-images')
+          .getPublicUrl(data.path);
+          
+        setImageUrl(publicUrl);
+        setValue('image', publicUrl);
         toast({
           title: "Upload successful",
           description: "Image uploaded successfully.",
@@ -138,7 +143,7 @@ export function ProjectForm({ project }: ProjectFormProps) {
     } finally {
       setIsUploading(false);
     }
-  }, [supabase, setValue, toast]);
+  }, [setValue, toast]);
 
   const { getRootProps, getInputProps } = useDropzone({
     onDrop,
@@ -154,8 +159,8 @@ export function ProjectForm({ project }: ProjectFormProps) {
     setValue('image', "");
   };
 
-  const upsertProject = useMutation(
-    async (values: z.infer<typeof formSchema>) => {
+  const upsertProject = useMutation({
+    mutationFn: async (values: z.infer<typeof formSchema>) => {
       if (!user || !profile) {
         throw new Error("User not authenticated.");
       }
@@ -164,6 +169,15 @@ export function ProjectForm({ project }: ProjectFormProps) {
       const projectId = project?.id || uuidv4();
       const now = new Date().toISOString();
       const newStatus = autoApproveProjects ? 'published' : 'pending_publish';
+
+      // Make sure partnership_types has valid values
+      const validPartnershipTypes = (values.partnership_types || []).filter(
+        (type): type is PartnershipType => 
+          type === 'monetary' || 
+          type === 'knowledge' || 
+          type === 'skilled' || 
+          type === 'volunteering'
+      );
 
       const projectData = {
         id: projectId,
@@ -176,8 +190,8 @@ export function ProjectForm({ project }: ProjectFormProps) {
         organization_id: values.organization_id,
         organizer_id: profile.id,
         updated_at: now,
-        partnership_types: values.partnership_types,
-        status: newStatus,
+        partnership_types: validPartnershipTypes,
+        status: newStatus as any,
       };
 
       if (isUpdate) {
@@ -210,31 +224,29 @@ export function ProjectForm({ project }: ProjectFormProps) {
         return data;
       }
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["projects"] });
-        queryClient.invalidateQueries({ queryKey: ["user-projects"] });
-        toast({
-          title: autoApproveProjects ? "Project Published" : "Project Submitted for Review",
-          description: autoApproveProjects 
-            ? "Your project has been published successfully."
-            : "Your project has been submitted and is awaiting admin approval.",
-        });
-        navigate("/projects");
-      },
-      onError: (error: any) => {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["user-projects"] });
+      toast({
+        title: autoApproveProjects ? "Project Published" : "Project Submitted for Review",
+        description: autoApproveProjects 
+          ? "Your project has been published successfully."
+          : "Your project has been submitted and is awaiting admin approval.",
+      });
+      navigate("/projects");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   return (
     <Form {...form}>
-      <form onSubmit={handleSubmit(upsertProject.mutate)} className="space-y-4">
+      <form onSubmit={handleSubmit(values => upsertProject.mutate(values))} className="space-y-4">
         <Card>
           <CardHeader>
             <CardTitle>{project ? "Edit Project" : "Create Project"}</CardTitle>
@@ -450,8 +462,8 @@ export function ProjectForm({ project }: ProjectFormProps) {
             <Button variant="ghost" onClick={() => navigate("/projects")}>
               Cancel
             </Button>
-            <Button type="submit" disabled={upsertProject.isLoading}>
-              {upsertProject.isLoading ? "Loading..." : "Submit"}
+            <Button type="submit" disabled={upsertProject.isPending}>
+              {upsertProject.isPending ? "Loading..." : "Submit"}
             </Button>
           </CardFooter>
         </Card>

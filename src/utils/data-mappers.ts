@@ -38,6 +38,7 @@ export function mapSupabaseProjectToProject(supabaseProject: any): Project {
     created_at: supabaseProject.created_at,
     updated_at: supabaseProject.updated_at,
     completed_at: supabaseProject.completed_at,
+    completedAt: supabaseProject.completed_at, // Add camelCase version
     applications_enabled: supabaseProject.applications_enabled !== false,
     applicationsEnabled: supabaseProject.applications_enabled !== false, // Add camelCase version
     proposal_file_path: supabaseProject.proposal_file_path,
@@ -46,6 +47,7 @@ export function mapSupabaseProjectToProject(supabaseProject: any): Project {
     end_date: supabaseProject.end_date,
     partnership_details: supabaseProject.partnership_details,
     previous_projects: supabaseProject.previous_projects,
+    content: supabaseProject.content,
   };
 }
 
