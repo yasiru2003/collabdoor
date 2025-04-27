@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -58,7 +59,7 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
     startDate: project?.timeline?.start || "",
     endDate: project?.timeline?.end || "",
     partnershipTypes: project?.partnershipTypes || [] as PartnershipType[],
-    applicationsEnabled: project?.applicationsEnabled === true, // Ensure strict boolean conversion
+    applicationsEnabled: Boolean(project?.applicationsEnabled), // Convert to boolean explicitly
     status: project?.status || "draft",
   });
   const [showCustomTypes, setShowCustomTypes] = useState(false);
@@ -88,7 +89,7 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
       image: project?.image || "",
       startDate: project?.timeline?.start || "",
       endDate: project?.timeline?.end || "",
-      applicationsEnabled: project?.applicationsEnabled === true,
+      applicationsEnabled: Boolean(project?.applicationsEnabled),
     },
     mode: "onChange",
   });
@@ -112,15 +113,15 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
         const requireApproval = getSetting("require_project_approval", true);
         const initialStatus = requireApproval && !isAdmin ? "pending_publish" : "published";
 
-        // Ensure applicationsEnabled is always a boolean using Boolean()
-        const applicationsEnabled: boolean = Boolean(form.applicationsEnabled);
+        // Use Boolean constructor to ensure boolean type
+        const applicationsEnabled = Boolean(form.applicationsEnabled);
 
         const formData = {
           ...values,
           startDate: form.startDate,
           endDate: form.endDate,
           partnershipTypes: form.partnershipTypes,
-          applicationsEnabled, // Now guaranteed to be a boolean
+          applicationsEnabled,
           status: form.status || initialStatus,
         };
 
@@ -308,7 +309,7 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
           <Checkbox
             id="applicationsEnabled"
             checked={form.applicationsEnabled}
-            onCheckedChange={(checked) => setForm({ ...form, applicationsEnabled: checked })}
+            onCheckedChange={(checked) => setForm({ ...form, applicationsEnabled: Boolean(checked) })}
           />
           <Label htmlFor="applicationsEnabled">Enable Applications</Label>
         </div>
