@@ -4,12 +4,13 @@ import { ProjectForm } from "@/components/project/ProjectForm";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
-import { toast } from "@/components/ui/toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function CreateProjectPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   // Redirect if not authenticated
   useEffect(() => {
@@ -21,7 +22,7 @@ export default function CreateProjectPage() {
       });
       navigate("/login", { state: { from: "/projects/new" } });
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, toast]);
   
   const handleSubmit = async (data: any) => {
     try {

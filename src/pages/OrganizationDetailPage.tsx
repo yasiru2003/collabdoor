@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -20,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { mapOrganizationData } from "@/utils/data-mappers";
+import { mapOrganizationData, mapProjectData } from "@/utils/data-mappers";
 
 export default function OrganizationDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -79,28 +80,9 @@ export default function OrganizationDetailPage() {
           
         if (error) throw error;
         
-        // Transform the data to match the Project type
-        const formattedProjects = data.map((project: any) => ({
-          id: project.id,
-          title: project.title,
-          description: project.description,
-          category: project.category,
-          location: project.location,
-          image: project.image,
-          status: project.status,
-          partnershipTypes: project.partnership_types || [],
-          timeline: {
-            start: project.start_date,
-            end: project.end_date
-          },
-          organizerId: project.organizer_id,
-          organizerName: project.organizer_name,
-          organizationId: project.organization_id,
-          organizationName: organization?.name,
-          applicationsEnabled: project.applications_enabled,
-        }));
-        
-        setProjects(formattedProjects);
+        // Map and transform the project data
+        const mappedProjects = (data || []).map(project => mapProjectData(project));
+        setProjects(mappedProjects);
       } catch (error) {
         console.error("Error fetching projects:", error);
       }
@@ -172,9 +154,9 @@ export default function OrganizationDetailPage() {
     if (!user || !organization) return;
     
     try {
-      // Check if already requested
+      // Check if already requested - use organization_join_requests table instead
       const { data: existingRequest, error: checkError } = await supabase
-        .from("organization_requests")
+        .from("organization_join_requests")
         .select("id, status")
         .eq("organization_id", organization.id)
         .eq("user_id", user.id)
@@ -201,7 +183,7 @@ export default function OrganizationDetailPage() {
       
       // Send join request
       const { error } = await supabase
-        .from("organization_requests")
+        .from("organization_join_requests")
         .insert({
           organization_id: organization.id,
           user_id: user.id,
@@ -393,28 +375,6 @@ export default function OrganizationDetailPage() {
                   </a>
                 </div>
               )}
-              {organization.email && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <a 
-                    href={`mailto:${organization.email}`}
-                    className="text-primary hover:underline"
-                  >
-                    {organization.email}
-                  </a>
-                </div>
-              )}
-              {organization.phone && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <a 
-                    href={`tel:${organization.phone}`}
-                    className="text-primary hover:underline"
-                  >
-                    {organization.phone}
-                  </a>
-                </div>
-              )}
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="h-4 w-4" />
                 <span>Joined {new Date(organization.createdAt).toLocaleDateString()}</span>
@@ -467,15 +427,14 @@ export default function OrganizationDetailPage() {
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-3">
                     <Avatar>
-                      <AvatarImage src={organization.ownerImage} />
                       <AvatarFallback>
-                        {organization.ownerName?.substring(0, 2).toUpperCase() || "??"}
+                        {organization.name?.substring(0, 2).toUpperCase() || "??"}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <CardTitle className="text-base">
                         <Link to={`/users/${organization.ownerId}`} className="hover:text-primary">
-                          {organization.ownerName || "Organization Owner"}
+                          Organization Owner
                         </Link>
                       </CardTitle>
                       <CardDescription>
@@ -574,20 +533,6 @@ export default function OrganizationDetailPage() {
                           className="text-primary hover:underline"
                         >
                           {organization.website}
-                        </a>
-                      </p>
-                    </div>
-                  )}
-                  
-                  {organization.email && (
-                    <div className="mt-4">
-                      <h3 className="text-lg font-semibold">Contact Email</h3>
-                      <p>
-                        <a 
-                          href={`mailto:${organization.email}`}
-                          className="text-primary hover:underline"
-                        >
-                          {organization.email}
                         </a>
                       </p>
                     </div>

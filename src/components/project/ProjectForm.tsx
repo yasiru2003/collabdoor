@@ -117,7 +117,7 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
           startDate: form.startDate,
           endDate: form.endDate,
           partnershipTypes: form.partnershipTypes,
-          applicationsEnabled: Boolean(form.applicationsEnabled),
+          applicationsEnabled: form.applicationsEnabled === true,
           status: form.status || initialStatus,
         };
 
@@ -133,6 +133,7 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
   };
 
   return (
+    
     <Form {...formik}>
       <form onSubmit={handleSubmit} className="space-y-8">
         <FormField

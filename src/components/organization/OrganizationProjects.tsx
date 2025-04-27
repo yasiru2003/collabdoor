@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +7,7 @@ import { Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Project } from "@/types";
-import { mapSupabaseProjectToProject } from "@/utils/data-mappers";
+import { mapProjectData } from "@/utils/data-mappers";
 
 interface OrganizationProjectsProps {
   organizationId: string;
@@ -34,7 +35,7 @@ export function OrganizationProjects({ organizationId, organizationName, isOwner
         
         // Map database results to Project type
         const mappedProjects = (data || []).map(project => {
-          const mappedProject = mapSupabaseProjectToProject(project);
+          const mappedProject = mapProjectData(project);
           mappedProject.organizerName = project.profiles?.name || "Unknown";
           return mappedProject;
         });
