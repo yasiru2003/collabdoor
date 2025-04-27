@@ -12,7 +12,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 export function Header() {
   const {
     user,
-    signOut
+    signOut,
+    userProfile
   } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef(null);
@@ -26,6 +27,11 @@ export function Header() {
       setIsMobileMenuOpen(false);
     }
   });
+  
+  // Get display name and profile image from user or userProfile
+  const displayName = userProfile?.name || user?.email || "User";
+  const profileImage = userProfile?.profile_image || "";
+  const displayInitials = ((displayName || "??").substring(0, 2)).toUpperCase();
   
   return <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
@@ -59,16 +65,15 @@ export function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
                 <Avatar className="h-8 w-8">
-                  {/* Fix profile_image and name properties with optional chaining and fallbacks */}
-                  <AvatarImage src={user?.user_metadata?.profile_image || user?.profile_image} alt={user?.user_metadata?.name || user?.email || "Avatar"} />
-                  <AvatarFallback>{((user?.user_metadata?.name || user?.email || "??").substring(0, 2)).toUpperCase()}</AvatarFallback>
+                  <AvatarImage src={profileImage} alt={displayName} />
+                  <AvatarFallback>{displayInitials}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user?.user_metadata?.name || user?.email}</p>
+                  <p className="text-sm font-medium leading-none">{displayName}</p>
                   <p className="text-xs leading-none text-muted-foreground">
                     {user?.email}
                   </p>

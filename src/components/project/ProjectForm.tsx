@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -120,7 +121,7 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
           startDate: form.startDate,
           endDate: form.endDate,
           partnershipTypes: form.partnershipTypes,
-          applicationsEnabled: Boolean(form.applicationsEnabled), // Explicitly convert to boolean
+          applicationsEnabled, // Explicitly pass the boolean value
           status: form.status || initialStatus,
         };
 
