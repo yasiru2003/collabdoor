@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProjects } from "@/hooks/use-projects-query";
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Project, ProjectStatus } from "@/types";
+import { Project, ProjectStatus, PartnershipType } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, AlertCircle, Trash2 } from "lucide-react";
@@ -66,6 +67,7 @@ export function AdminProjects() {
     if (!selectedProject) return;
 
     try {
+      // Ensure we're using snake_case for database fields
       const updateData: Partial<Project> = {
         title: selectedProject.title,
         status: selectedProject.status,
@@ -410,7 +412,7 @@ export function AdminProjects() {
                     onValueChange={(value) => 
                       setSelectedProject({
                         ...selectedProject, 
-                        status: value as "draft" | "published" | "in-progress" | "completed" | "pending_publish"
+                        status: value as ProjectStatus
                       })
                     }
                   >

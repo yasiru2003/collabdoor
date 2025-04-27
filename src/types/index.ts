@@ -32,7 +32,7 @@ export interface Project {
   updated_at?: string;
   completed_at?: string;
   // Define both camelCase and snake_case versions for compatibility
-  organizerId?: string; 
+  organizerId?: string;
   organizerName?: string;
   organizationId?: string;
   organizationName?: string;
@@ -43,6 +43,12 @@ export interface Project {
   content?: string;
   timeline?: any;
   partners?: any;
+  proposalFilePath?: string;
+  proposal_file_path?: string;
+  requiredSkills?: string[];
+  required_skills?: string[];
+  partnership_details?: Record<string, string>;
+  previous_projects?: Record<string, string>;
 }
 
 // Add missing type definitions

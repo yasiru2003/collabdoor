@@ -27,9 +27,10 @@ export function ProjectOverview({
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
 
   const handleDownloadProposal = async () => {
-    if (!project.proposalFilePath) return;
+    if (!project.proposal_file_path && !project.proposalFilePath) return;
     
-    const url = await getProjectProposalUrl(project.proposalFilePath);
+    const filePath = project.proposal_file_path || project.proposalFilePath;
+    const url = await getProjectProposalUrl(filePath!);
     if (url) {
       // Create a temporary anchor element to trigger the download
       const a = document.createElement('a');
@@ -112,17 +113,18 @@ export function ProjectOverview({
       <div>
         <h3 className="text-lg font-semibold">Project Timeline</h3>
         <p>
-          {new Date(project.timeline.start).toLocaleDateString()} -{" "}
-          {new Date(project.timeline.end).toLocaleDateString()}
+          {new Date(project.timeline?.start || project.start_date || '').toLocaleDateString()} -{" "}
+          {new Date(project.timeline?.end || project.end_date || '').toLocaleDateString()}
         </p>
       </div>
 
       {/* Required Skills */}
       <div>
         <h3 className="text-lg font-semibold">Required Skills</h3>
-        {project.requiredSkills && project.requiredSkills.length > 0 ? (
+        {(project.requiredSkills || project.required_skills) && 
+         (project.requiredSkills?.length > 0 || project.required_skills?.length > 0) ? (
           <ul className="list-disc pl-5">
-            {project.requiredSkills.map((skill, index) => (
+            {(project.requiredSkills || project.required_skills || []).map((skill, index) => (
               <li key={index}>{skill}</li>
             ))}
           </ul>
@@ -134,13 +136,14 @@ export function ProjectOverview({
       {/* Partnership Types and Details */}
       <div>
         <h3 className="text-lg font-semibold">Partnership Types</h3>
-        {project.partnershipTypes && project.partnershipTypes.length > 0 && (
+        {(project.partnershipTypes || project.partnership_types) && 
+         (project.partnershipTypes?.length || project.partnership_types?.length) > 0 && (
           <div className="space-y-4">
-            {project.partnershipTypes.map((type, index) => (
+            {(project.partnershipTypes || project.partnership_types)?.map((type, index) => (
               <Card key={index}>
                 <CardContent className="p-4">
                   <h4 className="font-semibold capitalize mb-2">{type}</h4>
-                  {project.partnership_details?.[type] && (
+                  {project.partnership_details && project.partnership_details[type] && (
                     <p className="text-muted-foreground">
                       {project.partnership_details[type]}
                     </p>
@@ -170,7 +173,7 @@ export function ProjectOverview({
       )}
       
       {/* Project Proposal Download */}
-      {project.proposalFilePath && (
+      {(project.proposal_file_path || project.proposalFilePath) && (
         <div className="mt-4">
           <Button 
             variant="outline" 

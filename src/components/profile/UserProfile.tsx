@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ProfileHeader } from "./ProfileHeader";
@@ -12,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { useReviews } from "@/hooks/use-reviews";
 import { useState, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { mapSupabaseProjectToProject } from "@/utils/data-mappers";
 
 interface UserProfileProps {
   profile: {
@@ -26,7 +28,7 @@ interface UserProfileProps {
 
 export function UserProfile({ profile }: UserProfileProps) {
   const { data: projects } = useProjects();
-  const userProjects = projects?.filter(p => p.organizerId === profile.id) || [];
+  const userProjects = projects?.filter(p => p.organizer_id === profile.id) || [];
   const { getUserReviews } = useReviews();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);

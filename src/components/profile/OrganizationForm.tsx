@@ -337,8 +337,8 @@ export function OrganizationForm() {
             )}
           </div>
         </div>
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Creating..." : "Create organization"}
+        <Button type="submit" disabled={createOrganizationMutation.isPending}>
+          {createOrganizationMutation.isPending ? "Creating..." : "Create organization"}
         </Button>
       </form>
     </Form>
