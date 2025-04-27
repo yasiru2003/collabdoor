@@ -58,7 +58,7 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
     startDate: project?.timeline?.start || "",
     endDate: project?.timeline?.end || "",
     partnershipTypes: project?.partnershipTypes || [] as PartnershipType[],
-    applicationsEnabled: project?.applicationsEnabled === true, // Ensure boolean
+    applicationsEnabled: Boolean(project?.applicationsEnabled), // Use Boolean() to ensure strict boolean
     status: project?.status || "draft",
   });
   const [showCustomTypes, setShowCustomTypes] = useState(false);
@@ -112,15 +112,15 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
         const requireApproval = getSetting("require_project_approval", true);
         const initialStatus = requireApproval && !isAdmin ? "pending_publish" : "published";
 
-        // Explicitly convert applicationsEnabled to boolean
-        const applicationsEnabled = form.applicationsEnabled === true;
+        // Explicitly convert applicationsEnabled to boolean using Boolean()
+        const applicationsEnabled = Boolean(form.applicationsEnabled);
 
         const formData = {
           ...values,
           startDate: form.startDate,
           endDate: form.endDate,
           partnershipTypes: form.partnershipTypes,
-          applicationsEnabled, // Guaranteed to be boolean
+          applicationsEnabled, // Now guaranteed to be a boolean
           status: form.status || initialStatus,
         };
 
