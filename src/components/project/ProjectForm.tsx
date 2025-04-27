@@ -89,7 +89,7 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
       image: project?.image || "",
       startDate: project?.timeline?.start || "",
       endDate: project?.timeline?.end || "",
-      applicationsEnabled: project?.applicationsEnabled !== false,
+      applicationsEnabled: project?.applicationsEnabled === true,
     },
     mode: "onChange",
   });
@@ -114,7 +114,7 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
         const initialStatus = requireApproval && !isAdmin ? "pending_publish" : "published";
 
         // Explicitly ensure applicationsEnabled is a boolean
-        const applicationsEnabled = form.applicationsEnabled === true;
+        const applicationsEnabled: boolean = form.applicationsEnabled === true;
 
         const formData = {
           ...values,
