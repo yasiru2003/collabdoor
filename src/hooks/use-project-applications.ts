@@ -59,7 +59,7 @@ export function useProjectApplications() {
           message: message,
           organization_id: organizationId || null,
           organization_name: organizationName,
-          status: "pending"
+          status: "pending" as "pending" | "approved" | "rejected"
         })
         .select();
         
@@ -84,7 +84,7 @@ export function useProjectApplications() {
     }
   };
 
-  const updateApplicationStatus = async (applicationId: string, status: string) => {
+  const updateApplicationStatus = async (applicationId: string, status: "pending" | "approved" | "rejected") => {
     try {
       const { error } = await supabase
         .from("project_applications")
@@ -116,4 +116,3 @@ export function useProjectApplications() {
     updateApplicationStatus
   };
 }
-

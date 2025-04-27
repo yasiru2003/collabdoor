@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -22,6 +23,7 @@ import { toast } from "@/hooks/use-toast";
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   // Fix: Access data as a separate property from the query result
   const { data: project, isLoading, error, refetch } = useProject(id);
   const { phases, isLoading: phasesLoading, error: phasesError, refetch: refetchPhases } = useProjectPhases(id);
@@ -68,7 +70,7 @@ export default function ProjectDetailPage() {
     );
   }
 
-  // ... keep existing code (rest of the component)
+  // Fix: Make sure user is defined before accessing its properties
   const isOwner = user && project.organizerId === user.id;
   const isAdmin = user && user.email === "yasirubandaraprivate@gmail.com";
   const canEdit = isOwner || isAdmin;
