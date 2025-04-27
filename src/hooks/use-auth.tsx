@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, createContext, useContext } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -150,6 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Rename logout to signOut for consistency
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -205,7 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       session, 
       signIn, 
       signUp, 
-      signOut, 
+      signOut, // Changed from logout to signOut
       loading,
       updateUserProfile,
       userProfile,

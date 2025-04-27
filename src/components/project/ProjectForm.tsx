@@ -15,7 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Project } from "@/types";
+import { Project, PartnershipType } from "@/types";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -46,7 +46,7 @@ interface ProjectFormProps {
 
 export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) {
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [form, setForm] = useState({
     title: project?.title || "",
@@ -57,13 +57,16 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
     proposalFilePath: project?.proposalFilePath || "",
     startDate: project?.timeline?.start || "",
     endDate: project?.timeline?.end || "",
-    partnershipTypes: project?.partnershipTypes || [],
+    partnershipTypes: project?.partnershipTypes || [] as PartnershipType[],
     applicationsEnabled: project?.applicationsEnabled !== false,
     status: project?.status || "draft",
   });
   const [showCustomTypes, setShowCustomTypes] = useState(false);
   const { getSetting } = useSystemSettings();
   const allowCustomTypes = getSetting("allow_custom_partnership_types", true);
+  
+  // Check if user has admin role
+  const isAdmin = user?.role === "admin";
 
   useEffect(() => {
     if (!user) {
@@ -114,7 +117,7 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
           startDate: form.startDate,
           endDate: form.endDate,
           partnershipTypes: form.partnershipTypes,
-          applicationsEnabled: form.applicationsEnabled,
+          applicationsEnabled: Boolean(form.applicationsEnabled),
           status: form.status || initialStatus,
         };
 
@@ -229,10 +232,10 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
                 <div key={type} className="flex items-center">
                   <Checkbox
                     id={`type-${type}`}
-                    checked={form.partnershipTypes.includes(type)}
+                    checked={form.partnershipTypes.includes(type as PartnershipType)}
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        setForm({ ...form, partnershipTypes: [...form.partnershipTypes, type] });
+                        setForm({ ...form, partnershipTypes: [...form.partnershipTypes, type as PartnershipType] });
                       } else {
                         setForm({ ...form, partnershipTypes: form.partnershipTypes.filter(t => t !== type) });
                       }
@@ -259,8 +262,8 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
                 {showCustomTypes && (
                   <CustomPartnershipTypes
                     projectId={project?.id}
-                    existingTypes={form.partnershipTypes}
-                    onTypesChange={(types) => setForm({ ...form, partnershipTypes: types })}
+                    existingTypes={form.partnershipTypes as string[]}
+                    onTypesChange={(types) => setForm({ ...form, partnershipTypes: types as PartnershipType[] })}
                     className="mt-4"
                   />
                 )}

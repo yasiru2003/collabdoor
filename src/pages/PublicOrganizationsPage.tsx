@@ -1,172 +1,108 @@
-
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Organization, PartnershipType } from "@/types";
-import { useAuth } from "@/hooks/use-auth";
-import { PartnerCard } from "@/components/partner-card";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { Organization } from "@/types";
+import { useToast } from "@/hooks/use-toast";
+import { mapOrganizationsData } from "@/utils/data-mappers";
 
-// Partnership type mapping for display
-const partnershipTypeLabels: Record<PartnershipType, string> = {
-  'monetary': 'Financial Support',
-  'knowledge': 'Knowledge Sharing',
-  'skilled': 'Skilled Professionals',
-  'volunteering': 'Volunteering'
-};
+interface Filters {
+  industry?: string;
+  size?: string;
+}
 
 export default function PublicOrganizationsPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [partnershipFilter, setPartnershipFilter] = useState<string>("all");
-  const { user } = useAuth();
-  
-  // Fetch organizations with their partnership interests
-  const { data, isLoading } = useQuery({
-    queryKey: ["public-organizations-with-interests"],
-    queryFn: async () => {
-      // First get all organizations
-      const { data: organizations, error: orgError } = await supabase
-        .from("organizations")
-        .select("*")
-        .order("name");
-      
-      if (orgError) throw orgError;
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<Filters>({});
+  const { toast } = useToast();
 
-      // Type-cast organizations to the expected type
-      const orgs = organizations as Organization[];
-      
-      // Then get all partnership interests
-      const { data: interests, error: interestsError } = await supabase
-        .from("organization_partnership_interests")
-        .select("organization_id, partnership_type");
-      
-      if (interestsError) throw interestsError;
-      
-      // Combine the data
-      const orgsWithInterests = orgs.map(org => {
-        const orgInterests = interests
-          ? interests.filter(int => int.organization_id === org.id)
-                    .map(int => int.partnership_type as PartnershipType)
-          : [];
+  useEffect(() => {
+    const fetchOrganizations = async () => {
+      try {
+        setLoading(true);
         
-        return {
-          ...org,
-          partnershipInterests: [...new Set(orgInterests)] // Remove duplicates
-        };
-      });
-      
-      return orgsWithInterests;
-    },
-  });
-
-  // Filter organizations based on search query and partnership filter
-  const filteredOrganizations = data?.filter(org => {
-    // Search filter
-    const matchesSearch = !searchQuery ||
-      org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      org.industry?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      org.location?.toLowerCase().includes(searchQuery.toLowerCase());
+        const query = supabase
+          .from("organizations")
+          .select("*")
+          .eq("status", "active");
+          
+        // Apply filters if provided
+        if (filters.industry) {
+          query.eq("industry", filters.industry);
+        }
+        
+        if (filters.size) {
+          query.eq("size", filters.size);
+        }
+        
+        const { data, error } = await query.order("created_at", { ascending: false });
+        
+        if (error) throw error;
+        
+        setOrganizations(mapOrganizationsData(data || []));
+      } catch (error) {
+        console.error("Error fetching organizations:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load organizations",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    // Partnership type filter
-    const matchesPartnership = partnershipFilter === "all" || 
-      (org.partnershipInterests && org.partnershipInterests.includes(partnershipFilter as PartnershipType));
-    
-    return matchesSearch && matchesPartnership;
-  });
+    fetchOrganizations();
+  }, [filters, toast]);
 
   return (
-    <div className="container mx-auto px-4 py-4 md:py-8">
-      <div className="flex flex-col gap-4 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Partner Organizations</h1>
-            <p className="text-muted-foreground text-sm md:text-base">
-              Discover organizations making an impact.
-            </p>
-          </div>
-          {!user && (
-            <Button asChild className="w-full sm:w-auto">
-              <Link to="/login">Sign in to Connect</Link>
-            </Button>
-          )}
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-grow">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search organizations..."
-              className="pl-9 w-full"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          
-          <div className="w-full sm:w-[200px]">
-            <Select value={partnershipFilter} onValueChange={setPartnershipFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by partnership" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Partnerships</SelectItem>
-                <SelectItem value="monetary">Financial Support</SelectItem>
-                <SelectItem value="knowledge">Knowledge Sharing</SelectItem>
-                <SelectItem value="skilled">Skilled Professionals</SelectItem>
-                <SelectItem value="volunteering">Volunteering</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+    <div className="container mx-auto py-8">
+      <h1 className="text-3xl font-bold mb-6">Browse Organizations</h1>
+      
+      {/* Filters (example) */}
+      <div className="mb-4">
+        {/* Industry Filter */}
+        <label htmlFor="industry" className="block text-sm font-medium text-gray-700">
+          Industry:
+        </label>
+        <select
+          id="industry"
+          className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary-500 sm:text-sm"
+          onChange={(e) => setFilters({ ...filters, industry: e.target.value })}
+        >
+          <option value="">All Industries</option>
+          <option value="technology">Technology</option>
+          <option value="healthcare">Healthcare</option>
+          {/* Add more options as needed */}
+        </select>
+        
+        {/* Size Filter */}
+        <label htmlFor="size" className="block mt-4 text-sm font-medium text-gray-700">
+          Size:
+        </label>
+        <select
+          id="size"
+          className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary-500 sm:text-sm"
+          onChange={(e) => setFilters({ ...filters, size: e.target.value })}
+        >
+          <option value="">All Sizes</option>
+          <option value="small">Small</option>
+          <option value="medium">Medium</option>
+          <option value="large">Large</option>
+          {/* Add more options as needed */}
+        </select>
       </div>
 
-      {partnershipFilter !== "all" && (
-        <div className="mb-4 flex flex-wrap gap-2">
-          <Badge variant="outline" className="mr-2">
-            Showing: {partnershipTypeLabels[partnershipFilter as PartnershipType]}
-            <button 
-              className="ml-2 hover:text-destructive" 
-              onClick={() => setPartnershipFilter("all")}
-            >
-              ✕
-            </button>
-          </Badge>
-        </div>
-      )}
-
-      {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-[200px] bg-muted animate-pulse rounded-lg" />
-          ))}
-        </div>
-      ) : filteredOrganizations && filteredOrganizations.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {filteredOrganizations.map((org) => (
-            <PartnerCard 
-              key={org.id} 
-              organization={org} 
-              partnershipInterests={org.partnershipInterests}
-            />
-          ))}
-        </div>
+      {loading ? (
+        <p>Loading organizations...</p>
       ) : (
-        <div className="text-center py-8 md:py-12">
-          <h2 className="text-xl md:text-2xl font-bold mb-2">No Organizations Found</h2>
-          <p className="text-muted-foreground">
-            Try adjusting your search criteria.
-          </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {organizations.map((org) => (
+            <div key={org.id} className="bg-white rounded-lg shadow-md p-4">
+              <h2 className="text-xl font-semibold mb-2">{org.name}</h2>
+              <p className="text-gray-600">{org.description}</p>
+              {/* Add more organization details here */}
+            </div>
+          ))}
         </div>
       )}
     </div>

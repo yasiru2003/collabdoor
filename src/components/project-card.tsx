@@ -1,4 +1,3 @@
-
 import { Project, PartnershipType } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
@@ -405,14 +404,14 @@ export function ProjectCard({ project }: ProjectCardProps) {
             <Avatar className="h-7 w-7 flex-shrink-0">
               {hasOrganization ? (
                 <>
-                  <AvatarImage src={project.organizationImage} alt={project.organizationName} />
+                  <AvatarImage src={project.logo || project.image} alt={project.organizationName} />
                   <AvatarFallback className="text-xs bg-blue-100 text-blue-800">
                     {project.organizationName?.substring(0, 2).toUpperCase() || "OR"}
                   </AvatarFallback>
                 </>
               ) : (
                 <>
-                  <AvatarImage src={project.organizerImage} alt={project.organizerName} />
+                  <AvatarImage src={project.image} alt={project.organizerName} />
                   <AvatarFallback className="text-xs bg-muted">
                     {project.organizerName ? project.organizerName.substring(0, 2).toUpperCase() : "??"}
                   </AvatarFallback>

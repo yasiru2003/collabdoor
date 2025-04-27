@@ -1,3 +1,4 @@
+
 import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,14 +13,17 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { useClickOutside } from "@/hooks/use-click-outside";
-import { Menu } from "lucide-react";
+import { Menu, Building } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export function Header() {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef(null);
   const isMobile = useIsMobile();
+  
+  // Check if user exists to determine authentication status
+  const isAuthenticated = !!user;
 
   useClickOutside(mobileMenuRef, () => {
     if (isMobileMenuOpen) {
@@ -51,7 +55,7 @@ export function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.image} alt={user?.name || "Avatar"} />
+                  <AvatarImage src={user?.profile_image} alt={user?.name || "Avatar"} />
                   <AvatarFallback>{user?.name?.substring(0, 2).toUpperCase() || "??"}</AvatarFallback>
                 </Avatar>
               </Button>
@@ -76,7 +80,7 @@ export function Header() {
                 <Link to="/settings">Settings</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
+              <DropdownMenuItem onClick={signOut}>Logout</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (

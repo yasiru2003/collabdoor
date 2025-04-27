@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/header";
@@ -8,7 +7,8 @@ import {
   Handshake, 
   CheckCircle, 
   Briefcase, 
-  Users 
+  Users,
+  Building
 } from "lucide-react";
 
 export default function HowItWorksPage() {
