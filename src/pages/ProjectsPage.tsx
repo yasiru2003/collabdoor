@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Layout } from "@/components/layout";
 import { ProjectCard } from "@/components/project/ProjectCard";
@@ -7,7 +8,8 @@ import { useState } from "react";
 
 export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const { projects, isLoading, error, refetch } = useProjects();
+  const projectsResult = useProjects();
+  const projects = projectsResult.data || [];
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -17,7 +19,7 @@ export default function ProjectsPage() {
     project.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (isLoading) {
+  if (projectsResult.isLoading) {
     return (
       <Layout>
         <div className="flex justify-center items-center min-h-[60vh]">
@@ -27,11 +29,11 @@ export default function ProjectsPage() {
     );
   }
 
-  if (error) {
+  if (projectsResult.error) {
     return (
       <Layout>
         <div className="flex justify-center items-center min-h-[60vh]">
-          <p>Error: {error.message}</p>
+          <p>Error: {projectsResult.error.message}</p>
         </div>
       </Layout>
     );

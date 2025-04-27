@@ -1,5 +1,5 @@
 
-import { ApplicationStatus, useProjectApplications, useProjectApplicationsQuery } from "@/hooks/use-applications-query";
+import { useProjectApplications, useProjectApplicationsQuery, ApplicationWithProfile } from "@/hooks/use-applications-query";
 
-export type { ApplicationStatus };
+export type { ApplicationWithProfile };
 export { useProjectApplications, useProjectApplicationsQuery };

@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 
 // Types for application data
 export interface ApplicationWithProfile {
@@ -12,6 +13,7 @@ export interface ApplicationWithProfile {
   partnership_type: string;
   organization_name: string;
   created_at: string;
+  updated_at: string;
   profiles: {
     name: string;
     id: string;
@@ -19,6 +21,8 @@ export interface ApplicationWithProfile {
     profile_image?: string;
   };
 }
+
+export type ApplicationStatus = "pending" | "approved" | "rejected";
 
 export function useProjectApplicationsQuery(projectId: string | undefined) {
   return useQuery({
@@ -39,7 +43,7 @@ export function useProjectApplicationsQuery(projectId: string | undefined) {
         return [];
       }
       
-      return data as ApplicationWithProfile[];
+      return data as unknown as ApplicationWithProfile[];
     },
     enabled: !!projectId
   });
