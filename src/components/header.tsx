@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,7 @@ import { Menu, Building } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export function Header() {
-  const { user, loading, signOut } = useAuth();
+  const { user, signOut, loading } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef(null);
   const isMobile = useIsMobile();
@@ -185,7 +184,7 @@ export function Header() {
                       </Link>
                       <button
                         onClick={() => {
-                          logout();
+                          signOut();
                           setIsMobileMenuOpen(false);
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
