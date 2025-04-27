@@ -1,3 +1,4 @@
+
 // src/components/admin/projects.tsx
 import {
   ColumnDef,
@@ -41,19 +42,19 @@ const columns: ColumnDef<Project>[] = [
     header: "Status",
   },
   {
-    accessorKey: "organizerId",
+    accessorKey: "organizer_id",
     header: "Organizer ID",
   },
   {
-    accessorKey: "organizationId",
+    accessorKey: "organization_id",
     header: "Organization ID",
   },
   {
-    accessorKey: "organizationName",
+    accessorKey: "organization_name",
     header: "Organization Name",
   },
   {
-    accessorKey: "completedAt",
+    accessorKey: "completed_at",
     header: "Completed At",
   },
 ];

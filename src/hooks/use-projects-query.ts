@@ -85,8 +85,9 @@ export type ApplicationStatus = "pending" | "approved" | "rejected";
 export const useProjectApplications = () => {
   const checkApplicationStatus = async (projectId: string, userId: string) => {
     try {
+      // Fix table name reference
       const { data, error } = await supabase
-        .from("applications")
+        .from("project_applications")
         .select("*")
         .eq("project_id", projectId)
         .eq("user_id", userId)
@@ -116,8 +117,9 @@ export const useProjectApplications = () => {
     organizationId: string | null
   ) => {
     try {
+      // Fix table name reference
       const { data, error } = await supabase
-        .from("applications")
+        .from("project_applications")
         .insert([
           {
             project_id: projectId,
@@ -147,8 +149,9 @@ export const useProjectApplications = () => {
     status: ApplicationStatus
   ) => {
     try {
+      // Fix table name reference
       const { data, error } = await supabase
-        .from("applications")
+        .from("project_applications")
         .update({ status })
         .eq("id", applicationId)
         .select()
@@ -198,8 +201,9 @@ export const useProjectApplicationsQuery = (projectId?: string) => {
     queryFn: async () => {
       if (!projectId) return [];
 
+      // Fix table name reference
       const { data, error } = await supabase
-        .from("applications")
+        .from("project_applications")
         .select(
           `
           id,
