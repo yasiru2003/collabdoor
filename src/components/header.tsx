@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { useClickOutside } from "@/hooks/use-click-outside";
 import { Menu, Building } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-
 export function Header() {
   const {
     user,
@@ -21,18 +19,16 @@ export function Header() {
 
   // Check if user exists to determine authentication status
   const isAuthenticated = !!user;
-  
   useClickOutside(mobileMenuRef, () => {
     if (isMobileMenuOpen) {
       setIsMobileMenuOpen(false);
     }
   });
-  
+
   // Get display name and profile image from user or userProfile
   const displayName = userProfile?.name || user?.email || "User";
   const profileImage = userProfile?.profile_image || "";
-  const displayInitials = ((displayName || "??").substring(0, 2)).toUpperCase();
-  
+  const displayInitials = (displayName || "??").substring(0, 2).toUpperCase();
   return <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
         <Link to="/" className="flex items-center gap-2">
@@ -43,21 +39,11 @@ export function Header() {
         </Link>
         
         <div className="ml-4 hidden md:flex items-center gap-6">
-          <Link to="/browse/projects" className="text-sm font-medium hover:text-primary">
-            Projects
-          </Link>
-          <Link to="/browse/organizations" className="text-sm font-medium hover:text-primary">
-            Organizations
-          </Link>
-          <Link to="/how-it-works" className="text-sm font-medium hover:text-primary">
-            How It Works
-          </Link>
-          <Link to="/about" className="text-sm font-medium hover:text-primary">
-            About
-          </Link>
-          <Link to="/contact" className="text-sm font-medium hover:text-primary">
-            Contact
-          </Link>
+          
+          
+          
+          
+          
         </div>
         
         <div className="flex-1"></div>
