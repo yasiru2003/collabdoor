@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -59,7 +58,7 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
     startDate: project?.timeline?.start || "",
     endDate: project?.timeline?.end || "",
     partnershipTypes: project?.partnershipTypes || [] as PartnershipType[],
-    applicationsEnabled: project?.applicationsEnabled === true, // Ensure strict boolean
+    applicationsEnabled: project?.applicationsEnabled === true, // Ensure strict boolean conversion
     status: project?.status || "draft",
   });
   const [showCustomTypes, setShowCustomTypes] = useState(false);
@@ -113,8 +112,8 @@ export function ProjectForm({ project, onSubmit, isLoading }: ProjectFormProps) 
         const requireApproval = getSetting("require_project_approval", true);
         const initialStatus = requireApproval && !isAdmin ? "pending_publish" : "published";
 
-        // Explicitly ensure applicationsEnabled is a boolean
-        const applicationsEnabled: boolean = form.applicationsEnabled === true;
+        // Ensure applicationsEnabled is always a boolean using Boolean()
+        const applicationsEnabled: boolean = Boolean(form.applicationsEnabled);
 
         const formData = {
           ...values,
