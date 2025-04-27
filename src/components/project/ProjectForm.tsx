@@ -485,7 +485,7 @@ export function ProjectForm() {
 
             {/* Previous Projects */}
             <FormItem>
-              <FormLabel>Previous Projects</FormLabel>
+              <FormLabel>Previous Versions</FormLabel>
               <FormDescription>Add details about relevant previous version of this project (optional)</FormDescription>
               <div className="space-y-4">
                 {previousProjects.map((project, index) => <Card key={index}>
