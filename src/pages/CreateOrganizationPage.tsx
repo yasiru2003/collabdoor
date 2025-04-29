@@ -1,11 +1,12 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { OrganizationForm } from "@/components/profile/OrganizationForm";
 import { supabase } from "@/integrations/supabase/client";
+import { useSystemSetting } from "@/hooks/use-system-settings";
 
 export default function CreateOrganizationPage() {
   const { user, loading } = useAuth();
@@ -21,6 +22,10 @@ export default function CreateOrganizationPage() {
     foundedYear: "",
     logo: ""
   });
+  
+  // Check if organizations require admin approval
+  const { data: orgApprovalSetting } = useSystemSetting("require_organization_approval");
+  const requiresAdminApproval = orgApprovalSetting?.value || false;
 
   // Redirect if not authenticated
   React.useEffect(() => {
@@ -53,6 +58,9 @@ export default function CreateOrganizationPage() {
     try {
       setSubmitting(true);
       
+      // Set status based on admin approval setting
+      const status = requiresAdminApproval ? "pending_approval" : "active";
+      
       const { error } = await supabase.from("organizations").insert({
         name: organization.name,
         description: organization.description || null,
@@ -62,14 +70,17 @@ export default function CreateOrganizationPage() {
         size: organization.size || null,
         founded_year: organization.foundedYear ? parseInt(organization.foundedYear) : null,
         logo: organization.logo || null,
-        owner_id: user.id
+        owner_id: user.id,
+        status: status
       });
 
       if (error) throw error;
 
       toast({
         title: "Organization created",
-        description: "Your organization has been successfully created"
+        description: requiresAdminApproval 
+          ? "Your organization has been submitted for approval" 
+          : "Your organization has been successfully created"
       });
       
       navigate("/organizations");
@@ -107,6 +118,12 @@ export default function CreateOrganizationPage() {
             onOrganizationChange={handleOrganizationChange}
             onSubmit={handleSubmit}
           />
+          
+          {requiresAdminApproval && (
+            <div className="mt-4 text-sm text-muted-foreground">
+              Note: Your organization will need admin approval before it's active.
+            </div>
+          )}
         </div>
       </div>
     </Layout>

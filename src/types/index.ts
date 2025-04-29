@@ -115,7 +115,7 @@ export interface ApplicationWithProfile {
   };
 }
 
-// New interface for system settings
+// Updated interface for system settings
 export interface SystemSettings {
   id: string;
   key: string;
