@@ -21,6 +21,7 @@ import { useSystemSetting } from "@/hooks/use-system-settings";
 import { PartnershipType } from "@/types";
 import { ProjectImagesUpload } from "@/components/project/ProjectImagesUpload";
 import { uploadProjectProposal } from "@/utils/upload-utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export function ProjectForm() {
   const { user } = useAuth();
@@ -31,7 +32,7 @@ export function ProjectForm() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
-  const [partnershipTypes, setPartnershipTypes] = useState<string[]>([]);
+  const [partnershipTypes, setPartnershipTypes] = useState<PartnershipType[]>([]);
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [previousProjects, setPreviousProjects] = useState("");
@@ -47,6 +48,16 @@ export function ProjectForm() {
     if (e.target.files && e.target.files.length > 0) {
       setProposalFile(e.target.files[0]);
     }
+  };
+
+  const handlePartnershipTypeChange = (type: PartnershipType) => {
+    setPartnershipTypes(current => {
+      if (current.includes(type)) {
+        return current.filter(t => t !== type);
+      } else {
+        return [...current, type];
+      }
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,11 +87,10 @@ export function ProjectForm() {
       // Determine initial status based on admin approval setting
       const initialStatus = requiresAdminApproval ? "pending_publish" : "draft";
       
-      // Type-safe partnership_types using valid PartnershipType values
-      const validPartnershipTypes = partnershipTypes
-        .filter((type): type is PartnershipType => 
-          ["monetary", "knowledge", "skilled", "volunteering"].includes(type)
-        );
+      // Ensure we have at least one partnership type selected
+      const validPartnershipTypes = partnershipTypes.length > 0 
+        ? partnershipTypes 
+        : ["knowledge" as PartnershipType];
 
       // Upload proposal file if selected
       let proposalFilePath = null;
@@ -104,7 +114,7 @@ export function ProjectForm() {
           description,
           category: category || null,
           location: location || null,
-          partnership_types: validPartnershipTypes.length > 0 ? validPartnershipTypes : ["knowledge"],
+          partnership_types: validPartnershipTypes,
           organizer_id: user.id,
           status: initialStatus,
           partnership_details: contactInfo,
@@ -154,11 +164,12 @@ export function ProjectForm() {
     }
   };
 
-  const partnershipOptions = [
-    { value: "monetary", label: "Monetary" },
-    { value: "knowledge", label: "Knowledge" },
-    { value: "skilled", label: "Skilled" },
-    { value: "volunteering", label: "Volunteering" },
+  // Define available partnership types based on the PartnershipType enum
+  const partnershipTypeOptions: { type: PartnershipType, label: string }[] = [
+    { type: "monetary", label: "Monetary" },
+    { type: "knowledge", label: "Knowledge" },
+    { type: "skilled", label: "Skilled" },
+    { type: "volunteering", label: "Volunteering" },
   ];
 
   return (
@@ -209,12 +220,28 @@ export function ProjectForm() {
           </div>
           <div className="grid gap-2">
             <Label>Partnership Types</Label>
-            <MultiSelect
-              options={partnershipOptions}
-              value={partnershipTypes}
-              onChange={setPartnershipTypes}
-              placeholder="Select partnership types"
-            />
+            <div className="space-y-2">
+              {partnershipTypeOptions.map((option) => (
+                <div key={option.type} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={`partnership-${option.type}`} 
+                    checked={partnershipTypes.includes(option.type)}
+                    onCheckedChange={() => handlePartnershipTypeChange(option.type)}
+                  />
+                  <Label 
+                    htmlFor={`partnership-${option.type}`}
+                    className="cursor-pointer font-normal"
+                  >
+                    {option.label}
+                  </Label>
+                </div>
+              ))}
+            </div>
+            {partnershipTypes.length === 0 && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Select at least one partnership type (Knowledge will be selected by default if none chosen)
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
