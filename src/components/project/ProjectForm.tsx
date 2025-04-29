@@ -19,6 +19,8 @@ import { useToast } from "@/hooks/use-toast";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useSystemSetting } from "@/hooks/use-system-settings";
 import { PartnershipType } from "@/types";
+import { ProjectImagesUpload } from "@/components/project/ProjectImagesUpload";
+import { uploadProjectProposal } from "@/utils/upload-utils";
 
 export function ProjectForm() {
   const { user } = useAuth();
@@ -30,11 +32,22 @@ export function ProjectForm() {
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
   const [partnershipTypes, setPartnershipTypes] = useState<string[]>([]);
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [previousProjects, setPreviousProjects] = useState("");
+  const [projectImages, setProjectImages] = useState<string[]>([]);
+  const [proposalFile, setProposalFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Check if projects require admin approval
   const { data: projectApprovalSetting } = useSystemSetting("require_project_approval");
   const requiresAdminApproval = projectApprovalSetting?.value || false;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setProposalFile(e.target.files[0]);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +81,21 @@ export function ProjectForm() {
         .filter((type): type is PartnershipType => 
           ["monetary", "knowledge", "skilled", "volunteering"].includes(type)
         );
+
+      // Upload proposal file if selected
+      let proposalFilePath = null;
+      if (proposalFile && user.id) {
+        proposalFilePath = await uploadProjectProposal(proposalFile, user.id);
+      }
+      
+      // Create contact information and previous projects objects
+      const contactInfo = {
+        email: contactEmail,
+        phone: contactPhone
+      };
+
+      const previousProjectsInfo = previousProjects ? 
+        { description: previousProjects } : null;
       
       const { data, error } = await supabase
         .from("projects")
@@ -78,12 +106,31 @@ export function ProjectForm() {
           location: location || null,
           partnership_types: validPartnershipTypes.length > 0 ? validPartnershipTypes : ["knowledge"],
           organizer_id: user.id,
-          status: initialStatus
+          status: initialStatus,
+          partnership_details: contactInfo,
+          previous_projects: previousProjectsInfo,
+          proposal_file_path: proposalFilePath
         })
         .select()
         .single();
         
       if (error) throw error;
+
+      // If we have images, associate them with the project
+      if (projectImages.length > 0 && data) {
+        const projectImagesData = projectImages.map(image_url => ({
+          project_id: data.id,
+          image_url
+        }));
+
+        const { error: imagesError } = await supabase
+          .from("project_images")
+          .insert(projectImagesData);
+
+        if (imagesError) {
+          console.error("Error saving project images:", imagesError);
+        }
+      }
       
       toast({
         title: "Project created",
@@ -170,6 +217,99 @@ export function ProjectForm() {
             />
           </div>
         </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Contact Information</CardTitle>
+          <CardDescription>
+            Provide contact details for interested partners.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="contactEmail">Contact Email</Label>
+            <Input
+              id="contactEmail"
+              type="email"
+              placeholder="contact@example.com"
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="contactPhone">Contact Phone</Label>
+            <Input
+              id="contactPhone"
+              placeholder="Phone Number"
+              value={contactPhone}
+              onChange={(e) => setContactPhone(e.target.value)}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Previous Projects</CardTitle>
+          <CardDescription>
+            Share information about any relevant past projects.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="previousProjects">Previous Projects</Label>
+            <Textarea
+              id="previousProjects"
+              placeholder="Describe your previous projects and experiences"
+              value={previousProjects}
+              onChange={(e) => setPreviousProjects(e.target.value)}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Project Proposal</CardTitle>
+          <CardDescription>
+            Upload a detailed proposal document if available.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="proposalFile">Proposal Document</Label>
+            <Input
+              id="proposalFile"
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={handleFileChange}
+            />
+            <p className="text-sm text-muted-foreground">
+              Accepted formats: PDF, DOC, DOCX
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {user && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Project Images</CardTitle>
+            <CardDescription>
+              Upload images related to your project.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ProjectImagesUpload 
+              userId={user.id} 
+              onImagesChange={setProjectImages}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
         <CardFooter>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Creating..." : requiresAdminApproval ? "Submit for Approval" : "Create Project"}
