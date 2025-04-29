@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,8 +16,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { MultiSelect } from "@/components/multi-select";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { useSystemSetting } from "@/hooks/use-system-settings";
+import { PartnershipType } from "@/types";
 
 export function ProjectForm() {
   const { user } = useAuth();
@@ -61,6 +63,12 @@ export function ProjectForm() {
       // Determine initial status based on admin approval setting
       const initialStatus = requiresAdminApproval ? "pending_publish" : "draft";
       
+      // Type-safe partnership_types using valid PartnershipType values
+      const validPartnershipTypes = partnershipTypes
+        .filter((type): type is PartnershipType => 
+          ["monetary", "knowledge", "skilled", "volunteering"].includes(type)
+        );
+      
       const { data, error } = await supabase
         .from("projects")
         .insert({
@@ -68,7 +76,7 @@ export function ProjectForm() {
           description,
           category: category || null,
           location: location || null,
-          partnership_types: partnershipTypes.length > 0 ? partnershipTypes : ["knowledge"],
+          partnership_types: validPartnershipTypes.length > 0 ? validPartnershipTypes : ["knowledge"],
           organizer_id: user.id,
           status: initialStatus
         })
