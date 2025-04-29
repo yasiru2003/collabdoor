@@ -49,6 +49,7 @@ export interface Organization {
   createdAt: string;
   updatedAt: string;
   owner_id: string;
+  status?: string;
   // Adding these for compatibility with raw DB objects
   created_at?: string;
   updated_at?: string;

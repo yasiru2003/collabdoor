@@ -41,6 +41,7 @@ export function mapSupabaseOrgToOrganization(supabaseOrg: any): Organization {
     createdAt: supabaseOrg.created_at,
     updatedAt: supabaseOrg.updated_at,
     owner_id: supabaseOrg.owner_id,
+    status: supabaseOrg.status, // Add status field
     // Keep original properties for compatibility
     created_at: supabaseOrg.created_at,
     updated_at: supabaseOrg.updated_at,
