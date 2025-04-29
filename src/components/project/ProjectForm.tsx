@@ -165,7 +165,8 @@ export function ProjectForm() {
             <MultiSelect
               options={partnershipOptions}
               value={partnershipTypes}
-              onChange={(values) => setPartnershipTypes(values)}
+              onChange={setPartnershipTypes}
+              placeholder="Select partnership types"
             />
           </div>
         </CardContent>

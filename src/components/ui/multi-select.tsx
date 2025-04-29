@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { X } from "lucide-react";
 import { Badge } from "./badge";
@@ -5,6 +6,7 @@ import {
   Command,
   CommandGroup,
   CommandItem,
+  CommandEmpty,
 } from "./command";
 import {
   Popover,
@@ -114,39 +116,38 @@ export function MultiSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
-        <Command className="max-h-64">
-          <CommandGroup className="max-h-64 overflow-auto">
-            {safeOptions.map((option) => {
-              const isSelected = safeValue.includes(option.value);
-              return (
-                <CommandItem
-                  key={option.value}
-                  onSelect={() => handleSelect(option.value)}
-                  className={cn(
-                    "flex cursor-pointer items-center gap-2",
-                    isSelected ? "bg-accent" : ""
-                  )}
-                >
-                  <div
+        <Command>
+          {safeOptions.length === 0 ? (
+            <CommandEmpty>No options available</CommandEmpty>
+          ) : (
+            <CommandGroup className="max-h-64 overflow-auto">
+              {safeOptions.map((option) => {
+                const isSelected = safeValue.includes(option.value);
+                return (
+                  <CommandItem
+                    key={option.value}
+                    onSelect={() => handleSelect(option.value)}
                     className={cn(
-                      "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                      isSelected
-                        ? "bg-primary text-primary-foreground"
-                        : "opacity-50"
+                      "flex cursor-pointer items-center gap-2",
+                      isSelected ? "bg-accent" : ""
                     )}
                   >
-                    {isSelected && <span className="h-4 text-xs">✓</span>}
-                  </div>
-                  {option.label}
-                </CommandItem>
-              );
-            })}
-            {safeOptions.length === 0 && (
-              <CommandItem disabled className="text-center text-muted-foreground">
-                No options available
-              </CommandItem>
-            )}
-          </CommandGroup>
+                    <div
+                      className={cn(
+                        "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                        isSelected
+                          ? "bg-primary text-primary-foreground"
+                          : "opacity-50"
+                      )}
+                    >
+                      {isSelected && <span className="h-4 text-xs">✓</span>}
+                    </div>
+                    {option.label}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          )}
         </Command>
       </PopoverContent>
     </Popover>
