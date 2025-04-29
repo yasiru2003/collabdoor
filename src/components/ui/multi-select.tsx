@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { X } from "lucide-react";
 import { Badge } from "./badge";
@@ -30,8 +29,8 @@ interface MultiSelectProps {
 }
 
 export function MultiSelect({
-  options,
-  value = [], // Provide default empty array to prevent undefined
+  options = [], // Provide default empty array for options
+  value = [], // Provide default empty array for value
   onChange,
   placeholder = "Select options",
   className,
@@ -39,29 +38,34 @@ export function MultiSelect({
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
 
-  // Ensure we always have an array, even if value is somehow undefined
+  // Ensure we always have arrays, even if values are somehow undefined
+  const safeOptions = React.useMemo(() => {
+    return Array.isArray(options) ? options : [];
+  }, [options]);
+
   const safeValue = React.useMemo(() => {
     return Array.isArray(value) ? value : [];
   }, [value]);
 
-  const handleUnselect = (item: string) => {
+  const handleUnselect = React.useCallback((item: string) => {
     onChange(safeValue.filter((i) => i !== item));
-  };
+  }, [safeValue, onChange]);
 
-  const handleSelect = (item: string) => {
+  const handleSelect = React.useCallback((item: string) => {
     if (safeValue.includes(item)) {
       onChange(safeValue.filter((i) => i !== item));
     } else {
       onChange([...safeValue, item]);
     }
     // Keep the popover open for multiple selections
-  };
+  }, [safeValue, onChange]);
 
   const selectedLabels = React.useMemo(() => {
+    if (!safeOptions.length) return [];
     return safeValue.map(
-      (v) => options.find((option) => option.value === v)?.label || v
+      (v) => safeOptions.find((option) => option.value === v)?.label || v
     );
-  }, [options, safeValue]);
+  }, [safeOptions, safeValue]);
 
   return (
     <Popover open={open && !disabled} onOpenChange={setOpen}>
@@ -95,7 +99,7 @@ export function MultiSelect({
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    const itemValue = options.find(
+                    const itemValue = safeOptions.find(
                       (option) => option.label === label
                     )?.value;
                     if (itemValue) handleUnselect(itemValue);
@@ -112,7 +116,7 @@ export function MultiSelect({
       <PopoverContent className="w-full p-0" align="start">
         <Command className="max-h-64">
           <CommandGroup className="max-h-64 overflow-auto">
-            {options.map((option) => {
+            {safeOptions.map((option) => {
               const isSelected = safeValue.includes(option.value);
               return (
                 <CommandItem
@@ -137,6 +141,11 @@ export function MultiSelect({
                 </CommandItem>
               );
             })}
+            {safeOptions.length === 0 && (
+              <CommandItem disabled className="text-center text-muted-foreground">
+                No options available
+              </CommandItem>
+            )}
           </CommandGroup>
         </Command>
       </PopoverContent>
