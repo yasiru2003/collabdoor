@@ -1,17 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -22,12 +14,14 @@ import { PartnershipType } from "@/types";
 import { ProjectImagesUpload } from "@/components/project/ProjectImagesUpload";
 import { uploadProjectProposal } from "@/utils/upload-utils";
 import { Checkbox } from "@/components/ui/checkbox";
-
 export function ProjectForm() {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  
+  const {
+    toast
+  } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -39,17 +33,17 @@ export function ProjectForm() {
   const [projectImages, setProjectImages] = useState<string[]>([]);
   const [proposalFile, setProposalFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Check if projects require admin approval
-  const { data: projectApprovalSetting } = useSystemSetting("require_project_approval");
-  const requiresAdminApproval = projectApprovalSetting?.value || false;
 
+  // Check if projects require admin approval
+  const {
+    data: projectApprovalSetting
+  } = useSystemSetting("require_project_approval");
+  const requiresAdminApproval = projectApprovalSetting?.value || false;
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setProposalFile(e.target.files[0]);
     }
   };
-
   const handlePartnershipTypeChange = (type: PartnershipType) => {
     setPartnershipTypes(current => {
       if (current.includes(type)) {
@@ -59,71 +53,62 @@ export function ProjectForm() {
       }
     });
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!user) {
       toast({
         title: "Authentication required",
         description: "Please login to create a project",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-    
     if (!title || !description) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-    
     try {
       setIsSubmitting(true);
-      
+
       // Determine initial status based on admin approval setting
       const initialStatus = requiresAdminApproval ? "pending_publish" : "draft";
-      
+
       // Ensure we have at least one partnership type selected
-      const validPartnershipTypes = partnershipTypes.length > 0 
-        ? partnershipTypes 
-        : ["knowledge" as PartnershipType];
+      const validPartnershipTypes = partnershipTypes.length > 0 ? partnershipTypes : ["knowledge" as PartnershipType];
 
       // Upload proposal file if selected
       let proposalFilePath = null;
       if (proposalFile && user.id) {
         proposalFilePath = await uploadProjectProposal(proposalFile, user.id);
       }
-      
+
       // Create contact information and previous projects objects
       const contactInfo = {
         email: contactEmail,
         phone: contactPhone
       };
-
-      const previousProjectsInfo = previousProjects ? 
-        { description: previousProjects } : null;
-      
-      const { data, error } = await supabase
-        .from("projects")
-        .insert({
-          title,
-          description,
-          category: category || null,
-          location: location || null,
-          partnership_types: validPartnershipTypes,
-          organizer_id: user.id,
-          status: initialStatus,
-          partnership_details: contactInfo,
-          previous_projects: previousProjectsInfo,
-          proposal_file_path: proposalFilePath
-        })
-        .select()
-        .single();
-        
+      const previousProjectsInfo = previousProjects ? {
+        description: previousProjects
+      } : null;
+      const {
+        data,
+        error
+      } = await supabase.from("projects").insert({
+        title,
+        description,
+        category: category || null,
+        location: location || null,
+        partnership_types: validPartnershipTypes,
+        organizer_id: user.id,
+        status: initialStatus,
+        partnership_details: contactInfo,
+        previous_projects: previousProjectsInfo,
+        proposal_file_path: proposalFilePath
+      }).select().single();
       if (error) throw error;
 
       // If we have images, associate them with the project
@@ -132,32 +117,26 @@ export function ProjectForm() {
           project_id: data.id,
           image_url
         }));
-
-        const { error: imagesError } = await supabase
-          .from("project_images")
-          .insert(projectImagesData);
-
+        const {
+          error: imagesError
+        } = await supabase.from("project_images").insert(projectImagesData);
         if (imagesError) {
           console.error("Error saving project images:", imagesError);
         }
       }
-      
       toast({
         title: "Project created",
-        description: requiresAdminApproval 
-          ? "Your project has been submitted for approval" 
-          : "Your project has been created successfully",
+        description: requiresAdminApproval ? "Your project has been submitted for approval" : "Your project has been created successfully"
       });
-      
+
       // Redirect to the project page
       navigate(`/projects/${data.id}`);
-      
     } catch (error: any) {
       console.error("Error creating project:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to create project",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsSubmitting(false);
@@ -165,15 +144,23 @@ export function ProjectForm() {
   };
 
   // Define available partnership types based on the PartnershipType enum
-  const partnershipTypeOptions: { type: PartnershipType, label: string }[] = [
-    { type: "monetary", label: "Monetary" },
-    { type: "knowledge", label: "Knowledge" },
-    { type: "skilled", label: "Skilled" },
-    { type: "volunteering", label: "Volunteering" },
-  ];
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+  const partnershipTypeOptions: {
+    type: PartnershipType;
+    label: string;
+  }[] = [{
+    type: "monetary",
+    label: "Monetary"
+  }, {
+    type: "knowledge",
+    label: "Knowledge"
+  }, {
+    type: "skilled",
+    label: "Skilled"
+  }, {
+    type: "volunteering",
+    label: "Volunteering"
+  }];
+  return <form onSubmit={handleSubmit} className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Project Details</CardTitle>
@@ -184,64 +171,33 @@ export function ProjectForm() {
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              placeholder="Project Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
+            <Input id="title" placeholder="Project Title" value={title} onChange={e => setTitle(e.target.value)} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="Project Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
+            <Textarea id="description" placeholder="Project Description" value={description} onChange={e => setDescription(e.target.value)} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="category">Category</Label>
-            <Input
-              id="category"
-              placeholder="Category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            />
+            <Input id="category" placeholder="Category" value={category} onChange={e => setCategory(e.target.value)} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="location">Location</Label>
-            <Input
-              id="location"
-              placeholder="Location"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            />
+            <Input id="location" placeholder="Location" value={location} onChange={e => setLocation(e.target.value)} />
           </div>
           <div className="grid gap-2">
             <Label>Partnership Types</Label>
             <div className="space-y-2">
-              {partnershipTypeOptions.map((option) => (
-                <div key={option.type} className="flex items-center space-x-2">
-                  <Checkbox 
-                    id={`partnership-${option.type}`} 
-                    checked={partnershipTypes.includes(option.type)}
-                    onCheckedChange={() => handlePartnershipTypeChange(option.type)}
-                  />
-                  <Label 
-                    htmlFor={`partnership-${option.type}`}
-                    className="cursor-pointer font-normal"
-                  >
+              {partnershipTypeOptions.map(option => <div key={option.type} className="flex items-center space-x-2">
+                  <Checkbox id={`partnership-${option.type}`} checked={partnershipTypes.includes(option.type)} onCheckedChange={() => handlePartnershipTypeChange(option.type)} />
+                  <Label htmlFor={`partnership-${option.type}`} className="cursor-pointer font-normal">
                     {option.label}
                   </Label>
-                </div>
-              ))}
+                </div>)}
             </div>
-            {partnershipTypes.length === 0 && (
-              <p className="text-sm text-muted-foreground mt-1">
+            {partnershipTypes.length === 0 && <p className="text-sm text-muted-foreground mt-1">
                 Select at least one partnership type (Knowledge will be selected by default if none chosen)
-              </p>
-            )}
+              </p>}
           </div>
         </CardContent>
       </Card>
@@ -256,22 +212,11 @@ export function ProjectForm() {
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="contactEmail">Contact Email</Label>
-            <Input
-              id="contactEmail"
-              type="email"
-              placeholder="contact@example.com"
-              value={contactEmail}
-              onChange={(e) => setContactEmail(e.target.value)}
-            />
+            <Input id="contactEmail" type="email" placeholder="contact@example.com" value={contactEmail} onChange={e => setContactEmail(e.target.value)} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="contactPhone">Contact Phone</Label>
-            <Input
-              id="contactPhone"
-              placeholder="Phone Number"
-              value={contactPhone}
-              onChange={(e) => setContactPhone(e.target.value)}
-            />
+            <Input id="contactPhone" placeholder="Phone Number" value={contactPhone} onChange={e => setContactPhone(e.target.value)} />
           </div>
         </CardContent>
       </Card>
@@ -286,12 +231,7 @@ export function ProjectForm() {
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="previousProjects">Previous Projects</Label>
-            <Textarea
-              id="previousProjects"
-              placeholder="Describe your previous projects and experiences"
-              value={previousProjects}
-              onChange={(e) => setPreviousProjects(e.target.value)}
-            />
+            <Textarea id="previousProjects" placeholder="Describe your previous projects and experiences" value={previousProjects} onChange={e => setPreviousProjects(e.target.value)} />
           </div>
         </CardContent>
       </Card>
@@ -306,12 +246,7 @@ export function ProjectForm() {
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="proposalFile">Proposal Document</Label>
-            <Input
-              id="proposalFile"
-              type="file"
-              accept=".pdf,.doc,.docx"
-              onChange={handleFileChange}
-            />
+            <Input id="proposalFile" type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} />
             <p className="text-sm text-muted-foreground">
               Accepted formats: PDF, DOC, DOCX
             </p>
@@ -319,8 +254,7 @@ export function ProjectForm() {
         </CardContent>
       </Card>
 
-      {user && (
-        <Card>
+      {user && <Card>
           <CardHeader>
             <CardTitle>Project Images</CardTitle>
             <CardDescription>
@@ -328,26 +262,19 @@ export function ProjectForm() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ProjectImagesUpload 
-              userId={user.id} 
-              onImagesChange={setProjectImages}
-            />
+            <ProjectImagesUpload userId={user.id} onImagesChange={setProjectImages} />
           </CardContent>
-        </Card>
-      )}
+        </Card>}
 
       <Card>
         <CardFooter>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting} className="mx-0 my-[34px] py-[8px]">
             {isSubmitting ? "Creating..." : requiresAdminApproval ? "Submit for Approval" : "Create Project"}
           </Button>
         </CardFooter>
       </Card>
-      {requiresAdminApproval && (
-        <div className="text-sm text-muted-foreground">
+      {requiresAdminApproval && <div className="text-sm text-muted-foreground">
           Note: Your project will need admin approval before it's published.
-        </div>
-      )}
-    </form>
-  );
+        </div>}
+    </form>;
 }
