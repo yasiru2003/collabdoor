@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { X } from "lucide-react";
 import { Badge } from "./badge";
@@ -30,7 +31,7 @@ interface MultiSelectProps {
 
 export function MultiSelect({
   options,
-  value,
+  value = [], // Provide default empty array to prevent undefined
   onChange,
   placeholder = "Select options",
   className,
@@ -38,24 +39,29 @@ export function MultiSelect({
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
 
+  // Ensure we always have an array, even if value is somehow undefined
+  const safeValue = React.useMemo(() => {
+    return Array.isArray(value) ? value : [];
+  }, [value]);
+
   const handleUnselect = (item: string) => {
-    onChange(value.filter((i) => i !== item));
+    onChange(safeValue.filter((i) => i !== item));
   };
 
   const handleSelect = (item: string) => {
-    if (value.includes(item)) {
-      onChange(value.filter((i) => i !== item));
+    if (safeValue.includes(item)) {
+      onChange(safeValue.filter((i) => i !== item));
     } else {
-      onChange([...value, item]);
+      onChange([...safeValue, item]);
     }
     // Keep the popover open for multiple selections
   };
 
   const selectedLabels = React.useMemo(() => {
-    return value.map(
+    return safeValue.map(
       (v) => options.find((option) => option.value === v)?.label || v
     );
-  }, [options, value]);
+  }, [options, safeValue]);
 
   return (
     <Popover open={open && !disabled} onOpenChange={setOpen}>
@@ -107,7 +113,7 @@ export function MultiSelect({
         <Command className="max-h-64">
           <CommandGroup className="max-h-64 overflow-auto">
             {options.map((option) => {
-              const isSelected = value.includes(option.value);
+              const isSelected = safeValue.includes(option.value);
               return (
                 <CommandItem
                   key={option.value}
