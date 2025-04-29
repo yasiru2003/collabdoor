@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,9 @@ import { PartnershipType } from "@/types";
 import { ProjectImagesUpload } from "@/components/project/ProjectImagesUpload";
 import { uploadProjectProposal } from "@/utils/upload-utils";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useUserOrganizations } from "@/hooks/use-user-organizations";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 export function ProjectForm() {
   const {
     user
@@ -33,17 +37,23 @@ export function ProjectForm() {
   const [projectImages, setProjectImages] = useState<string[]>([]);
   const [proposalFile, setProposalFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
+
+  // Fetch user organizations
+  const { data: userOrganizations, isLoading: organizationsLoading } = useUserOrganizations();
 
   // Check if projects require admin approval
   const {
     data: projectApprovalSetting
   } = useSystemSetting("require_project_approval");
   const requiresAdminApproval = projectApprovalSetting?.value || false;
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setProposalFile(e.target.files[0]);
     }
   };
+
   const handlePartnershipTypeChange = (type: PartnershipType) => {
     setPartnershipTypes(current => {
       if (current.includes(type)) {
@@ -53,6 +63,7 @@ export function ProjectForm() {
       }
     });
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
@@ -94,6 +105,14 @@ export function ProjectForm() {
       const previousProjectsInfo = previousProjects ? {
         description: previousProjects
       } : null;
+
+      // Get selected organization name if an organization was selected
+      let organizationName = null;
+      if (organizationId && userOrganizations) {
+        const selectedOrg = userOrganizations.find(org => org.id === organizationId);
+        organizationName = selectedOrg?.name || null;
+      }
+
       const {
         data,
         error
@@ -107,7 +126,9 @@ export function ProjectForm() {
         status: initialStatus,
         partnership_details: contactInfo,
         previous_projects: previousProjectsInfo,
-        proposal_file_path: proposalFilePath
+        proposal_file_path: proposalFilePath,
+        organization_id: organizationId,
+        organization_name: organizationName
       }).select().single();
       if (error) throw error;
 
@@ -160,6 +181,7 @@ export function ProjectForm() {
     type: "volunteering",
     label: "Volunteering"
   }];
+  
   return <form onSubmit={handleSubmit} className="space-y-6">
       <Card>
         <CardHeader>
@@ -177,6 +199,30 @@ export function ProjectForm() {
             <Label htmlFor="description">Description</Label>
             <Textarea id="description" placeholder="Project Description" value={description} onChange={e => setDescription(e.target.value)} />
           </div>
+          
+          {/* Organization selection */}
+          <div className="grid gap-2">
+            <Label htmlFor="organization">Organization (optional)</Label>
+            <Select value={organizationId || ""} onValueChange={(value) => setOrganizationId(value || null)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select an organization or leave empty for individual project" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Individual Project (No Organization)</SelectItem>
+                {userOrganizations?.map(org => (
+                  <SelectItem key={org.id} value={org.id}>{org.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground">
+              {organizationsLoading 
+                ? "Loading your organizations..." 
+                : userOrganizations?.length 
+                  ? "Select an organization or leave empty for an individual project" 
+                  : "You aren't a member of any organizations. This will be created as an individual project."}
+            </p>
+          </div>
+
           <div className="grid gap-2">
             <Label htmlFor="category">Category</Label>
             <Input id="category" placeholder="Category" value={category} onChange={e => setCategory(e.target.value)} />
