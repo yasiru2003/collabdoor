@@ -1,16 +1,15 @@
 
 import React, { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useCreatePost } from "@/hooks/use-feed";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { 
-  AtSign, MapPin, Send, Building 
+  MapPin, Send, Building 
 } from "lucide-react";
 import {
   Select,
@@ -19,12 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-interface Organization {
-  id: string;
-  name: string;
-  logo?: string;
-}
+import { Organization } from "@/types";
 
 interface CreatePostFormProps {
   userOrganizations: Organization[];
@@ -32,52 +26,26 @@ interface CreatePostFormProps {
 
 export function CreatePostForm({ userOrganizations }: CreatePostFormProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [content, setContent] = useState("");
   const [location, setLocation] = useState("");
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   
-  const { mutate: createPost, isPending } = useMutation({
-    mutationFn: async () => {
-      if (!user || !content.trim()) return;
-      
-      const newPost = {
-        user_id: user.id,
-        content: content.trim(),
-        organization_id: selectedOrgId || null,
-        location: location.trim() || null
-      };
-      
-      const { data, error } = await supabase
-        .from("feed_posts")
-        .insert(newPost)
-        .select();
-        
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      setContent("");
-      setLocation("");
-      setSelectedOrgId(null);
-      
-      toast({
-        title: "Post created",
-        description: "Your post has been shared successfully!",
-      });
-      
-      queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to create post. Please try again.",
-        variant: "destructive",
-      });
-      console.error("Post creation error:", error);
-    }
-  });
+  const createPostMutation = useCreatePost();
+  
+  const handleCreatePost = () => {
+    if (!content.trim()) return;
+    
+    createPostMutation.mutate({
+      content,
+      organization_id: selectedOrgId,
+      location: location.trim() || null
+    });
+    
+    // Reset form
+    setContent("");
+    setLocation("");
+    setSelectedOrgId(null);
+  };
   
   if (!user) return null;
   
@@ -139,8 +107,8 @@ export function CreatePostForm({ userOrganizations }: CreatePostFormProps) {
       <CardFooter className="flex justify-end">
         <Button 
           className="gap-2" 
-          onClick={() => createPost()} 
-          disabled={isPending || !content.trim()}
+          onClick={handleCreatePost} 
+          disabled={createPostMutation.isPending || !content.trim()}
         >
           <Send className="h-4 w-4" />
           Post

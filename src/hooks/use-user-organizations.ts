@@ -15,17 +15,22 @@ export function useUserOrganizations() {
     queryFn: async () => {
       if (!user) return [];
       
-      // Get organizations where user is a member (including as owner)
-      const { data, error } = await supabase
-        .from("organization_members")
-        .select(`
-          organization_id,
-          role,
-          organizations:organization_id(*)
-        `)
-        .eq("user_id", user.id);
+      try {
+        // Get organizations where user is a member (including as owner)
+        const { data, error } = await supabase
+          .from("organization_members")
+          .select(`
+            organization_id,
+            role,
+            organizations:organization_id(*)
+          `)
+          .eq("user_id", user.id);
 
-      if (error) {
+        if (error) throw error;
+        
+        // Map the data to the expected format
+        return data.map(item => mapSupabaseOrgToOrganization(item.organizations));
+      } catch (error: any) {
         console.error("Error fetching user organizations:", error);
         toast({
           title: "Error fetching organizations",
@@ -34,8 +39,6 @@ export function useUserOrganizations() {
         });
         return [];
       }
-      
-      return data.map(item => mapSupabaseOrgToOrganization(item.organizations));
     },
     enabled: !!user
   });
