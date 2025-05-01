@@ -62,8 +62,8 @@ export function useFeedPosts(filter: "all" | "following" = "all") {
           .from("feed_posts")
           .select(`
             *,
-            profiles!feed_posts_user_id_fkey(name, profile_image),
-            organizations!feed_posts_organization_id_fkey(name, logo),
+            profiles(name, profile_image),
+            organizations(name, logo),
             feed_likes(id, user_id),
             feed_comments(id, content, created_at, user_id, profiles(name, profile_image))
           `)
@@ -88,7 +88,7 @@ export function useFeedPosts(filter: "all" | "following" = "all") {
         
         if (error) throw error;
         
-        return data as FeedPost[];
+        return data as unknown as FeedPost[];
       } catch (error: any) {
         console.error("Error fetching feed posts:", error);
         toast({
