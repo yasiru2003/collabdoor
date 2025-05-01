@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Project, Organization, PartnershipType } from "@/types";
@@ -52,7 +53,7 @@ interface ProjectHeaderProps {
   handleApply: () => void;
   handleContact: () => void;
   applicationLoading: boolean;
-  partnershipType: (type: string) => void;
+  partnershipType: string;
   setPartnershipType: (type: string) => void;
   message: string;
   setMessage: (message: string) => void;
@@ -193,8 +194,8 @@ export function ProjectHeader({
               <label htmlFor="partnershipType" className="text-right">
                 Partnership Type
               </label>
-              <Select onValueChange={setPartnershipType} defaultValue="skilled" className="col-span-3">
-                <SelectTrigger>
+              <Select onValueChange={setPartnershipType} defaultValue="skilled">
+                <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select a partnership type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -211,8 +212,8 @@ export function ProjectHeader({
                 <label htmlFor="organization" className="text-right">
                   Apply as
                 </label>
-                <Select value={selectedOrganizationId || "individual"} onValueChange={setSelectedOrganizationId} className="col-span-3">
-                  <SelectTrigger>
+                <Select value={selectedOrganizationId || "individual"} onValueChange={setSelectedOrganizationId}>
+                  <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Select an organization or apply individually" />
                   </SelectTrigger>
                   <SelectContent>
