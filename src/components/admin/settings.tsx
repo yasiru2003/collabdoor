@@ -35,7 +35,9 @@ export function AdminSettings() {
       });
     } else {
       // Using the hook from use-system-settings.tsx
-      updateSystemSetting.mutate({
+      // Use type assertion to inform TypeScript about the expected structure
+      type TSXMutateParams = { key: string; value: boolean; description?: string };
+      (updateSystemSetting.mutate as (params: TSXMutateParams) => void)({
         key: 'require_project_approval', 
         value: checked,
         description: 'Require admin approval before projects are published'
