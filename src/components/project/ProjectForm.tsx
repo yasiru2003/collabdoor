@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -208,7 +207,7 @@ export function ProjectForm() {
                 <SelectValue placeholder="Select an organization or leave empty for individual project" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Individual Project (No Organization)</SelectItem>
+                <SelectItem value="none">Individual Project (No Organization)</SelectItem>
                 {userOrganizations?.map(org => (
                   <SelectItem key={org.id} value={org.id}>{org.name}</SelectItem>
                 ))}
