@@ -1,18 +1,30 @@
-
-import { Button } from "@/components/ui/button";
-import { Project, Organization } from "@/types";
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Project, Organization, PartnershipType } from "@/types";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, AlertCircle } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle,
+  CardFooter
+} from "@/components/ui/card";
+import { 
+  Building, 
+  MapPin, 
+  Link as LinkIcon, 
+  Contact2,
+  Edit,
+  Save,
+  Share2,
+  Heart,
+  HeartOff
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -20,7 +32,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface ProjectHeaderProps {
   project: Project;
@@ -32,7 +52,7 @@ interface ProjectHeaderProps {
   handleApply: () => void;
   handleContact: () => void;
   applicationLoading: boolean;
-  partnershipType: string;
+  partnershipType: (type: string) => void;
   setPartnershipType: (type: string) => void;
   message: string;
   setMessage: (message: string) => void;
@@ -67,148 +87,162 @@ export function ProjectHeader({
   onApplySubmit,
   onEdit
 }: ProjectHeaderProps) {
-  const isMobile = useIsMobile();
+  const toggleSave = () => {
+    const newSavedState = !saved;
+    setSaved(newSavedState);
+    localStorage.setItem(`saved_${project.id}`, newSavedState.toString());
+  };
   
+  // Make sure the status badge shows the pending_publish status
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'draft':
+        return <Badge variant="outline">Draft</Badge>;
+      case 'published':
+        return <Badge variant="default" className="bg-green-600">Published</Badge>;
+      case 'in-progress':
+        return <Badge variant="default" className="bg-blue-600">In Progress</Badge>;
+      case 'completed':
+        return <Badge variant="default" className="bg-purple-600">Completed</Badge>;
+      case 'pending_publish':
+        return <Badge variant="default" className="bg-yellow-600">Pending Approval</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
   return (
-    <div className="bg-card border rounded-lg p-4 md:p-6 mb-6 relative">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-          <div className="flex-1">
-            <h1 className="text-xl md:text-2xl font-bold mb-2">{project.title}</h1>
-            {project.status === "completed" && (
-              <Badge variant="outline" className="gap-1.5 mt-1 w-fit">
-                <CheckCircle2 className="h-4 w-4" />
-                Completed
-              </Badge>
-            )}
-            {project.status === "pending_publish" && (
-              <Badge variant="destructive" className="gap-1.5 mt-1 w-fit">
-                <AlertCircle className="h-4 w-4" />
-                Pending Approval
-              </Badge>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
+    <Card className="mb-8">
+      <CardHeader className="space-y-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-2xl font-bold">{project.title}</CardTitle>
+          <div className="flex items-center space-x-2">
             {isOwner && (
-              <Button onClick={onEdit} variant="outline" size={isMobile ? "default" : "sm"} className="w-full md:w-auto">
-                Edit Project
+              <Button variant="outline" size="sm" onClick={onEdit}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
               </Button>
             )}
-            {applicationStatus === "pending" ? (
-              <Badge variant="secondary" className="w-full md:w-auto text-center">
-                Application Pending
-              </Badge>
-            ) : applicationStatus === "approved" ? (
-              <Badge variant="success" className="w-full md:w-auto text-center">
-                Application Approved
-              </Badge>
-            ) : null}
-            
-            <Button 
-              variant="default" 
-              size={isMobile ? "default" : "sm"} 
-              onClick={handleContact}
-              className="w-full md:w-auto"
-            >
-              Contact
+            {!isOwner && (
+              <Button variant="ghost" size="icon" onClick={toggleSave}>
+                {saved ? <Heart className="h-5 w-5 text-red-500" /> : <HeartOff className="h-5 w-5" />}
+              </Button>
+            )}
+            <Button variant="ghost" size="icon">
+              <Share2 className="h-5 w-5" />
             </Button>
           </div>
         </div>
-
-        <p className="text-muted-foreground">{project.description}</p>
-
-        <div className="flex flex-wrap items-center gap-2 mt-2">
-          {isOwner ? (
-            <Badge variant="secondary" className="w-full md:w-auto text-center">
-              You are the project organizer
-            </Badge>
-          ) : applicationStatus === null && project.status !== "completed" ? (
-            <Button 
-              size={isMobile ? "default" : "sm"} 
-              onClick={handleApply} 
-              disabled={applicationLoading || project.applicationsEnabled === false}
-              className="w-full md:w-auto"
-            >
-              {project.applicationsEnabled === false ? "Applications Paused" : "Apply to Project"}
+        <CardDescription>
+          {project.organizationName && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Building className="h-4 w-4" />
+              {project.organizationName}
+            </div>
+          )}
+          {project.location && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <MapPin className="h-4 w-4" />
+              {project.location}
+            </div>
+          )}
+        </CardDescription>
+        {getStatusBadge(project.status)}
+      </CardHeader>
+      <CardContent>
+        {project.image && (
+          <img
+            src={project.image}
+            alt={project.title}
+            className="rounded-md w-full aspect-video object-cover mb-4"
+          />
+        )}
+        <p className="text-md text-muted-foreground">{project.description}</p>
+      </CardContent>
+      <CardFooter className="flex justify-between items-center">
+        <div className="flex items-center space-x-4">
+          {!isOwner && applicationStatus === null && project.status !== 'completed' && (
+            <Button onClick={handleApply} disabled={applicationLoading}>
+              {applicationLoading ? "Applying..." : "Apply Now"}
             </Button>
-          ) : null}
+          )}
+          {!isOwner && applicationStatus === "pending" && (
+            <Badge variant="secondary">Application Pending</Badge>
+          )}
+          {!isOwner && applicationStatus === "approved" && (
+            <Badge variant="default" className="bg-green-600">Approved Partner</Badge>
+          )}
+          <Button variant="outline" onClick={handleContact}>
+            <Contact2 className="h-4 w-4 mr-2" />
+            Contact
+          </Button>
         </div>
-      </div>
+      </CardFooter>
 
       {/* Application Dialog */}
       <Dialog open={applicationOpen} onOpenChange={setApplicationOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Apply to Join Project</DialogTitle>
+            <DialogTitle>Apply to {project.title}</DialogTitle>
             <DialogDescription>
-              Apply to collaborate on "{project.title}". Provide details about how you can contribute.
+              Submit your application to become a partner in this project.
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Choose partnership type:</h4>
-              <Select
-                value={partnershipType}
-                onValueChange={setPartnershipType}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select partnership type" />
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="partnershipType" className="text-right">
+                Partnership Type
+              </label>
+              <Select onValueChange={setPartnershipType} defaultValue="skilled" className="col-span-3">
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a partnership type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {project.partnershipTypes && project.partnershipTypes.map((type) => (
-                    <SelectItem key={type} value={type} className="capitalize">
-                      {type} partnership
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="monetary">Monetary</SelectItem>
+                  <SelectItem value="knowledge">Knowledge</SelectItem>
+                  <SelectItem value="skilled">Skilled</SelectItem>
+                  <SelectItem value="volunteering">Volunteering</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Apply from organization (optional):</h4>
-              <Select
-                value={selectedOrganizationId || "individual"}
-                onValueChange={setSelectedOrganizationId}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select organization" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="individual">Apply as individual</SelectItem>
-                  {userOrganizations.map((org) => (
-                    <SelectItem key={org.id} value={org.id}>
-                      {org.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Message (optional):</h4>
+            {userOrganizations.length > 0 && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="organization" className="text-right">
+                  Apply as
+                </label>
+                <Select value={selectedOrganizationId || "individual"} onValueChange={setSelectedOrganizationId} className="col-span-3">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an organization or apply individually" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="individual">Individual</SelectItem>
+                    {userOrganizations.map((org) => (
+                      <SelectItem key={org.id} value={org.id}>{org.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="message" className="text-right">
+                Message
+              </label>
               <Textarea
+                id="message"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Describe how you or your organization can contribute to this project..."
-                className="min-h-[100px]"
+                placeholder="Why do you want to join this project?"
+                className="col-span-3"
               />
             </div>
           </div>
-          
           <DialogFooter>
-            <Button variant="outline" onClick={() => setApplicationOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={onApplySubmit} 
-              disabled={applicationLoading || !partnershipType}
-            >
-              {applicationLoading ? "Submitting..." : "Submit Application"}
-            </Button>
+            <Button type="submit" onClick={onApplySubmit}>Apply</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Card>
   );
 }
