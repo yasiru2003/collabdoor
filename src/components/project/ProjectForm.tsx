@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,13 @@ import { uploadProjectProposal } from "@/utils/upload-utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useUserOrganizations } from "@/hooks/use-user-organizations";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function ProjectForm() {
   const {
@@ -37,6 +45,17 @@ export function ProjectForm() {
   const [proposalFile, setProposalFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
+  
+  // Add state for start and end dates
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  
+  // Form validation errors
+  const [formErrors, setFormErrors] = useState<{
+    title?: string;
+    description?: string;
+    timeline?: string;
+  }>({});
 
   // Fetch user organizations
   const { data: userOrganizations, isLoading: organizationsLoading } = useUserOrganizations();
@@ -63,8 +82,34 @@ export function ProjectForm() {
     });
   };
 
+  const validateForm = () => {
+    const errors: {
+      title?: string;
+      description?: string;
+      timeline?: string;
+    } = {};
+    
+    if (!title) {
+      errors.title = "Title is required";
+    }
+    
+    if (!description) {
+      errors.description = "Description is required";
+    }
+    
+    if (!startDate || !endDate) {
+      errors.timeline = "Start and end dates are required";
+    } else if (endDate < startDate) {
+      errors.timeline = "End date must be after start date";
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!user) {
       toast({
         title: "Authentication required",
@@ -73,7 +118,9 @@ export function ProjectForm() {
       });
       return;
     }
-    if (!title || !description) {
+    
+    // Validate the form
+    if (!validateForm()) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields",
@@ -81,6 +128,7 @@ export function ProjectForm() {
       });
       return;
     }
+    
     try {
       setIsSubmitting(true);
 
@@ -107,7 +155,7 @@ export function ProjectForm() {
 
       // Get selected organization name if an organization was selected
       let organizationName = null;
-      if (organizationId && userOrganizations) {
+      if (organizationId && organizationId !== "none" && userOrganizations) {
         const selectedOrg = userOrganizations.find(org => org.id === organizationId);
         organizationName = selectedOrg?.name || null;
       }
@@ -126,9 +174,12 @@ export function ProjectForm() {
         partnership_details: contactInfo,
         previous_projects: previousProjectsInfo,
         proposal_file_path: proposalFilePath,
-        organization_id: organizationId,
-        organization_name: organizationName
+        organization_id: (organizationId && organizationId !== "none") ? organizationId : null,
+        organization_name: organizationName,
+        start_date: startDate?.toISOString(),
+        end_date: endDate?.toISOString()
       }).select().single();
+      
       if (error) throw error;
 
       // If we have images, associate them with the project
@@ -191,18 +242,102 @@ export function ProjectForm() {
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="title">Title</Label>
-            <Input id="title" placeholder="Project Title" value={title} onChange={e => setTitle(e.target.value)} />
+            <Label htmlFor="title">Title <span className="text-destructive">*</span></Label>
+            <Input 
+              id="title" 
+              placeholder="Project Title" 
+              value={title} 
+              onChange={e => setTitle(e.target.value)} 
+              className={formErrors.title ? "border-destructive" : ""}
+            />
+            {formErrors.title && (
+              <p className="text-sm text-destructive mt-1">{formErrors.title}</p>
+            )}
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea id="description" placeholder="Project Description" value={description} onChange={e => setDescription(e.target.value)} />
+            <Label htmlFor="description">Description <span className="text-destructive">*</span></Label>
+            <Textarea 
+              id="description" 
+              placeholder="Project Description" 
+              value={description} 
+              onChange={e => setDescription(e.target.value)} 
+              className={formErrors.description ? "border-destructive" : ""}
+            />
+            {formErrors.description && (
+              <p className="text-sm text-destructive mt-1">{formErrors.description}</p>
+            )}
+          </div>
+
+          {/* Project Timeline */}
+          <div className="grid gap-2">
+            <Label htmlFor="timeline">Project Timeline <span className="text-destructive">*</span></Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="start-date">Start Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="start-date"
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !startDate && "text-muted-foreground",
+                        formErrors.timeline && "border-destructive"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDate ? format(startDate, "PPP") : <span>Select date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="end-date">End Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="end-date"
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !endDate && "text-muted-foreground",
+                        formErrors.timeline && "border-destructive"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {endDate ? format(endDate, "PPP") : <span>Select date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      initialFocus
+                      disabled={(date) => startDate ? date < startDate : false}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            {formErrors.timeline && (
+              <p className="text-sm text-destructive mt-1">{formErrors.timeline}</p>
+            )}
           </div>
           
           {/* Organization selection */}
           <div className="grid gap-2">
             <Label htmlFor="organization">Organization (optional)</Label>
-            <Select value={organizationId || ""} onValueChange={(value) => setOrganizationId(value || null)}>
+            <Select value={organizationId || "none"} onValueChange={(value) => setOrganizationId(value === "none" ? null : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select an organization or leave empty for individual project" />
               </SelectTrigger>
@@ -318,8 +453,14 @@ export function ProjectForm() {
           </Button>
         </CardFooter>
       </Card>
-      {requiresAdminApproval && <div className="text-sm text-muted-foreground">
-          Note: Your project will need admin approval before it's published.
-        </div>}
+      
+      {requiresAdminApproval && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Note: Your project will need admin approval before it's published.
+          </AlertDescription>
+        </Alert>
+      )}
     </form>;
 }
