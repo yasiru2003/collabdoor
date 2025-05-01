@@ -3,21 +3,28 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { SystemSettings } from "@/types";
-import { useSystemSetting } from "@/hooks/use-system-settings";
-import { useQueryClient } from "@tanstack/react-query";
+import { useSystemSetting, useUpdateSystemSetting } from "@/hooks/use-system-settings";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { AlertCircle } from "lucide-react";
 
 export function AdminSettings() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   
   // Project approval setting
   const { data: requireProjectApproval, isLoading: loadingProjectApproval } = 
     useSystemSetting("require_project_approval");
   
   const [isProjectApprovalEnabled, setIsProjectApprovalEnabled] = useState(false);
+  const updateSystemSetting = useUpdateSystemSetting();
   
   useEffect(() => {
     if (requireProjectApproval !== undefined) {
@@ -25,45 +32,13 @@ export function AdminSettings() {
     }
   }, [requireProjectApproval]);
 
-  const updateSetting = async (key: string, value: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('system_settings')
-        .upsert({ 
-          key, 
-          value,
-          // If the setting doesn't exist yet, provide a description
-          description: key === 'require_project_approval' 
-            ? 'Require admin approval before projects are published'
-            : undefined
-        }, { 
-          onConflict: 'key',
-          ignoreDuplicates: false
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Setting updated",
-        description: "The system setting has been updated successfully."
-      });
-      
-      // Invalidate cache to refresh data
-      queryClient.invalidateQueries({ queryKey: ['system_settings'] });
-      
-    } catch (error: any) {
-      console.error("Error updating setting:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update setting",
-        variant: "destructive"
-      });
-    }
-  };
-
   const handleProjectApprovalChange = (checked: boolean) => {
     setIsProjectApprovalEnabled(checked);
-    updateSetting('require_project_approval', checked);
+    updateSystemSetting.mutate({
+      key: 'require_project_approval', 
+      value: checked,
+      description: 'Require admin approval before projects are published'
+    });
   };
 
   return (
@@ -88,9 +63,21 @@ export function AdminSettings() {
             id="project-approval"
             checked={isProjectApprovalEnabled}
             onCheckedChange={handleProjectApprovalChange}
-            disabled={loadingProjectApproval}
+            disabled={loadingProjectApproval || updateSystemSetting.isPending}
           />
         </div>
+        
+        {isProjectApprovalEnabled && (
+          <div className="mt-4 border rounded-md p-4 bg-muted/40">
+            <div className="flex items-center mb-2 gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-500" />
+              <h4 className="text-sm font-medium">Project approval is enabled</h4>
+            </div>
+            <p className="text-sm text-muted-foreground mb-2">
+              New projects submitted for publishing will require admin approval in the Projects tab before they become publicly visible.
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
