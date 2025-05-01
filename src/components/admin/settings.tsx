@@ -5,15 +5,6 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useSystemSetting, useUpdateSystemSetting } from "@/hooks/use-system-settings";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { AlertCircle } from "lucide-react";
 
 export function AdminSettings() {
@@ -27,18 +18,29 @@ export function AdminSettings() {
   const updateSystemSetting = useUpdateSystemSetting();
   
   useEffect(() => {
-    if (requireProjectApproval !== undefined) {
+    if (requireProjectApproval !== undefined && requireProjectApproval !== null) {
       setIsProjectApprovalEnabled(requireProjectApproval.value);
     }
   }, [requireProjectApproval]);
 
   const handleProjectApprovalChange = (checked: boolean) => {
     setIsProjectApprovalEnabled(checked);
-    updateSystemSetting.mutate({
-      key: 'require_project_approval', 
-      value: checked,
-      description: 'Require admin approval before projects are published'
-    });
+    
+    // Check which version of the hook we're using by inspecting the data structure
+    if (requireProjectApproval && 'id' in requireProjectApproval) {
+      // Using the hook from use-system-settings.ts
+      updateSystemSetting.mutate({
+        id: requireProjectApproval.id, 
+        value: checked
+      });
+    } else {
+      // Using the hook from use-system-settings.tsx
+      updateSystemSetting.mutate({
+        key: 'require_project_approval', 
+        value: checked,
+        description: 'Require admin approval before projects are published'
+      });
+    }
   };
 
   return (
