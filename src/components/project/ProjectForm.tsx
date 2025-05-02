@@ -14,7 +14,7 @@ import { Project, PartnershipType } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useSystemSetting } from "@/hooks/use-system-settings";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { uploadProjectProposal } from "@/utils/upload-utils";
 
 const projectFormSchema = z.object({
@@ -49,20 +49,60 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
 
   // Define skill options for MultiSelect - moved outside form to avoid recreating on each render
   const skillOptions = React.useMemo(() => [
-    { label: "Programming", value: "programming" },
-    { label: "Design", value: "design" },
-    { label: "Marketing", value: "marketing" },
-    { label: "Writing", value: "writing" },
-    { label: "Project Management", value: "project_management" },
-    { label: "Research", value: "research" },
+    { 
+      label: "Programming", 
+      value: "programming",
+      description: "Software development, coding, and technical implementation skills"
+    },
+    { 
+      label: "Design", 
+      value: "design",
+      description: "UI/UX, graphic design, and visual content creation"
+    },
+    { 
+      label: "Marketing", 
+      value: "marketing",
+      description: "Digital marketing, social media, SEO, and content strategy"
+    },
+    { 
+      label: "Writing", 
+      value: "writing",
+      description: "Content creation, copywriting, technical writing, and documentation"
+    },
+    { 
+      label: "Project Management", 
+      value: "project_management",
+      description: "Coordination, timeline management, and stakeholder communication"
+    },
+    { 
+      label: "Research", 
+      value: "research",
+      description: "Data analysis, market research, and academic investigation"
+    },
   ], []);
 
   // Define partnership options for MultiSelect - moved outside form to avoid recreating on each render
   const partnershipTypeOptions = React.useMemo(() => [
-    { label: "Monetary", value: "monetary" },
-    { label: "Knowledge", value: "knowledge" },
-    { label: "Skilled", value: "skilled" },
-    { label: "Volunteering", value: "volunteering" },
+    { 
+      label: "Monetary", 
+      value: "monetary",
+      description: "Financial support through funding, grants, or investments"
+    },
+    { 
+      label: "Knowledge", 
+      value: "knowledge",
+      description: "Expertise, mentorship, consultation, and advisory services"
+    },
+    { 
+      label: "Skilled", 
+      value: "skilled",
+      description: "Professional services, technical expertise, and specialized work"
+    },
+    { 
+      label: "Volunteering", 
+      value: "volunteering",
+      description: "Time contribution, community support, and hands-on assistance"
+    },
   ], []);
 
   // Set default values for form with proper fallbacks for arrays and objects
@@ -349,6 +389,9 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Required Skills</FormLabel>
+              <FormDescription>
+                Select the skills needed for this project. Each volunteer or partner should have at least one of these skills.
+              </FormDescription>
               <FormControl>
                 <MultiSelect 
                   value={field.value || []}
@@ -369,6 +412,9 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Partnership Types</FormLabel>
+              <FormDescription>
+                Select the types of partnerships you're seeking for this project. This helps potential partners understand how they can contribute.
+              </FormDescription>
               <FormControl>
                 <MultiSelect
                   value={field.value || []}
@@ -425,8 +471,12 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
                   onChange={(e) => field.onChange(e.target.checked)}
                 />
               </FormControl>
-              <FormLabel htmlFor="applicationsEnabled">Enable Applications</FormLabel>
-              <FormMessage />
+              <div className="space-y-1 leading-none">
+                <FormLabel htmlFor="applicationsEnabled">Enable Applications</FormLabel>
+                <FormDescription>
+                  Allow users to apply to join this project
+                </FormDescription>
+              </div>
             </FormItem>
           )}
         />

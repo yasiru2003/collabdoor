@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { X } from "lucide-react";
 import { Badge } from "./badge";
@@ -14,10 +15,12 @@ import {
 } from "./popover";
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
+import { Checkbox } from "./checkbox";
 
 export type Option = {
   value: string;
   label: string;
+  description?: string;
 };
 
 interface MultiSelectProps {
@@ -124,22 +127,27 @@ export function MultiSelect({
                 <CommandItem
                   key={option.value}
                   onSelect={() => handleSelect(option.value)}
-                  className={cn(
-                    "flex cursor-pointer items-center gap-2",
-                    isSelected ? "bg-accent" : ""
-                  )}
+                  className="flex cursor-pointer items-center py-2"
                 >
-                  <div
-                    className={cn(
-                      "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                      isSelected
-                        ? "bg-primary text-primary-foreground"
-                        : "opacity-50"
-                    )}
-                  >
-                    {isSelected && <span className="h-4 text-xs">✓</span>}
+                  <div className="flex items-start gap-2 w-full">
+                    <Checkbox 
+                      checked={isSelected}
+                      onCheckedChange={() => handleSelect(option.value)}
+                      className="mt-0.5"
+                      id={`checkbox-${option.value}`}
+                    />
+                    <div className="flex flex-col">
+                      <label 
+                        htmlFor={`checkbox-${option.value}`}
+                        className="font-medium cursor-pointer"
+                      >
+                        {option.label}
+                      </label>
+                      {option.description && (
+                        <p className="text-xs text-muted-foreground">{option.description}</p>
+                      )}
+                    </div>
                   </div>
-                  {option.label}
                 </CommandItem>
               );
             })}
