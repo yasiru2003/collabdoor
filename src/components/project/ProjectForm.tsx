@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -13,6 +14,7 @@ import { Project, PartnershipType } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useSystemSetting } from "@/hooks/use-system-settings";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 const projectFormSchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters." }),
@@ -44,7 +46,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
   const [proposalFile, setProposalFile] = useState<File | null>(null);
   const { data: requireProjectApproval } = useSystemSetting("require_project_approval");
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<z.infer<typeof projectFormSchema>>({
+  const form = useForm<z.infer<typeof projectFormSchema>>({
     resolver: zodResolver(projectFormSchema),
     defaultValues: {
       title: project?.title || "",
@@ -67,22 +69,22 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
   useEffect(() => {
     // Populate the form with project data when it's available
     if (project) {
-      setValue('title', project.title || "");
-      setValue('description', project.description || "");
-      setValue('category', project.category || "");
-      setValue('status', project.status || 'draft');
-      setValue('timelineStart', project.timeline?.start || "");
-      setValue('timelineEnd', project.timeline?.end || "");
-      setValue('requiredSkills', project.requiredSkills || []);
-      setValue('partnershipTypes', project.partnershipTypes || []);
-      setValue('location', project.location || "");
-      setValue('image', project.image || "");
-      setValue('applicationsEnabled', project.applicationsEnabled !== undefined ? project.applicationsEnabled : true);
-      setValue('proposalFilePath', project.proposalFilePath || "");
-      setValue('partnership_details', project.partnership_details || {});
-      setValue('previous_projects', project.previous_projects || {});
+      form.setValue('title', project.title || "");
+      form.setValue('description', project.description || "");
+      form.setValue('category', project.category || "");
+      form.setValue('status', project.status || 'draft');
+      form.setValue('timelineStart', project.timeline?.start || "");
+      form.setValue('timelineEnd', project.timeline?.end || "");
+      form.setValue('requiredSkills', project.requiredSkills || []);
+      form.setValue('partnershipTypes', project.partnershipTypes || []);
+      form.setValue('location', project.location || "");
+      form.setValue('image', project.image || "");
+      form.setValue('applicationsEnabled', project.applicationsEnabled !== undefined ? project.applicationsEnabled : true);
+      form.setValue('proposalFilePath', project.proposalFilePath || "");
+      form.setValue('partnership_details', project.partnership_details || {});
+      form.setValue('previous_projects', project.previous_projects || {});
     }
-  }, [project, setValue]);
+  }, [project, form]);
 
   const handleProposalUpload = async (file: File) => {
     setUploading(true);
@@ -105,8 +107,12 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
         return null;
       }
 
-      const publicURL = `${supabase.storageUrl}/object/public/project-files/${filePath}`;
-      return publicURL;
+      // Get the public URL using the getPublicUrl method
+      const { data } = supabase.storage
+        .from('project-files')
+        .getPublicUrl(filePath);
+      
+      return data.publicUrl;
     } catch (error) {
       console.error("Unexpected error during upload: ", error);
       toast({
@@ -120,59 +126,43 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
     }
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const onFormSubmit = async (formData: z.infer<typeof projectFormSchema>) => {
     setIsSaving(true);
 
-    const formData = {
-      title: (event.target as HTMLFormElement).title.value,
-      description: (event.target as HTMLFormElement).description.value,
-      category: (event.target as HTMLFormElement).category.value,
-      status: (event.target as HTMLFormElement).status.value,
-      timelineStart: (event.target as HTMLFormElement).timelineStart.value,
-      timelineEnd: (event.target as HTMLFormElement).timelineEnd.value,
-      requiredSkills: (event.target as HTMLFormElement).requiredSkills.value ? ((event.target as HTMLFormElement).requiredSkills.value as string).split(',') : [],
-      partnershipTypes: (event.target as HTMLFormElement).partnershipTypes.value ? ((event.target as HTMLFormElement).partnershipTypes.value as string).split(',') : [],
-      location: (event.target as HTMLFormElement).location.value,
-      image: (event.target as HTMLFormElement).image.value,
-      applicationsEnabled: (event.target as HTMLFormElement).applicationsEnabled.checked,
-      proposalFilePath: (event.target as HTMLFormElement).proposalFilePath.value,
-      partnership_details: {},
-      previous_projects: {},
-    };
-
     try {
-      let proposalURL = formData.proposalFilePath;
+      let proposalURL = formData.proposalFilePath || "";
 
       if (proposalFile) {
-        proposalURL = await handleProposalUpload(proposalFile);
-        if (!proposalURL) {
+        const uploadedUrl = await handleProposalUpload(proposalFile);
+        if (!uploadedUrl) {
           setIsSaving(false);
           return;
         }
+        proposalURL = uploadedUrl;
       }
 
       // Check if admin approval is required for publishing projects
-      if (formData.status === 'published' && requireProjectApproval?.value === true) {
+      let status = formData.status;
+      if (status === 'published' && requireProjectApproval?.value === true) {
         // Change status to pending_publish if admin approval required
-        formData.status = 'pending_publish';
+        status = 'pending_publish';
       }
 
       const updates = {
         title: formData.title,
         description: formData.description,
         category: formData.category,
-        status: formData.status,
+        status: status as 'draft' | 'published' | 'in-progress' | 'completed' | 'pending_publish',
         start_date: formData.timelineStart,
         end_date: formData.timelineEnd,
         required_skills: formData.requiredSkills,
-        partnership_types: formData.partnershipTypes,
+        partnership_types: formData.partnershipTypes as PartnershipType[],
         location: formData.location,
         image: formData.image,
         applications_enabled: formData.applicationsEnabled,
         proposal_file_path: proposalURL,
-        partnership_details: {},
-        previous_projects: {},
+        partnership_details: formData.partnership_details || {},
+        previous_projects: formData.previous_projects || {},
       };
 
       if (project?.id) {
@@ -188,11 +178,18 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
           description: "Your project has been updated successfully.",
         });
       } else {
+        const { data: userData } = await supabase.auth.getUser();
+        const organizerId = userData?.user?.id;
+        
+        if (!organizerId) {
+          throw new Error("User not authenticated");
+        }
+        
         const { data, error } = await supabase
           .from('projects')
           .insert({
             ...updates,
-            organizer_id: supabase.auth.getUser().then((response) => response.data?.user?.id),
+            organizer_id: organizerId,
           })
           .select()
           .single();
@@ -208,7 +205,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
         navigate(`/projects/${data.id}`);
       }
 
-      if (formData.status === 'pending_publish') {
+      if (status === 'pending_publish') {
         toast({
           title: "Project submitted for review",
           description: "Your project has been submitted and is awaiting admin approval.",
@@ -234,129 +231,223 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <Label htmlFor="title">Title</Label>
-        <Input id="title" type="text" {...register("title")} />
-        {errors.title && (
-          <p className="text-sm text-red-500">{errors.title.message}</p>
-        )}
-      </div>
-      <div>
-        <Label htmlFor="description">Description</Label>
-        <Textarea id="description" {...register("description")} />
-        {errors.description && (
-          <p className="text-sm text-red-500">{errors.description.message}</p>
-        )}
-      </div>
-      <div>
-        <Label htmlFor="category">Category</Label>
-        <Input id="category" type="text" {...register("category")} />
-        {errors.category && (
-          <p className="text-sm text-red-500">{errors.category.message}</p>
-        )}
-      </div>
-      <div>
-        <Label htmlFor="status">Status</Label>
-        <Select {...register("status")} defaultValue={project?.status || 'draft'}>
-          <SelectTrigger id="status">
-            <SelectValue placeholder="Select status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="pending_publish">Pending Publish</SelectItem>
-            <SelectItem value="published">Published</SelectItem>
-            <SelectItem value="in-progress">In Progress</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-          </SelectContent>
-        </Select>
-        {errors.status && (
-          <p className="text-sm text-red-500">{errors.status.message}</p>
-        )}
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="timelineStart">Timeline Start</Label>
-          <Input id="timelineStart" type="date" {...register("timelineStart")} />
-          {errors.timelineStart && (
-            <p className="text-sm text-red-500">{errors.timelineStart.message}</p>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onFormSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel htmlFor="title">Title</FormLabel>
+              <FormControl>
+                <Input id="title" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
-        <div>
-          <Label htmlFor="timelineEnd">Timeline End</Label>
-          <Input id="timelineEnd" type="date" {...register("timelineEnd")} />
-          {errors.timelineEnd && (
-            <p className="text-sm text-red-500">{errors.timelineEnd.message}</p>
+        />
+        
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel htmlFor="description">Description</FormLabel>
+              <FormControl>
+                <Textarea id="description" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel htmlFor="category">Category</FormLabel>
+              <FormControl>
+                <Input id="category" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="status"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Status</FormLabel>
+              <Select 
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="pending_publish">Pending Publish</SelectItem>
+                  <SelectItem value="published">Published</SelectItem>
+                  <SelectItem value="in-progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="timelineStart"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor="timelineStart">Timeline Start</FormLabel>
+                <FormControl>
+                  <Input id="timelineStart" type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="timelineEnd"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor="timelineEnd">Timeline End</FormLabel>
+                <FormControl>
+                  <Input id="timelineEnd" type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-      </div>
-      <div>
-        <Label htmlFor="requiredSkills">Required Skills</Label>
-        <MultiSelect id="requiredSkills" {...register("requiredSkills")} />
-        {errors.requiredSkills && (
-          <p className="text-sm text-red-500">{errors.requiredSkills.message}</p>
-        )}
-      </div>
-      <div>
-        <Label htmlFor="partnershipTypes">Partnership Types</Label>
-        <MultiSelect
-          id="partnershipTypes"
-          options={[
-            { label: "Monetary", value: "monetary" },
-            { label: "Knowledge", value: "knowledge" },
-            { label: "Skilled", value: "skilled" },
-            { label: "Volunteering", value: "volunteering" },
-          ]}
-          {...register("partnershipTypes")}
+        
+        <FormField
+          control={form.control}
+          name="requiredSkills"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Required Skills</FormLabel>
+              <FormControl>
+                <MultiSelect 
+                  value={field.value || []}
+                  onChange={field.onChange}
+                  options={[]}
+                  placeholder="Add required skills"
+                  className="w-full"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        {errors.partnershipTypes && (
-          <p className="text-sm text-red-500">{errors.partnershipTypes.message}</p>
-        )}
-      </div>
-      <div>
-        <Label htmlFor="location">Location</Label>
-        <Input id="location" type="text" {...register("location")} />
-        {errors.location && (
-          <p className="text-sm text-red-500">{errors.location.message}</p>
-        )}
-      </div>
-      <div>
-        <Label htmlFor="image">Image URL</Label>
-        <Input id="image" type="text" {...register("image")} />
-        {errors.image && (
-          <p className="text-sm text-red-500">{errors.image.message}</p>
-        )}
-      </div>
-      <div>
-        <Label htmlFor="applicationsEnabled">Applications Enabled</Label>
-        <Input id="applicationsEnabled" type="checkbox" {...register("applicationsEnabled")} />
-        {errors.applicationsEnabled && (
-          <p className="text-sm text-red-500">{errors.applicationsEnabled.message}</p>
-        )}
-      </div>
-      <div>
-        <Label htmlFor="proposalFile">Proposal File</Label>
-        <Input
-          id="proposalFile"
-          type="file"
-          onChange={(e) => {
-            if (e.target.files && e.target.files.length > 0) {
-              setProposalFile(e.target.files[0]);
-            } else {
-              setProposalFile(null);
-            }
-          }}
+        
+        <FormField
+          control={form.control}
+          name="partnershipTypes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Partnership Types</FormLabel>
+              <FormControl>
+                <MultiSelect
+                  value={field.value || []}
+                  onChange={field.onChange}
+                  options={[
+                    { label: "Monetary", value: "monetary" },
+                    { label: "Knowledge", value: "knowledge" },
+                    { label: "Skilled", value: "skilled" },
+                    { label: "Volunteering", value: "volunteering" },
+                  ]}
+                  placeholder="Select partnership types"
+                  className="w-full"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        {uploading && <p>Uploading...</p>}
-        {errors.proposalFilePath && (
-          <p className="text-sm text-red-500">{errors.proposalFilePath.message}</p>
-        )}
-      </div>
-      <Button type="submit" disabled={isSaving}>
-        {isSaving ? "Saving..." : "Submit"}
-      </Button>
-    </form>
+        
+        <FormField
+          control={form.control}
+          name="location"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel htmlFor="location">Location</FormLabel>
+              <FormControl>
+                <Input id="location" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="image"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel htmlFor="image">Image URL</FormLabel>
+              <FormControl>
+                <Input id="image" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="applicationsEnabled"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+              <FormControl>
+                <Input 
+                  id="applicationsEnabled" 
+                  type="checkbox"
+                  className="w-4 h-4"
+                  checked={field.value}
+                  onChange={field.onChange}
+                />
+              </FormControl>
+              <FormLabel htmlFor="applicationsEnabled">Enable Applications</FormLabel>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <div>
+          <Label htmlFor="proposalFile">Proposal File</Label>
+          <Input
+            id="proposalFile"
+            type="file"
+            onChange={(e) => {
+              if (e.target.files && e.target.files.length > 0) {
+                setProposalFile(e.target.files[0]);
+              } else {
+                setProposalFile(null);
+              }
+            }}
+          />
+          {uploading && <p>Uploading...</p>}
+        </div>
+        
+        <Button type="submit" disabled={isSaving}>
+          {isSaving ? "Saving..." : "Submit"}
+        </Button>
+      </form>
+    </Form>
   );
 };
 
-export default ProjectForm;
+export { ProjectForm };
