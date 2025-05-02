@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -47,7 +46,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
   const [proposalFile, setProposalFile] = useState<File | null>(null);
   const { data: requireProjectApproval } = useSystemSetting("require_project_approval");
 
-  // Define skill options for MultiSelect - moved outside form to avoid recreating on each render
+  // Enhanced skill options with detailed descriptions
   const skillOptions = React.useMemo(() => [
     { 
       label: "Programming", 
@@ -79,9 +78,19 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
       value: "research",
       description: "Data analysis, market research, and academic investigation"
     },
+    {
+      label: "Community Building",
+      value: "community_building",
+      description: "Engagement, moderation, and growth of community initiatives"
+    },
+    {
+      label: "Event Planning",
+      value: "event_planning",
+      description: "Organization, coordination, and execution of events"
+    }
   ], []);
 
-  // Define partnership options for MultiSelect - moved outside form to avoid recreating on each render
+  // Enhanced partnership type options with detailed descriptions
   const partnershipTypeOptions = React.useMemo(() => [
     { 
       label: "Monetary", 
@@ -103,6 +112,16 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
       value: "volunteering",
       description: "Time contribution, community support, and hands-on assistance"
     },
+    {
+      label: "Resources",
+      value: "resources",
+      description: "Access to tools, equipment, facilities, or other physical resources"
+    },
+    {
+      label: "Network",
+      value: "network",
+      description: "Connections, introductions, and community outreach opportunities"
+    }
   ], []);
 
   // Set default values for form with proper fallbacks for arrays and objects
@@ -282,13 +301,14 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onFormSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onFormSubmit)} className="space-y-6">
+        {/* Basic project info fields */}
         <FormField
           control={form.control}
           name="title"
           render={({ field }) => (
             <FormItem>
-              <FormLabel htmlFor="title">Title</FormLabel>
+              <FormLabel htmlFor="title">Project Title</FormLabel>
               <FormControl>
                 <Input id="title" {...field} />
               </FormControl>
@@ -302,9 +322,14 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel htmlFor="description">Description</FormLabel>
+              <FormLabel htmlFor="description">Project Description</FormLabel>
               <FormControl>
-                <Textarea id="description" {...field} />
+                <Textarea 
+                  id="description" 
+                  {...field} 
+                  className="min-h-[120px]"
+                  placeholder="Describe your project, its goals, and impact..."
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -318,7 +343,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
             <FormItem>
               <FormLabel htmlFor="category">Category</FormLabel>
               <FormControl>
-                <Input id="category" {...field} />
+                <Input id="category" {...field} placeholder="e.g. Education, Environment, Technology..." />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -337,7 +362,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue placeholder="Select project status" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -359,7 +384,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
             name="timelineStart"
             render={({ field }) => (
               <FormItem>
-                <FormLabel htmlFor="timelineStart">Timeline Start</FormLabel>
+                <FormLabel htmlFor="timelineStart">Start Date</FormLabel>
                 <FormControl>
                   <Input id="timelineStart" type="date" {...field} />
                 </FormControl>
@@ -373,7 +398,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
             name="timelineEnd"
             render={({ field }) => (
               <FormItem>
-                <FormLabel htmlFor="timelineEnd">Timeline End</FormLabel>
+                <FormLabel htmlFor="timelineEnd">End Date</FormLabel>
                 <FormControl>
                   <Input id="timelineEnd" type="date" {...field} />
                 </FormControl>
@@ -391,6 +416,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
               <FormLabel>Required Skills</FormLabel>
               <FormDescription>
                 Select the skills needed for this project. Each volunteer or partner should have at least one of these skills.
+                Click on each option to see more details.
               </FormDescription>
               <FormControl>
                 <MultiSelect 
@@ -413,7 +439,9 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
             <FormItem>
               <FormLabel>Partnership Types</FormLabel>
               <FormDescription>
-                Select the types of partnerships you're seeking for this project. This helps potential partners understand how they can contribute.
+                Select the types of partnerships you're seeking for this project. 
+                This helps potential partners understand how they can contribute.
+                Click on each option to see detailed descriptions.
               </FormDescription>
               <FormControl>
                 <MultiSelect
@@ -436,7 +464,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
             <FormItem>
               <FormLabel htmlFor="location">Location</FormLabel>
               <FormControl>
-                <Input id="location" {...field} />
+                <Input id="location" {...field} placeholder="City, Country or 'Remote'" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -448,9 +476,9 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
           name="image"
           render={({ field }) => (
             <FormItem>
-              <FormLabel htmlFor="image">Image URL</FormLabel>
+              <FormLabel htmlFor="image">Cover Image URL</FormLabel>
               <FormControl>
-                <Input id="image" {...field} />
+                <Input id="image" {...field} placeholder="https://example.com/image.jpg" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -482,7 +510,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
         />
         
         <div>
-          <Label htmlFor="proposalFile">Proposal File</Label>
+          <Label htmlFor="proposalFile">Project Proposal Document</Label>
           <Input
             id="proposalFile"
             type="file"
@@ -493,12 +521,17 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
                 setProposalFile(null);
               }
             }}
+            className="mt-1"
+            accept=".pdf,.doc,.docx"
           />
-          {uploading && <p>Uploading...</p>}
+          <FormDescription>
+            Upload a detailed project proposal document (PDF or Word format)
+          </FormDescription>
+          {uploading && <p className="text-sm text-amber-600 mt-1">Uploading document...</p>}
         </div>
         
-        <Button type="submit" disabled={isSaving}>
-          {isSaving ? "Saving..." : "Submit"}
+        <Button type="submit" disabled={isSaving} className="w-full md:w-auto">
+          {isSaving ? "Saving..." : project?.id ? "Update Project" : "Create Project"}
         </Button>
       </form>
     </Form>
