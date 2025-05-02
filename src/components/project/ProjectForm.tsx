@@ -48,22 +48,22 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
   const { data: requireProjectApproval } = useSystemSetting("require_project_approval");
 
   // Define skill options for MultiSelect - moved outside form to avoid recreating on each render
-  const skillOptions = [
+  const skillOptions = React.useMemo(() => [
     { label: "Programming", value: "programming" },
     { label: "Design", value: "design" },
     { label: "Marketing", value: "marketing" },
     { label: "Writing", value: "writing" },
     { label: "Project Management", value: "project_management" },
     { label: "Research", value: "research" },
-  ];
+  ], []);
 
   // Define partnership options for MultiSelect - moved outside form to avoid recreating on each render
-  const partnershipTypeOptions = [
+  const partnershipTypeOptions = React.useMemo(() => [
     { label: "Monetary", value: "monetary" },
     { label: "Knowledge", value: "knowledge" },
     { label: "Skilled", value: "skilled" },
     { label: "Volunteering", value: "volunteering" },
-  ];
+  ], []);
 
   // Set default values for form with proper fallbacks for arrays and objects
   const form = useForm<z.infer<typeof projectFormSchema>>({
@@ -144,7 +144,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
 
       if (proposalFile) {
         const uploadedUrl = await handleProposalUpload(proposalFile);
-        if (!uploadedUrl) {
+        if (uploadedUrl === null) {
           setIsSaving(false);
           return;
         }
