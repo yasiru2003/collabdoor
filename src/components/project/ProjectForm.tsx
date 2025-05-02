@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useSystemSetting } from "@/hooks/use-system-settings";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { uploadProjectProposal } from "@/utils/upload-utils";
 
 const projectFormSchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters." }),
@@ -89,30 +90,20 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
   const handleProposalUpload = async (file: File) => {
     setUploading(true);
     try {
-      const filePath = `proposals/${Date.now()}_${file.name}`;
-      const { error } = await supabase.storage
-        .from('project-files')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (error) {
-        console.error("Error uploading file: ", error);
+      if (!file) return null;
+      
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user?.id) {
         toast({
-          title: "Upload failed",
-          description: "Failed to upload the proposal. Please try again.",
+          title: "Authentication required",
+          description: "You must be logged in to upload files.",
           variant: "destructive",
         });
         return null;
       }
 
-      // Get the public URL using the getPublicUrl method
-      const { data } = supabase.storage
-        .from('project-files')
-        .getPublicUrl(filePath);
-      
-      return data.publicUrl;
+      const publicUrl = await uploadProjectProposal(file, userData.user.id);
+      return publicUrl;
     } catch (error) {
       console.error("Unexpected error during upload: ", error);
       toast({
