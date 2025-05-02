@@ -47,6 +47,24 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
   const [proposalFile, setProposalFile] = useState<File | null>(null);
   const { data: requireProjectApproval } = useSystemSetting("require_project_approval");
 
+  // Define skill options for MultiSelect - moved outside form to avoid recreating on each render
+  const skillOptions = [
+    { label: "Programming", value: "programming" },
+    { label: "Design", value: "design" },
+    { label: "Marketing", value: "marketing" },
+    { label: "Writing", value: "writing" },
+    { label: "Project Management", value: "project_management" },
+    { label: "Research", value: "research" },
+  ];
+
+  // Define partnership options for MultiSelect - moved outside form to avoid recreating on each render
+  const partnershipTypeOptions = [
+    { label: "Monetary", value: "monetary" },
+    { label: "Knowledge", value: "knowledge" },
+    { label: "Skilled", value: "skilled" },
+    { label: "Volunteering", value: "volunteering" },
+  ];
+
   const form = useForm<z.infer<typeof projectFormSchema>>({
     resolver: zodResolver(projectFormSchema),
     defaultValues: {
@@ -146,8 +164,8 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
         status: status as 'draft' | 'published' | 'in-progress' | 'completed' | 'pending_publish',
         start_date: formData.timelineStart,
         end_date: formData.timelineEnd,
-        required_skills: formData.requiredSkills,
-        partnership_types: formData.partnershipTypes as PartnershipType[],
+        required_skills: formData.requiredSkills || [], // Ensure it's never undefined
+        partnership_types: formData.partnershipTypes as PartnershipType[] || [], // Ensure it's never undefined
         location: formData.location,
         image: formData.image,
         applications_enabled: formData.applicationsEnabled,
@@ -220,24 +238,6 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
       setIsSaving(false);
     }
   };
-
-  // Define skill options for MultiSelect
-  const skillOptions = [
-    { label: "Programming", value: "programming" },
-    { label: "Design", value: "design" },
-    { label: "Marketing", value: "marketing" },
-    { label: "Writing", value: "writing" },
-    { label: "Project Management", value: "project_management" },
-    { label: "Research", value: "research" },
-  ];
-
-  // Define partnership options for MultiSelect
-  const partnershipTypeOptions = [
-    { label: "Monetary", value: "monetary" },
-    { label: "Knowledge", value: "knowledge" },
-    { label: "Skilled", value: "skilled" },
-    { label: "Volunteering", value: "volunteering" },
-  ];
 
   return (
     <Form {...form}>
@@ -350,7 +350,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
               <FormLabel>Required Skills</FormLabel>
               <FormControl>
                 <MultiSelect 
-                  value={field.value || []}
+                  value={field.value || []} // Ensure it's never undefined
                   onChange={field.onChange}
                   options={skillOptions}
                   placeholder="Add required skills"
@@ -370,7 +370,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
               <FormLabel>Partnership Types</FormLabel>
               <FormControl>
                 <MultiSelect
-                  value={field.value || []}
+                  value={field.value || []} // Ensure it's never undefined
                   onChange={field.onChange}
                   options={partnershipTypeOptions}
                   placeholder="Select partnership types"
@@ -421,7 +421,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
                   type="checkbox"
                   className="w-4 h-4"
                   checked={field.value}
-                  onChange={field.onChange}
+                  onChange={(e) => field.onChange(e.target.checked)}
                 />
               </FormControl>
               <FormLabel htmlFor="applicationsEnabled">Enable Applications</FormLabel>
