@@ -65,6 +65,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
     { label: "Volunteering", value: "volunteering" },
   ];
 
+  // Set default values for form with proper fallbacks for arrays and objects
   const form = useForm<z.infer<typeof projectFormSchema>>({
     resolver: zodResolver(projectFormSchema),
     defaultValues: {
@@ -420,7 +421,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
                   id="applicationsEnabled" 
                   type="checkbox"
                   className="w-4 h-4"
-                  checked={field.value}
+                  checked={field.value === true}
                   onChange={(e) => field.onChange(e.target.checked)}
                 />
               </FormControl>
