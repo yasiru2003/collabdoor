@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { X } from "lucide-react";
 import { Badge } from "./badge";
@@ -117,37 +116,34 @@ export function MultiSelect({
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
         <Command>
-          {safeOptions.length === 0 ? (
-            <CommandEmpty>No options available</CommandEmpty>
-          ) : (
-            <CommandGroup className="max-h-64 overflow-auto">
-              {safeOptions.map((option) => {
-                const isSelected = safeValue.includes(option.value);
-                return (
-                  <CommandItem
-                    key={option.value}
-                    onSelect={() => handleSelect(option.value)}
+          <CommandEmpty>No options available</CommandEmpty>
+          <CommandGroup className="max-h-64 overflow-auto">
+            {safeOptions.map((option) => {
+              const isSelected = safeValue.includes(option.value);
+              return (
+                <CommandItem
+                  key={option.value}
+                  onSelect={() => handleSelect(option.value)}
+                  className={cn(
+                    "flex cursor-pointer items-center gap-2",
+                    isSelected ? "bg-accent" : ""
+                  )}
+                >
+                  <div
                     className={cn(
-                      "flex cursor-pointer items-center gap-2",
-                      isSelected ? "bg-accent" : ""
+                      "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                      isSelected
+                        ? "bg-primary text-primary-foreground"
+                        : "opacity-50"
                     )}
                   >
-                    <div
-                      className={cn(
-                        "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                        isSelected
-                          ? "bg-primary text-primary-foreground"
-                          : "opacity-50"
-                      )}
-                    >
-                      {isSelected && <span className="h-4 text-xs">✓</span>}
-                    </div>
-                    {option.label}
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          )}
+                    {isSelected && <span className="h-4 text-xs">✓</span>}
+                  </div>
+                  {option.label}
+                </CommandItem>
+              );
+            })}
+          </CommandGroup>
         </Command>
       </PopoverContent>
     </Popover>

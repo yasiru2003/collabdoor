@@ -351,7 +351,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
               <FormLabel>Required Skills</FormLabel>
               <FormControl>
                 <MultiSelect 
-                  value={field.value || []} // Ensure it's never undefined
+                  value={field.value || []}
                   onChange={field.onChange}
                   options={skillOptions}
                   placeholder="Add required skills"
@@ -371,7 +371,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
               <FormLabel>Partnership Types</FormLabel>
               <FormControl>
                 <MultiSelect
-                  value={field.value || []} // Ensure it's never undefined
+                  value={field.value || []}
                   onChange={field.onChange}
                   options={partnershipTypeOptions}
                   placeholder="Select partnership types"
