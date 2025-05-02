@@ -914,7 +914,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      approve_project: {
+        Args: { project_id: string }
+        Returns: boolean
+      }
+      reject_project: {
+        Args: { project_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       application_status: "pending" | "approved" | "rejected"

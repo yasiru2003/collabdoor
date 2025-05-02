@@ -1,466 +1,362 @@
-
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { Project, PartnershipType } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useSystemSetting } from "@/hooks/use-system-settings";
-import { PartnershipType } from "@/types";
-import { ProjectImagesUpload } from "@/components/project/ProjectImagesUpload";
-import { uploadProjectProposal } from "@/utils/upload-utils";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useUserOrganizations } from "@/hooks/use-user-organizations";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import { AlertCircle } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
-export function ProjectForm() {
-  const {
-    user
-  } = useAuth();
+const projectFormSchema = z.object({
+  title: z.string().min(3, { message: "Title must be at least 3 characters." }),
+  description: z.string().min(10, { message: "Description must be at least 10 characters." }),
+  category: z.string().optional(),
+  status: z.enum(['draft', 'published', 'in-progress', 'completed', 'pending_publish']).default('draft'),
+  timelineStart: z.string().optional(),
+  timelineEnd: z.string().optional(),
+  requiredSkills: z.array(z.string()).optional(),
+  partnershipTypes: z.array(z.enum(["monetary", "knowledge", "skilled", "volunteering"])).optional(),
+  location: z.string().optional(),
+  image: z.string().optional(),
+  applicationsEnabled: z.boolean().default(true).optional(),
+  proposalFilePath: z.string().optional(),
+  partnership_details: z.record(z.string(), z.string()).optional(),
+  previous_projects: z.record(z.string(), z.string()).optional(),
+});
+
+interface ProjectFormProps {
+  project?: Partial<Project>;
+  onSubmit?: (data: z.infer<typeof projectFormSchema>) => void;
+}
+
+const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
-  const [location, setLocation] = useState("");
-  const [partnershipTypes, setPartnershipTypes] = useState<PartnershipType[]>([]);
-  const [contactEmail, setContactEmail] = useState("");
-  const [contactPhone, setContactPhone] = useState("");
-  const [previousProjects, setPreviousProjects] = useState("");
-  const [projectImages, setProjectImages] = useState<string[]>([]);
+  const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [proposalFile, setProposalFile] = useState<File | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
-  
-  // Add state for start and end dates
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  
-  // Form validation errors
-  const [formErrors, setFormErrors] = useState<{
-    title?: string;
-    description?: string;
-    timeline?: string;
-  }>({});
+  const { data: requireProjectApproval } = useSystemSetting("require_project_approval");
 
-  // Fetch user organizations
-  const { data: userOrganizations, isLoading: organizationsLoading } = useUserOrganizations();
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<z.infer<typeof projectFormSchema>>({
+    resolver: zodResolver(projectFormSchema),
+    defaultValues: {
+      title: project?.title || "",
+      description: project?.description || "",
+      category: project?.category || "",
+      status: project?.status || 'draft',
+      timelineStart: project?.timeline?.start || "",
+      timelineEnd: project?.timeline?.end || "",
+      requiredSkills: project?.requiredSkills || [],
+      partnershipTypes: project?.partnershipTypes || [],
+      location: project?.location || "",
+      image: project?.image || "",
+      applicationsEnabled: project?.applicationsEnabled !== undefined ? project?.applicationsEnabled : true,
+      proposalFilePath: project?.proposalFilePath || "",
+      partnership_details: project?.partnership_details || {},
+      previous_projects: project?.previous_projects || {},
+    },
+  });
 
-  // Check if projects require admin approval
-  const {
-    data: projectApprovalSetting
-  } = useSystemSetting("require_project_approval");
-  const requiresAdminApproval = projectApprovalSetting?.value || false;
+  useEffect(() => {
+    // Populate the form with project data when it's available
+    if (project) {
+      setValue('title', project.title || "");
+      setValue('description', project.description || "");
+      setValue('category', project.category || "");
+      setValue('status', project.status || 'draft');
+      setValue('timelineStart', project.timeline?.start || "");
+      setValue('timelineEnd', project.timeline?.end || "");
+      setValue('requiredSkills', project.requiredSkills || []);
+      setValue('partnershipTypes', project.partnershipTypes || []);
+      setValue('location', project.location || "");
+      setValue('image', project.image || "");
+      setValue('applicationsEnabled', project.applicationsEnabled !== undefined ? project.applicationsEnabled : true);
+      setValue('proposalFilePath', project.proposalFilePath || "");
+      setValue('partnership_details', project.partnership_details || {});
+      setValue('previous_projects', project.previous_projects || {});
+    }
+  }, [project, setValue]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setProposalFile(e.target.files[0]);
-    }
-  };
-
-  const handlePartnershipTypeChange = (type: PartnershipType) => {
-    setPartnershipTypes(current => {
-      if (current.includes(type)) {
-        return current.filter(t => t !== type);
-      } else {
-        return [...current, type];
-      }
-    });
-  };
-
-  const validateForm = () => {
-    const errors: {
-      title?: string;
-      description?: string;
-      timeline?: string;
-    } = {};
-    
-    if (!title) {
-      errors.title = "Title is required";
-    }
-    
-    if (!description) {
-      errors.description = "Description is required";
-    }
-    
-    if (!startDate || !endDate) {
-      errors.timeline = "Start and end dates are required";
-    } else if (endDate < startDate) {
-      errors.timeline = "End date must be after start date";
-    }
-    
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please login to create a project",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Validate the form
-    if (!validateForm()) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
-      return;
-    }
-    
+  const handleProposalUpload = async (file: File) => {
+    setUploading(true);
     try {
-      setIsSubmitting(true);
+      const filePath = `proposals/${Date.now()}_${file.name}`;
+      const { error } = await supabase.storage
+        .from('project-files')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
-      // Determine initial status based on admin approval setting
-      const initialStatus = requiresAdminApproval ? "pending_publish" : "draft";
-
-      // Ensure we have at least one partnership type selected
-      const validPartnershipTypes = partnershipTypes.length > 0 ? partnershipTypes : ["knowledge" as PartnershipType];
-
-      // Upload proposal file if selected
-      let proposalFilePath = null;
-      if (proposalFile && user.id) {
-        proposalFilePath = await uploadProjectProposal(proposalFile, user.id);
+      if (error) {
+        console.error("Error uploading file: ", error);
+        toast({
+          title: "Upload failed",
+          description: "Failed to upload the proposal. Please try again.",
+          variant: "destructive",
+        });
+        return null;
       }
 
-      // Create contact information and previous projects objects
-      const contactInfo = {
-        email: contactEmail,
-        phone: contactPhone
-      };
-      const previousProjectsInfo = previousProjects ? {
-        description: previousProjects
-      } : null;
+      const publicURL = `${supabase.storageUrl}/object/public/project-files/${filePath}`;
+      return publicURL;
+    } catch (error) {
+      console.error("Unexpected error during upload: ", error);
+      toast({
+        title: "Upload failed",
+        description: "An unexpected error occurred during upload. Please try again.",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
 
-      // Get selected organization name if an organization was selected
-      let organizationName = null;
-      if (organizationId && organizationId !== "none" && userOrganizations) {
-        const selectedOrg = userOrganizations.find(org => org.id === organizationId);
-        organizationName = selectedOrg?.name || null;
-      }
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSaving(true);
 
-      const {
-        data,
-        error
-      } = await supabase.from("projects").insert({
-        title,
-        description,
-        category: category || null,
-        location: location || null,
-        partnership_types: validPartnershipTypes,
-        organizer_id: user.id,
-        status: initialStatus,
-        partnership_details: contactInfo,
-        previous_projects: previousProjectsInfo,
-        proposal_file_path: proposalFilePath,
-        organization_id: (organizationId && organizationId !== "none") ? organizationId : null,
-        organization_name: organizationName,
-        start_date: startDate?.toISOString(),
-        end_date: endDate?.toISOString()
-      }).select().single();
-      
-      if (error) throw error;
+    const formData = {
+      title: (event.target as HTMLFormElement).title.value,
+      description: (event.target as HTMLFormElement).description.value,
+      category: (event.target as HTMLFormElement).category.value,
+      status: (event.target as HTMLFormElement).status.value,
+      timelineStart: (event.target as HTMLFormElement).timelineStart.value,
+      timelineEnd: (event.target as HTMLFormElement).timelineEnd.value,
+      requiredSkills: (event.target as HTMLFormElement).requiredSkills.value ? ((event.target as HTMLFormElement).requiredSkills.value as string).split(',') : [],
+      partnershipTypes: (event.target as HTMLFormElement).partnershipTypes.value ? ((event.target as HTMLFormElement).partnershipTypes.value as string).split(',') : [],
+      location: (event.target as HTMLFormElement).location.value,
+      image: (event.target as HTMLFormElement).image.value,
+      applicationsEnabled: (event.target as HTMLFormElement).applicationsEnabled.checked,
+      proposalFilePath: (event.target as HTMLFormElement).proposalFilePath.value,
+      partnership_details: {},
+      previous_projects: {},
+    };
 
-      // If we have images, associate them with the project
-      if (projectImages.length > 0 && data) {
-        const projectImagesData = projectImages.map(image_url => ({
-          project_id: data.id,
-          image_url
-        }));
-        const {
-          error: imagesError
-        } = await supabase.from("project_images").insert(projectImagesData);
-        if (imagesError) {
-          console.error("Error saving project images:", imagesError);
+    try {
+      let proposalURL = formData.proposalFilePath;
+
+      if (proposalFile) {
+        proposalURL = await handleProposalUpload(proposalFile);
+        if (!proposalURL) {
+          setIsSaving(false);
+          return;
         }
       }
-      toast({
-        title: "Project created",
-        description: requiresAdminApproval ? "Your project has been submitted for approval" : "Your project has been created successfully"
-      });
 
-      // Redirect to the project page
-      navigate(`/projects/${data.id}`);
-    } catch (error: any) {
-      console.error("Error creating project:", error);
+      // Check if admin approval is required for publishing projects
+      if (formData.status === 'published' && requireProjectApproval?.value === true) {
+        // Change status to pending_publish if admin approval required
+        formData.status = 'pending_publish';
+      }
+
+      const updates = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        status: formData.status,
+        start_date: formData.timelineStart,
+        end_date: formData.timelineEnd,
+        required_skills: formData.requiredSkills,
+        partnership_types: formData.partnershipTypes,
+        location: formData.location,
+        image: formData.image,
+        applications_enabled: formData.applicationsEnabled,
+        proposal_file_path: proposalURL,
+        partnership_details: {},
+        previous_projects: {},
+      };
+
+      if (project?.id) {
+        const { error } = await supabase
+          .from('projects')
+          .update(updates)
+          .eq('id', project.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Project updated",
+          description: "Your project has been updated successfully.",
+        });
+      } else {
+        const { data, error } = await supabase
+          .from('projects')
+          .insert({
+            ...updates,
+            organizer_id: supabase.auth.getUser().then((response) => response.data?.user?.id),
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        toast({
+          title: "Project created",
+          description: "Your project has been created successfully.",
+        });
+
+        // Redirect to the newly created project
+        navigate(`/projects/${data.id}`);
+      }
+
+      if (formData.status === 'pending_publish') {
+        toast({
+          title: "Project submitted for review",
+          description: "Your project has been submitted and is awaiting admin approval.",
+        });
+      } else {
+        toast({
+          title: "Project saved",
+          description: "Your project has been saved successfully.",
+        });
+      }
+
+      navigate('/projects');
+    } catch (error) {
+      console.error("Error submitting project:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create project",
-        variant: "destructive"
+        description: "Failed to submit project. Please try again.",
+        variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsSaving(false);
     }
   };
 
-  // Define available partnership types based on the PartnershipType enum
-  const partnershipTypeOptions: {
-    type: PartnershipType;
-    label: string;
-  }[] = [{
-    type: "monetary",
-    label: "Monetary"
-  }, {
-    type: "knowledge",
-    label: "Knowledge"
-  }, {
-    type: "skilled",
-    label: "Skilled"
-  }, {
-    type: "volunteering",
-    label: "Volunteering"
-  }];
-  
-  return <form onSubmit={handleSubmit} className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Project Details</CardTitle>
-          <CardDescription>
-            Enter the details of your project to get started.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="title">Title <span className="text-destructive">*</span></Label>
-            <Input 
-              id="title" 
-              placeholder="Project Title" 
-              value={title} 
-              onChange={e => setTitle(e.target.value)} 
-              className={formErrors.title ? "border-destructive" : ""}
-            />
-            {formErrors.title && (
-              <p className="text-sm text-destructive mt-1">{formErrors.title}</p>
-            )}
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="description">Description <span className="text-destructive">*</span></Label>
-            <Textarea 
-              id="description" 
-              placeholder="Project Description" 
-              value={description} 
-              onChange={e => setDescription(e.target.value)} 
-              className={formErrors.description ? "border-destructive" : ""}
-            />
-            {formErrors.description && (
-              <p className="text-sm text-destructive mt-1">{formErrors.description}</p>
-            )}
-          </div>
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="title">Title</Label>
+        <Input id="title" type="text" {...register("title")} />
+        {errors.title && (
+          <p className="text-sm text-red-500">{errors.title.message}</p>
+        )}
+      </div>
+      <div>
+        <Label htmlFor="description">Description</Label>
+        <Textarea id="description" {...register("description")} />
+        {errors.description && (
+          <p className="text-sm text-red-500">{errors.description.message}</p>
+        )}
+      </div>
+      <div>
+        <Label htmlFor="category">Category</Label>
+        <Input id="category" type="text" {...register("category")} />
+        {errors.category && (
+          <p className="text-sm text-red-500">{errors.category.message}</p>
+        )}
+      </div>
+      <div>
+        <Label htmlFor="status">Status</Label>
+        <Select {...register("status")} defaultValue={project?.status || 'draft'}>
+          <SelectTrigger id="status">
+            <SelectValue placeholder="Select status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="draft">Draft</SelectItem>
+            <SelectItem value="pending_publish">Pending Publish</SelectItem>
+            <SelectItem value="published">Published</SelectItem>
+            <SelectItem value="in-progress">In Progress</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
+        {errors.status && (
+          <p className="text-sm text-red-500">{errors.status.message}</p>
+        )}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="timelineStart">Timeline Start</Label>
+          <Input id="timelineStart" type="date" {...register("timelineStart")} />
+          {errors.timelineStart && (
+            <p className="text-sm text-red-500">{errors.timelineStart.message}</p>
+          )}
+        </div>
+        <div>
+          <Label htmlFor="timelineEnd">Timeline End</Label>
+          <Input id="timelineEnd" type="date" {...register("timelineEnd")} />
+          {errors.timelineEnd && (
+            <p className="text-sm text-red-500">{errors.timelineEnd.message}</p>
+          )}
+        </div>
+      </div>
+      <div>
+        <Label htmlFor="requiredSkills">Required Skills</Label>
+        <MultiSelect id="requiredSkills" {...register("requiredSkills")} />
+        {errors.requiredSkills && (
+          <p className="text-sm text-red-500">{errors.requiredSkills.message}</p>
+        )}
+      </div>
+      <div>
+        <Label htmlFor="partnershipTypes">Partnership Types</Label>
+        <MultiSelect
+          id="partnershipTypes"
+          options={[
+            { label: "Monetary", value: "monetary" },
+            { label: "Knowledge", value: "knowledge" },
+            { label: "Skilled", value: "skilled" },
+            { label: "Volunteering", value: "volunteering" },
+          ]}
+          {...register("partnershipTypes")}
+        />
+        {errors.partnershipTypes && (
+          <p className="text-sm text-red-500">{errors.partnershipTypes.message}</p>
+        )}
+      </div>
+      <div>
+        <Label htmlFor="location">Location</Label>
+        <Input id="location" type="text" {...register("location")} />
+        {errors.location && (
+          <p className="text-sm text-red-500">{errors.location.message}</p>
+        )}
+      </div>
+      <div>
+        <Label htmlFor="image">Image URL</Label>
+        <Input id="image" type="text" {...register("image")} />
+        {errors.image && (
+          <p className="text-sm text-red-500">{errors.image.message}</p>
+        )}
+      </div>
+      <div>
+        <Label htmlFor="applicationsEnabled">Applications Enabled</Label>
+        <Input id="applicationsEnabled" type="checkbox" {...register("applicationsEnabled")} />
+        {errors.applicationsEnabled && (
+          <p className="text-sm text-red-500">{errors.applicationsEnabled.message}</p>
+        )}
+      </div>
+      <div>
+        <Label htmlFor="proposalFile">Proposal File</Label>
+        <Input
+          id="proposalFile"
+          type="file"
+          onChange={(e) => {
+            if (e.target.files && e.target.files.length > 0) {
+              setProposalFile(e.target.files[0]);
+            } else {
+              setProposalFile(null);
+            }
+          }}
+        />
+        {uploading && <p>Uploading...</p>}
+        {errors.proposalFilePath && (
+          <p className="text-sm text-red-500">{errors.proposalFilePath.message}</p>
+        )}
+      </div>
+      <Button type="submit" disabled={isSaving}>
+        {isSaving ? "Saving..." : "Submit"}
+      </Button>
+    </form>
+  );
+};
 
-          {/* Project Timeline */}
-          <div className="grid gap-2">
-            <Label htmlFor="timeline">Project Timeline <span className="text-destructive">*</span></Label>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="start-date">Start Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id="start-date"
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !startDate && "text-muted-foreground",
-                        formErrors.timeline && "border-destructive"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {startDate ? format(startDate, "PPP") : <span>Select date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={startDate}
-                      onSelect={setStartDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="end-date">End Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id="end-date"
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !endDate && "text-muted-foreground",
-                        formErrors.timeline && "border-destructive"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {endDate ? format(endDate, "PPP") : <span>Select date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={endDate}
-                      onSelect={setEndDate}
-                      initialFocus
-                      disabled={(date) => startDate ? date < startDate : false}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-            {formErrors.timeline && (
-              <p className="text-sm text-destructive mt-1">{formErrors.timeline}</p>
-            )}
-          </div>
-          
-          {/* Organization selection */}
-          <div className="grid gap-2">
-            <Label htmlFor="organization">Organization (optional)</Label>
-            <Select value={organizationId || "none"} onValueChange={(value) => setOrganizationId(value === "none" ? null : value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select an organization or leave empty for individual project" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Individual Project (No Organization)</SelectItem>
-                {userOrganizations?.map(org => (
-                  <SelectItem key={org.id} value={org.id}>{org.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-sm text-muted-foreground">
-              {organizationsLoading 
-                ? "Loading your organizations..." 
-                : userOrganizations?.length 
-                  ? "Select an organization or leave empty for an individual project" 
-                  : "You aren't a member of any organizations. This will be created as an individual project."}
-            </p>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="category">Category</Label>
-            <Input id="category" placeholder="Category" value={category} onChange={e => setCategory(e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="location">Location</Label>
-            <Input id="location" placeholder="Location" value={location} onChange={e => setLocation(e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label>Partnership Types</Label>
-            <div className="space-y-2">
-              {partnershipTypeOptions.map(option => <div key={option.type} className="flex items-center space-x-2">
-                  <Checkbox id={`partnership-${option.type}`} checked={partnershipTypes.includes(option.type)} onCheckedChange={() => handlePartnershipTypeChange(option.type)} />
-                  <Label htmlFor={`partnership-${option.type}`} className="cursor-pointer font-normal">
-                    {option.label}
-                  </Label>
-                </div>)}
-            </div>
-            {partnershipTypes.length === 0 && <p className="text-sm text-muted-foreground mt-1">
-                Select at least one partnership type (Knowledge will be selected by default if none chosen)
-              </p>}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Contact Information</CardTitle>
-          <CardDescription>
-            Provide contact details for interested partners.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="contactEmail">Contact Email</Label>
-            <Input id="contactEmail" type="email" placeholder="contact@example.com" value={contactEmail} onChange={e => setContactEmail(e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="contactPhone">Contact Phone</Label>
-            <Input id="contactPhone" placeholder="Phone Number" value={contactPhone} onChange={e => setContactPhone(e.target.value)} />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Previous Projects</CardTitle>
-          <CardDescription>
-            Share information about any relevant past projects.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="previousProjects">Previous Projects</Label>
-            <Textarea id="previousProjects" placeholder="Describe your previous projects and experiences" value={previousProjects} onChange={e => setPreviousProjects(e.target.value)} />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Project Proposal</CardTitle>
-          <CardDescription>
-            Upload a detailed proposal document if available.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="proposalFile">Proposal Document</Label>
-            <Input id="proposalFile" type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} />
-            <p className="text-sm text-muted-foreground">
-              Accepted formats: PDF, DOC, DOCX
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {user && <Card>
-          <CardHeader>
-            <CardTitle>Project Images</CardTitle>
-            <CardDescription>
-              Upload images related to your project.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ProjectImagesUpload userId={user.id} onImagesChange={setProjectImages} />
-          </CardContent>
-        </Card>}
-
-      <Card>
-        <CardFooter>
-          <Button type="submit" disabled={isSubmitting} className="mx-0 my-[34px] py-[8px]">
-            {isSubmitting ? "Creating..." : requiresAdminApproval ? "Submit for Approval" : "Create Project"}
-          </Button>
-        </CardFooter>
-      </Card>
-      
-      {requiresAdminApproval && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Note: Your project will need admin approval before it's published.
-          </AlertDescription>
-        </Alert>
-      )}
-    </form>;
-}
+export default ProjectForm;
