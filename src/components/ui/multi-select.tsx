@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { X, Check, Plus } from "lucide-react";
 import { Badge } from "./badge";
@@ -77,13 +78,14 @@ export function MultiSelect({
   }, [inputValue, safeValue, onChange]);
 
   const selectedLabels = React.useMemo(() => {
-    if (!safeOptions.length) return [];
-    const knownLabels = safeValue.map(
-      (v) => safeOptions.find((option) => option.value === v)?.label || v
-    );
+    // Create a mapping of value to label for quick lookup
+    const optionMap = safeOptions.reduce((acc, option) => {
+      acc[option.value] = option.label;
+      return acc;
+    }, {} as Record<string, string>);
     
-    // Include any custom values that might not be in options
-    return knownLabels;
+    // Map values to labels, falling back to the value itself if no label is found
+    return safeValue.map(v => optionMap[v] || v);
   }, [safeOptions, safeValue]);
 
   return (
@@ -118,6 +120,7 @@ export function MultiSelect({
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    // Find the value by label, or use the label as the value if not found
                     const itemValue = safeOptions.find(
                       (option) => option.label === label
                     )?.value || label;
