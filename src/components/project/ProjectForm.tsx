@@ -425,6 +425,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
                   options={skillOptions}
                   placeholder="Add required skills"
                   className="w-full"
+                  allowCustomEntry={true}
                 />
               </FormControl>
               <FormMessage />
@@ -450,6 +451,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
                   options={partnershipTypeOptions}
                   placeholder="Select partnership types"
                   className="w-full"
+                  allowCustomEntry={true}
                 />
               </FormControl>
               <FormMessage />

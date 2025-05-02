@@ -1,12 +1,12 @@
-
 import * as React from "react";
-import { X, Check } from "lucide-react";
+import { X, Check, Plus } from "lucide-react";
 import { Badge } from "./badge";
 import {
   Command,
   CommandGroup,
   CommandItem,
   CommandEmpty,
+  CommandInput
 } from "./command";
 import {
   Popover,
@@ -30,6 +30,7 @@ interface MultiSelectProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  allowCustomEntry?: boolean;
 }
 
 export function MultiSelect({
@@ -39,8 +40,10 @@ export function MultiSelect({
   placeholder = "Select options",
   className,
   disabled = false,
+  allowCustomEntry = false,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
+  const [inputValue, setInputValue] = React.useState("");
 
   // Ensure we always have arrays, even if values are somehow undefined
   const safeOptions = React.useMemo(() => {
@@ -64,11 +67,23 @@ export function MultiSelect({
     // Keep the popover open for multiple selections
   }, [safeValue, onChange]);
 
+  const handleAddCustomOption = React.useCallback(() => {
+    if (!inputValue || safeValue.includes(inputValue)) {
+      return;
+    }
+    
+    onChange([...safeValue, inputValue]);
+    setInputValue("");
+  }, [inputValue, safeValue, onChange]);
+
   const selectedLabels = React.useMemo(() => {
     if (!safeOptions.length) return [];
-    return safeValue.map(
+    const knownLabels = safeValue.map(
       (v) => safeOptions.find((option) => option.value === v)?.label || v
     );
+    
+    // Include any custom values that might not be in options
+    return knownLabels;
   }, [safeOptions, safeValue]);
 
   return (
@@ -105,8 +120,8 @@ export function MultiSelect({
                     e.stopPropagation();
                     const itemValue = safeOptions.find(
                       (option) => option.label === label
-                    )?.value;
-                    if (itemValue) handleUnselect(itemValue);
+                    )?.value || label;
+                    handleUnselect(itemValue);
                   }}
                 >
                   <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
@@ -119,6 +134,28 @@ export function MultiSelect({
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
         <Command>
+          {allowCustomEntry && (
+            <div className="flex items-center border-b px-3 py-2">
+              <CommandInput 
+                placeholder="Search or add new..." 
+                value={inputValue}
+                onValueChange={setInputValue}
+                className="flex-1"
+              />
+              {inputValue && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={handleAddCustomOption}
+                  className="ml-2"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add
+                </Button>
+              )}
+            </div>
+          )}
+          
           <CommandEmpty>No options available</CommandEmpty>
           <CommandGroup className="max-h-64 overflow-auto">
             {safeOptions.map((option) => {
