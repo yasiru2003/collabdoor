@@ -33,8 +33,8 @@ interface MultiSelectProps {
 }
 
 export function MultiSelect({
-  options = [], // Provide default empty array for options
-  value = [], // Provide default empty array for value
+  options = [], // Default empty array for options
+  value = [], // Default empty array for value
   onChange,
   placeholder = "Select options",
   className,
