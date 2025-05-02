@@ -1,6 +1,6 @@
 
 import * as React from "react";
-import { X } from "lucide-react";
+import { X, Check } from "lucide-react";
 import { Badge } from "./badge";
 import {
   Command,
