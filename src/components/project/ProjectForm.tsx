@@ -230,6 +230,24 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
     }
   };
 
+  // Define skill options for MultiSelect
+  const skillOptions = [
+    { label: "Programming", value: "programming" },
+    { label: "Design", value: "design" },
+    { label: "Marketing", value: "marketing" },
+    { label: "Writing", value: "writing" },
+    { label: "Project Management", value: "project_management" },
+    { label: "Research", value: "research" },
+  ];
+
+  // Define partnership options for MultiSelect
+  const partnershipTypeOptions = [
+    { label: "Monetary", value: "monetary" },
+    { label: "Knowledge", value: "knowledge" },
+    { label: "Skilled", value: "skilled" },
+    { label: "Volunteering", value: "volunteering" },
+  ];
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onFormSubmit)} className="space-y-4">
@@ -343,7 +361,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
                 <MultiSelect 
                   value={field.value || []}
                   onChange={field.onChange}
-                  options={[]}
+                  options={skillOptions}
                   placeholder="Add required skills"
                   className="w-full"
                 />
@@ -363,12 +381,7 @@ const ProjectForm = ({ project, onSubmit }: ProjectFormProps) => {
                 <MultiSelect
                   value={field.value || []}
                   onChange={field.onChange}
-                  options={[
-                    { label: "Monetary", value: "monetary" },
-                    { label: "Knowledge", value: "knowledge" },
-                    { label: "Skilled", value: "skilled" },
-                    { label: "Volunteering", value: "volunteering" },
-                  ]}
+                  options={partnershipTypeOptions}
                   placeholder="Select partnership types"
                   className="w-full"
                 />
