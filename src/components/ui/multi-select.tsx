@@ -78,9 +78,15 @@ export function MultiSelect({
   }, [inputValue, safeValue, onChange]);
 
   const selectedLabels = React.useMemo(() => {
+    if (!Array.isArray(safeOptions) || !Array.isArray(safeValue)) {
+      return [];
+    }
+    
     // Create a mapping of value to label for quick lookup
     const optionMap = safeOptions.reduce((acc, option) => {
-      acc[option.value] = option.label;
+      if (option && typeof option === 'object' && 'value' in option && 'label' in option) {
+        acc[option.value] = option.label;
+      }
       return acc;
     }, {} as Record<string, string>);
     
@@ -104,9 +110,9 @@ export function MultiSelect({
         >
           <div className="flex flex-wrap gap-1.5 py-0.5">
             {selectedLabels.length === 0 && placeholder}
-            {selectedLabels.map((label) => (
+            {selectedLabels.map((label, index) => (
               <Badge
-                key={label}
+                key={`${label}-${index}`}
                 variant="secondary"
                 className="mr-1 rounded-sm px-1 font-normal"
               >
