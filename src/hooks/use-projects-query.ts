@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -265,7 +266,7 @@ export function useActiveProjects() {
           profiles!projects_organizer_id_fkey(id, name, email)
         `)
         .neq("status", "completed")
-        .eq("status", "published")  // Only show published projects (not pending_publish or draft)
+        .eq("status", "published")
         .order("created_at", { ascending: false });
 
       if (error) {

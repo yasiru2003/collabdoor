@@ -1,4 +1,3 @@
-
 import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ProjectCard } from "@/components/project-card";
@@ -9,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Project, Organization } from "@/types";
 import { useState, useEffect } from "react";
-import { mapSupabaseProjectToProject, mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
+import { mapSupabaseProjectToProject } from "@/utils/data-mappers";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function LandingPage() {
@@ -45,7 +44,7 @@ export default function LandingPage() {
         .order("created_at", { ascending: false });
         
       if (error) throw error;
-      return data ? data.map(org => mapSupabaseOrgToOrganization(org)) : [];
+      return data as Organization[];
     },
   });
   

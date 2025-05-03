@@ -1,6 +1,8 @@
 
 import React, { useState } from "react";
-import { useToggleLike, useAddComment, FeedPost as FeedPostType } from "@/hooks/use-feed";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -11,45 +13,89 @@ import { Heart, MessageSquare, AtSign, Building, Send, Share } from "lucide-reac
 import { formatDistanceToNow } from "date-fns";
 
 interface FeedPostProps {
-  post: FeedPostType;
+  post: any;
   currentUser: any;
 }
 
 export function FeedPost({ post, currentUser }: FeedPostProps) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
-  
-  // Use our custom hooks
-  const toggleLikeMutation = useToggleLike();
-  const addCommentMutation = useAddComment();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Check if the current user has liked this post
   const userLike = post.feed_likes?.find(
-    (like) => like.user_id === currentUser?.id
+    (like: any) => like.user_id === currentUser?.id
   );
   
   // Get comments count
   const commentsCount = post.feed_comments?.length || 0;
   
-  // Like/unlike handler
-  const handleToggleLike = () => {
-    toggleLikeMutation.mutate({
-      postId: post.id,
-      likeId: userLike?.id
-    });
-  };
+  // Like/unlike a post
+  const { mutate: toggleLike } = useMutation({
+    mutationFn: async () => {
+      if (userLike) {
+        // Unlike the post
+        const { error } = await supabase
+          .from("feed_likes")
+          .delete()
+          .eq("id", userLike.id);
+          
+        if (error) throw error;
+      } else {
+        // Like the post
+        const { error } = await supabase
+          .from("feed_likes")
+          .insert({
+            post_id: post.id,
+            user_id: currentUser.id
+          });
+          
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to process like action",
+        variant: "destructive",
+      });
+      console.error("Like error:", error);
+    }
+  });
   
-  // Add comment handler
-  const handleAddComment = () => {
-    if (!commentText.trim()) return;
-    
-    addCommentMutation.mutate({
-      postId: post.id,
-      content: commentText
-    }, {
-      onSuccess: () => setCommentText("")
-    });
-  };
+  // Add comment
+  const { mutate: addComment, isPending: isAddingComment } = useMutation({
+    mutationFn: async () => {
+      if (!commentText.trim()) return;
+      
+      const { error } = await supabase
+        .from("feed_comments")
+        .insert({
+          post_id: post.id,
+          user_id: currentUser.id,
+          content: commentText.trim()
+        });
+        
+      if (error) throw error;
+      
+      setCommentText("");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to add comment",
+        variant: "destructive",
+      });
+      console.error("Comment error:", error);
+    }
+  });
   
   // Format date
   const formattedDate = post.created_at 
@@ -111,7 +157,7 @@ export function FeedPost({ post, currentUser }: FeedPostProps) {
               variant="ghost" 
               size="sm" 
               className={`flex items-center gap-1 ${userLike ? 'text-red-500' : ''}`}
-              onClick={handleToggleLike}
+              onClick={() => toggleLike()}
             >
               <Heart className={`h-4 w-4 ${userLike ? 'fill-current' : ''}`} />
               <span>{post.feed_likes?.length || 0}</span>
@@ -140,7 +186,7 @@ export function FeedPost({ post, currentUser }: FeedPostProps) {
             {/* Comments list */}
             <div className="space-y-3 max-h-60 overflow-y-auto">
               {post.feed_comments && post.feed_comments.length > 0 ? (
-                post.feed_comments.map((comment) => (
+                post.feed_comments.map((comment: any) => (
                   <div key={comment.id} className="flex space-x-2">
                     <Avatar className="h-6 w-6">
                       <AvatarImage src={comment.profiles?.profile_image || ""} />
@@ -184,8 +230,8 @@ export function FeedPost({ post, currentUser }: FeedPostProps) {
               />
               <Button 
                 size="sm" 
-                onClick={handleAddComment} 
-                disabled={addCommentMutation.isPending || !commentText.trim()}
+                onClick={() => addComment()} 
+                disabled={isAddingComment || !commentText.trim()}
               >
                 <Send className="h-4 w-4" />
               </Button>

@@ -1,27 +1,111 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
-import { useUserOrganizations } from "@/hooks/use-user-organizations";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useFeedPosts } from "@/hooks/use-feed";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  MessageSquare, User, Building, Users
+  Heart, MessageSquare, Share, Send, Users, 
+  AtSign, User, Building, MapPin 
 } from "lucide-react";
 import { FeedPost } from "@/components/feed/FeedPost";
 import { CreatePostForm } from "@/components/feed/CreatePostForm";
+import { Separator } from "@/components/ui/separator";
 
 export default function FeedPage() {
   const { user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("all");
-  
-  // Use our custom hooks
-  const { data: userOrganizations, isLoading: orgsLoading } = useUserOrganizations();
-  const { data: posts, isLoading: postsLoading, error: postsError } = useFeedPosts(activeTab as "all" | "following");
+
+  // Query to fetch all posts
+  const {
+    data: posts,
+    isLoading: postsLoading,
+    error: postsError
+  } = useQuery({
+    queryKey: ["feed-posts", activeTab],
+    queryFn: async () => {
+      if (!user) return [];
+      
+      let query = supabase
+        .from("feed_posts")
+        .select(`
+          *,
+          profiles!feed_posts_user_id_fkey(name, profile_image),
+          organizations!feed_posts_organization_id_fkey(name, logo),
+          feed_likes(id, user_id),
+          feed_comments(id, content, created_at, user_id, profiles(name, profile_image))
+        `)
+        .order("created_at", { ascending: false });
+      
+      if (activeTab === "following") {
+        // Get organizations the user is a member of
+        const { data: memberships } = await supabase
+          .from("organization_members")
+          .select("organization_id")
+          .eq("user_id", user.id);
+        
+        if (memberships && memberships.length > 0) {
+          const orgIds = memberships.map(m => m.organization_id);
+          query = query.in("organization_id", orgIds);
+        } else {
+          return []; // User doesn't follow any organizations
+        }
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error("Error fetching posts:", error);
+        throw error;
+      }
+      
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  // Query to fetch user's organizations
+  const {
+    data: userOrganizations,
+    isLoading: orgsLoading
+  } = useQuery({
+    queryKey: ["user-organizations", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      
+      // Get organizations where user is a member
+      const { data: memberships, error: membershipError } = await supabase
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id);
+      
+      if (membershipError) throw membershipError;
+      
+      if (memberships && memberships.length > 0) {
+        const orgIds = memberships.map(m => m.organization_id);
+        
+        const { data: organizations, error: orgsError } = await supabase
+          .from("organizations")
+          .select("id, name, logo")
+          .in("id", orgIds);
+        
+        if (orgsError) throw orgsError;
+        return organizations || [];
+      }
+      
+      return [];
+    },
+    enabled: !!user,
+  });
 
   if (authLoading || !user) {
     return (

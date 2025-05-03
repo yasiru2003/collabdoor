@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProjects } from "@/hooks/use-projects-query";
@@ -39,38 +38,23 @@ export function AdminProjects() {
   // Get pending publish projects
   useEffect(() => {
     const fetchPendingProjects = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('projects')
-          .select(`
-            *,
-            profiles!projects_organizer_id_fkey(id, name, email)
-          `)
-          .eq('status', 'pending_publish')
-          .order('created_at', { ascending: false });
-        
-        if (error) {
-          console.error("Error fetching pending projects:", error);
-          throw error;
-        }
-        
-        if (data) {
-          // Map the raw data to Project objects using the utility function
-          const mappedProjects = data.map(project => mapSupabaseProjectToProject(project)) as Project[];
-          setPendingPublishProjects(mappedProjects);
-          console.log("Fetched pending projects:", mappedProjects.length, mappedProjects);
-        }
-      } catch (err) {
-        console.error("Error in fetchPendingProjects:", err);
+      const { data } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          profiles!projects_organizer_id_fkey(id, name, email)
+        `)
+        .eq('status', 'pending_publish')
+        .order('created_at', { ascending: false });
+      
+      if (data) {
+        // Map the raw data to Project objects using the utility function
+        const mappedProjects = data.map(project => mapSupabaseProjectToProject(project)) as Project[];
+        setPendingPublishProjects(mappedProjects);
       }
     };
     
     fetchPendingProjects();
-    
-    // Set up a polling interval to check for new pending projects
-    const interval = setInterval(fetchPendingProjects, 30000); // Check every 30 seconds
-    
-    return () => clearInterval(interval);
   }, []);
 
   const handleEdit = (project: Project) => {
@@ -101,35 +85,12 @@ export function AdminProjects() {
       
       setIsEditDialogOpen(false);
       refetch();
-      // Also refetch pending projects if needed
-      refreshPendingProjects();
     } catch (error: any) {
       toast({
         title: "Error updating project",
         description: error.message,
         variant: "destructive",
       });
-    }
-  };
-  
-  const refreshPendingProjects = async () => {
-    const { data, error } = await supabase
-      .from('projects')
-      .select(`
-        *,
-        profiles!projects_organizer_id_fkey(id, name, email)
-      `)
-      .eq('status', 'pending_publish')
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error("Error refreshing pending projects:", error);
-      return;
-    }
-    
-    if (data) {
-      const mappedProjects = data.map(project => mapSupabaseProjectToProject(project)) as Project[];
-      setPendingPublishProjects(mappedProjects);
     }
   };
   
@@ -231,40 +192,24 @@ export function AdminProjects() {
     if (!projectToDelete) return;
     
     try {
-      console.log("Deleting project with ID:", projectToDelete.id);
-      
-      // Delete the project
+      // Delete the project - cascade rules will handle deleting related records
       const { error } = await supabase
         .from('projects')
         .delete()
         .eq('id', projectToDelete.id);
 
-      if (error) {
-        console.error("Supabase delete error:", error);
-        throw error;
-      }
+      if (error) throw error;
 
-      // Close the dialog and reset state
-      setIsDeleteDialogOpen(false);
-      
-      // Force refresh both the local state and the query cache
-      setPendingPublishProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
-      
       toast({
         title: "Project deleted",
-        description: "The project has been permanently deleted.",
+        description: "The project and all related data have been permanently deleted.",
       });
-
-      // Set projectToDelete to null AFTER toast to avoid race conditions
+      
+      // Refresh the projects list
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      setIsDeleteDialogOpen(false);
       setProjectToDelete(null);
-      
-      // Invalidate the cache and force a refetch
-      await queryClient.invalidateQueries({ queryKey: ['projects'] });
-      await refetch();
-      
-      console.log("Project deletion completed and UI refreshed");
     } catch (error: any) {
-      console.error("Error deleting project:", error);
       toast({
         title: "Error deleting project",
         description: error.message || "An unexpected error occurred",
@@ -313,7 +258,6 @@ export function AdminProjects() {
                     <div>
                       <p className="font-medium">{project.title}</p>
                       <p className="text-sm text-muted-foreground">
-                        By: {project.organizerName || "Unknown"} • 
                         Category: {project.category || "Uncategorized"}
                       </p>
                     </div>
@@ -348,20 +292,18 @@ export function AdminProjects() {
           <TabsList>
             <TabsTrigger value="all">All Projects</TabsTrigger>
             <TabsTrigger value="draft">Draft</TabsTrigger>
-            <TabsTrigger value="pending_publish">Pending</TabsTrigger>
             <TabsTrigger value="published">Published</TabsTrigger>
             <TabsTrigger value="in-progress">In Progress</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
           </TabsList>
           
-          {["all", "draft", "pending_publish", "published", "in-progress", "completed"].map((tab) => (
+          {["all", "draft", "published", "in-progress", "completed"].map((tab) => (
             <TabsContent key={tab} value={tab} className="space-y-4">
               <div className="rounded-md border">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/50 text-muted-foreground">
                       <th className="p-2 text-left">Title</th>
-                      <th className="p-2 text-left">Organizer</th>
                       <th className="p-2 text-left">Category</th>
                       <th className="p-2 text-left">Status</th>
                       <th className="p-2 text-center">Actions</th>
@@ -373,7 +315,6 @@ export function AdminProjects() {
                       .map((project) => (
                         <tr key={project.id} className="border-b transition-colors hover:bg-muted/50">
                           <td className="p-2 font-medium">{project.title}</td>
-                          <td className="p-2">{project.organizerName || "Unknown"}</td>
                           <td className="p-2">{project.category || "Uncategorized"}</td>
                           <td className="p-2">
                             <Badge className={getStatusColor(project.status)}>
@@ -400,7 +341,7 @@ export function AdminProjects() {
                       ))}
                     {projects?.filter(project => tab === "all" || project.status === tab).length === 0 && (
                       <tr>
-                        <td colSpan={5} className="p-4 text-center text-muted-foreground">
+                        <td colSpan={4} className="p-4 text-center text-muted-foreground">
                           No projects found
                         </td>
                       </tr>
@@ -448,16 +389,15 @@ export function AdminProjects() {
                     onValueChange={(value) => 
                       setSelectedProject({
                         ...selectedProject, 
-                        status: value as "draft" | "published" | "in-progress" | "completed" | "pending_publish"
+                        status: value as "draft" | "published" | "in-progress" | "completed"
                       })
                     }
                   >
-                    <SelectTrigger id="status" className="w-full">
+                    <SelectTrigger>
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="pending_publish">Pending Publication</SelectItem>
                       <SelectItem value="published">Published</SelectItem>
                       <SelectItem value="in-progress">In Progress</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
@@ -479,10 +419,7 @@ export function AdminProjects() {
         </Dialog>
 
         {/* Delete confirmation dialog */}
-        <AlertDialog open={isDeleteDialogOpen} onOpenChange={(open) => {
-        setIsDeleteDialogOpen(open);
-        if (!open) setProjectToDelete(null); // Clear selection when dialog is closed
-      }}>
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>

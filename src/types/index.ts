@@ -1,3 +1,4 @@
+
 export interface Project {
   id: string;
   title: string;
@@ -26,12 +27,6 @@ export interface Project {
   completedAt?: string;
   applicationsEnabled?: boolean;
   proposalFilePath?: string;
-  partnership_details?: {
-    [key: string]: string;
-  };
-  previous_projects?: {
-    [key: string]: string;
-  };
 }
 
 export type PartnershipType = "monetary" | "knowledge" | "skilled" | "volunteering";
@@ -49,7 +44,6 @@ export interface Organization {
   createdAt: string;
   updatedAt: string;
   owner_id: string;
-  status?: string;
   // Adding these for compatibility with raw DB objects
   created_at?: string;
   updated_at?: string;
@@ -115,7 +109,7 @@ export interface ApplicationWithProfile {
   };
 }
 
-// Updated interface for system settings
+// New interface for system settings
 export interface SystemSettings {
   id: string;
   key: string;

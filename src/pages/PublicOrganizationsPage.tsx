@@ -17,7 +17,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
 
 // Partnership type mapping for display
 const partnershipTypeLabels: Record<PartnershipType, string> = {
@@ -44,8 +43,8 @@ export default function PublicOrganizationsPage() {
       
       if (orgError) throw orgError;
 
-      // Map raw database organizations to Organization type
-      const orgs = organizations ? organizations.map(org => mapSupabaseOrgToOrganization(org)) : [];
+      // Type-cast organizations to the expected type
+      const orgs = organizations as Organization[];
       
       // Then get all partnership interests
       const { data: interests, error: interestsError } = await supabase

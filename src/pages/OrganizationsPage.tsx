@@ -12,7 +12,6 @@ import { Building, Filter, Plus, Search, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Organization } from "@/types";
-import { mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
 import {
   Popover,
   PopoverContent,
@@ -77,7 +76,7 @@ export default function OrganizationsPage() {
         .order("name", { ascending: true });
         
       if (error) throw error;
-      return data ? data.map(org => mapSupabaseOrgToOrganization(org)) : [];
+      return data as Organization[];
     }
   });
   
@@ -94,7 +93,7 @@ export default function OrganizationsPage() {
         .order("created_at", { ascending: false });
         
       if (error) throw error;
-      return data ? data.map(org => mapSupabaseOrgToOrganization(org)) : [];
+      return data as Organization[];
     },
     enabled: !!user
   });

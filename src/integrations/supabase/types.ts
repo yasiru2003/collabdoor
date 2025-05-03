@@ -327,7 +327,6 @@ export type Database = {
           name: string
           owner_id: string
           size: string | null
-          status: string | null
           updated_at: string
           website: string | null
         }
@@ -342,7 +341,6 @@ export type Database = {
           name: string
           owner_id: string
           size?: string | null
-          status?: string | null
           updated_at?: string
           website?: string | null
         }
@@ -357,7 +355,6 @@ export type Database = {
           name?: string
           owner_id?: string
           size?: string | null
-          status?: string | null
           updated_at?: string
           website?: string | null
         }
@@ -595,82 +592,6 @@ export type Database = {
           },
         ]
       }
-      project_images: {
-        Row: {
-          created_at: string
-          id: string
-          image_url: string
-          is_primary: boolean | null
-          project_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          image_url: string
-          is_primary?: boolean | null
-          project_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          image_url?: string
-          is_primary?: boolean | null
-          project_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_images_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      project_packages: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          partnership_type: string
-          price: number | null
-          project_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-          partnership_type: string
-          price?: number | null
-          project_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-          partnership_type?: string
-          price?: number | null
-          project_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_packages_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       project_phases: {
         Row: {
           completed_date: string | null
@@ -732,9 +653,7 @@ export type Database = {
           organization_id: string | null
           organization_name: string | null
           organizer_id: string
-          partnership_details: Json | null
-          partnership_types: string[]
-          previous_projects: Json | null
+          partnership_types: Database["public"]["Enums"]["partnership_type"][]
           proposal_file_path: string | null
           required_skills: string[] | null
           start_date: string | null
@@ -755,9 +674,7 @@ export type Database = {
           organization_id?: string | null
           organization_name?: string | null
           organizer_id: string
-          partnership_details?: Json | null
-          partnership_types: string[]
-          previous_projects?: Json | null
+          partnership_types: Database["public"]["Enums"]["partnership_type"][]
           proposal_file_path?: string | null
           required_skills?: string[] | null
           start_date?: string | null
@@ -778,9 +695,7 @@ export type Database = {
           organization_id?: string | null
           organization_name?: string | null
           organizer_id?: string
-          partnership_details?: Json | null
-          partnership_types?: string[]
-          previous_projects?: Json | null
+          partnership_types?: Database["public"]["Enums"]["partnership_type"][]
           proposal_file_path?: string | null
           required_skills?: string[] | null
           start_date?: string | null
@@ -914,24 +829,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      approve_project: {
-        Args: { project_id: string }
-        Returns: boolean
-      }
-      reject_project: {
-        Args: { project_id: string }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
       application_status: "pending" | "approved" | "rejected"
-      partnership_type:
-        | "monetary"
-        | "knowledge"
-        | "skilled"
-        | "volunteering"
-        | "resources"
-        | "network"
+      partnership_type: "monetary" | "knowledge" | "skilled" | "volunteering"
       project_status:
         | "draft"
         | "published"
@@ -1055,14 +957,7 @@ export const Constants = {
   public: {
     Enums: {
       application_status: ["pending", "approved", "rejected"],
-      partnership_type: [
-        "monetary",
-        "knowledge",
-        "skilled",
-        "volunteering",
-        "resources",
-        "network",
-      ],
+      partnership_type: ["monetary", "knowledge", "skilled", "volunteering"],
       project_status: [
         "draft",
         "published",
