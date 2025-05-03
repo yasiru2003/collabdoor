@@ -733,7 +733,7 @@ export type Database = {
           organization_name: string | null
           organizer_id: string
           partnership_details: Json | null
-          partnership_types: Database["public"]["Enums"]["partnership_type"][]
+          partnership_types: string[]
           previous_projects: Json | null
           proposal_file_path: string | null
           required_skills: string[] | null
@@ -756,7 +756,7 @@ export type Database = {
           organization_name?: string | null
           organizer_id: string
           partnership_details?: Json | null
-          partnership_types: Database["public"]["Enums"]["partnership_type"][]
+          partnership_types: string[]
           previous_projects?: Json | null
           proposal_file_path?: string | null
           required_skills?: string[] | null
@@ -779,7 +779,7 @@ export type Database = {
           organization_name?: string | null
           organizer_id?: string
           partnership_details?: Json | null
-          partnership_types?: Database["public"]["Enums"]["partnership_type"][]
+          partnership_types?: string[]
           previous_projects?: Json | null
           proposal_file_path?: string | null
           required_skills?: string[] | null
@@ -925,7 +925,13 @@ export type Database = {
     }
     Enums: {
       application_status: "pending" | "approved" | "rejected"
-      partnership_type: "monetary" | "knowledge" | "skilled" | "volunteering"
+      partnership_type:
+        | "monetary"
+        | "knowledge"
+        | "skilled"
+        | "volunteering"
+        | "resources"
+        | "network"
       project_status:
         | "draft"
         | "published"
@@ -1049,7 +1055,14 @@ export const Constants = {
   public: {
     Enums: {
       application_status: ["pending", "approved", "rejected"],
-      partnership_type: ["monetary", "knowledge", "skilled", "volunteering"],
+      partnership_type: [
+        "monetary",
+        "knowledge",
+        "skilled",
+        "volunteering",
+        "resources",
+        "network",
+      ],
       project_status: [
         "draft",
         "published",

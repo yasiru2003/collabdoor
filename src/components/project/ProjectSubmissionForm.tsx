@@ -37,7 +37,7 @@ const projectFormSchema = z.object({
   requiredSkills: z.array(z.string()).optional(),
   partnershipTypes: z.array(z.enum(["monetary", "knowledge", "skilled", "volunteering", "resources", "network"])).optional(),
   location: z.string().optional(),
-  image: z.instanceof(File).optional().or(z.string().optional()),
+  image: z.string().optional(), // Changed from accepting File to just string
   contactEmail: z.string().email("Please enter a valid email address").optional(),
   contactPhone: z.string().optional(),
   organization_id: z.string().optional(),
@@ -225,7 +225,7 @@ export function ProjectSubmissionForm({ project }: { project?: Project }) {
   const uploadFiles = async () => {
     setUploading(true);
     try {
-      let imageUrl = form.getValues("image");
+      let imageUrl = form.getValues("image") || "";
       let proposalPath = project?.proposalFilePath || "";
       
       // Upload project image if selected
@@ -287,7 +287,7 @@ export function ProjectSubmissionForm({ project }: { project?: Project }) {
         submissionStatus = 'pending_publish';
       }
       
-      // Prepare project data
+      // Prepare project data - updated to match database schema
       const projectData = {
         title: formData.title,
         description: formData.description,
@@ -298,7 +298,7 @@ export function ProjectSubmissionForm({ project }: { project?: Project }) {
         required_skills: formData.requiredSkills || [],
         partnership_types: formData.partnershipTypes || [],
         location: formData.location,
-        image: imageUrl || null,
+        image: imageUrl || null, // Ensure only string type here
         applications_enabled: formData.applicationsEnabled,
         proposal_file_path: proposalPath || null,
         organization_id: formData.organization_id || null,
@@ -326,7 +326,7 @@ export function ProjectSubmissionForm({ project }: { project?: Project }) {
             : "Your project has been updated successfully."
         });
       } else {
-        // Create new project
+        // Create new project - fixed type issues
         const { data, error } = await supabase
           .from('projects')
           .insert({
