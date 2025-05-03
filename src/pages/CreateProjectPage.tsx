@@ -1,6 +1,5 @@
 
 import { Layout } from "@/components/layout";
-import { ProjectForm } from "@/components/project/ProjectForm";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
@@ -8,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { useSystemSetting } from "@/hooks/use-system-settings";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { ProjectSubmissionForm } from "@/components/project/ProjectSubmissionForm";
 
 export default function CreateProjectPage() {
   const { user, loading } = useAuth();
@@ -52,7 +52,7 @@ export default function CreateProjectPage() {
         )}
         
         <div className="max-w-3xl mx-auto">
-          <ProjectForm />
+          <ProjectSubmissionForm />
         </div>
       </div>
     </Layout>
