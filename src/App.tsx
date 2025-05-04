@@ -28,6 +28,8 @@ import EditOrganizationPage from "./pages/EditOrganizationPage";
 import AdminPage from "./pages/AdminPage";
 import FeedPage from "./pages/FeedPage";
 import UserProfilePage from "./pages/UserProfilePage";
+import AboutPage from "./pages/AboutPage";
+import ContactPage from "./pages/ContactPage";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +47,8 @@ const App = () => (
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/browse/projects" element={<PublicProjectsPage />} />
             <Route path="/browse/organizations" element={<PublicOrganizationsPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
             
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>
