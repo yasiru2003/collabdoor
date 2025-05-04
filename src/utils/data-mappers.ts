@@ -45,6 +45,8 @@ export function mapSupabaseOrgToOrganization(supabaseOrg: any): Organization {
     // Keep original properties for compatibility
     created_at: supabaseOrg.created_at,
     updated_at: supabaseOrg.updated_at,
-    founded_year: supabaseOrg.founded_year
+    founded_year: supabaseOrg.founded_year,
+    // Add partnershipInterests if available
+    partnershipInterests: supabaseOrg.partnershipInterests
   };
 }

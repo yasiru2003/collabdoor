@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import { Organization, PartnershipType } from "@/types";
 import { useAuth } from "@/hooks/use-auth";
 import { PartnerCard } from "@/components/partner-card";
+import { mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
 import { 
   Select,
   SelectContent,
@@ -43,8 +44,8 @@ export default function PublicOrganizationsPage() {
       
       if (orgError) throw orgError;
 
-      // Type-cast organizations to the expected type
-      const orgs = organizations as Organization[];
+      // Map organizations to the expected type
+      const orgs = (organizations || []).map(org => mapSupabaseOrgToOrganization(org));
       
       // Then get all partnership interests
       const { data: interests, error: interestsError } = await supabase
