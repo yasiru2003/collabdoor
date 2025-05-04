@@ -20,7 +20,7 @@ export interface Project {
     name: string;
     role: string;
   }>;
-  partnershipTypes: PartnershipType[];
+  partnershipTypes: string[] | PartnershipType[]; // Updated to accept both string[] and PartnershipType[]
   requiredSkills?: string[];
   createdAt: string;
   updatedAt: string;

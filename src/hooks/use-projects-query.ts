@@ -1,8 +1,8 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Project } from "@/types";
+import { mapSupabaseProjectToProject } from "@/utils/data-mappers";
 
 /**
  * Hook to fetch all projects
@@ -31,30 +31,12 @@ export function useProjects() {
         throw error;
       }
       
-      // Map the raw data to Project objects
-      return data?.map(project => ({
-        id: project.id,
-        title: project.title,
-        description: project.description,
-        status: project.status,
-        organizerId: project.organizer_id,
-        organizerName: project.profiles?.name || "Unknown",
-        organizationId: project.organization_id,
-        organizationName: project.organization_name,
-        createdAt: project.created_at,
-        updatedAt: project.updated_at,
-        image: project.image,
-        location: project.location,
-        timeline: {
-          start: project.start_date,
-          end: project.end_date
-        },
-        requiredSkills: project.required_skills,
-        partnershipTypes: project.partnership_types,
-        category: project.category,
-        applicationsEnabled: project.applications_enabled,
-        completedAt: project.completed_at
-      })) || [];
+      // Map the raw data to Project objects using the utility function
+      return data?.map((project) => {
+        const mappedProject = mapSupabaseProjectToProject(project);
+        mappedProject.organizerName = project.profiles?.name || "Unknown";
+        return mappedProject;
+      }) || [];
     }
   });
 }
@@ -157,29 +139,11 @@ export function useUserProjects(userId: string | undefined) {
       }
       
       // Map the raw data to Project objects
-      return data?.map(project => ({
-        id: project.id,
-        title: project.title,
-        description: project.description,
-        status: project.status,
-        organizerId: project.organizer_id,
-        organizerName: project.profiles?.name || "Unknown",
-        organizationId: project.organization_id,
-        organizationName: project.organization_name,
-        createdAt: project.created_at,
-        updatedAt: project.updated_at,
-        image: project.image,
-        location: project.location,
-        timeline: {
-          start: project.start_date,
-          end: project.end_date
-        },
-        requiredSkills: project.required_skills,
-        partnershipTypes: project.partnership_types,
-        category: project.category,
-        applicationsEnabled: project.applications_enabled,
-        completedAt: project.completed_at
-      })) || [];
+      return data?.map(project => {
+        const mappedProject = mapSupabaseProjectToProject(project);
+        mappedProject.organizerName = project.profiles?.name || "Unknown";
+        return mappedProject;
+      }) || [];
     },
     enabled: !!userId
   });
@@ -220,29 +184,9 @@ export function useSavedProjects(userId: string | undefined) {
       // Map the raw data to Project objects
       return data?.map(item => {
         const project = item.projects;
-        return {
-          id: project.id,
-          title: project.title,
-          description: project.description,
-          status: project.status,
-          organizerId: project.organizer_id,
-          organizerName: project.profiles?.name || "Unknown",
-          organizationId: project.organization_id,
-          organizationName: project.organization_name,
-          createdAt: project.created_at,
-          updatedAt: project.updated_at,
-          image: project.image,
-          location: project.location,
-          timeline: {
-            start: project.start_date,
-            end: project.end_date
-          },
-          requiredSkills: project.required_skills,
-          partnershipTypes: project.partnership_types,
-          category: project.category,
-          applicationsEnabled: project.applications_enabled,
-          completedAt: project.completed_at
-        };
+        const mappedProject = mapSupabaseProjectToProject(project);
+        mappedProject.organizerName = project.profiles?.name || "Unknown";
+        return mappedProject;
       }) || [];
     },
     enabled: !!userId
@@ -279,29 +223,12 @@ export function useActiveProjects() {
         throw error;
       }
       
-      // Map the raw data to Project objects
-      return data?.map(project => ({
-        id: project.id,
-        title: project.title,
-        description: project.description,
-        status: project.status,
-        organizerId: project.organizer_id,
-        organizerName: project.profiles?.name || "Unknown",
-        organizationId: project.organization_id,
-        organizationName: project.organization_name,
-        createdAt: project.created_at,
-        updatedAt: project.updated_at,
-        image: project.image,
-        location: project.location,
-        timeline: {
-          start: project.start_date,
-          end: project.end_date
-        },
-        requiredSkills: project.required_skills,
-        partnershipTypes: project.partnership_types,
-        category: project.category,
-        applicationsEnabled: project.applications_enabled
-      })) || [];
+      // Map the raw data to Project objects using the utility function
+      return data?.map((project) => {
+        const mappedProject = mapSupabaseProjectToProject(project);
+        mappedProject.organizerName = project.profiles?.name || "Unknown";
+        return mappedProject;
+      }) || [];
     }
   });
 }

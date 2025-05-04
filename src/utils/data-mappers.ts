@@ -1,3 +1,4 @@
+
 import { Organization, Project } from "@/types";
 
 export function mapSupabaseProjectToProject(supabaseProject: any): Project {
@@ -9,7 +10,7 @@ export function mapSupabaseProjectToProject(supabaseProject: any): Project {
     organizerName: "", // This will be populated later with the profile name
     organizationId: supabaseProject.organization_id || undefined,
     organizationName: supabaseProject.organization_name || undefined,
-    partnershipTypes: supabaseProject.partnership_types || [],
+    partnershipTypes: supabaseProject.partnership_types || [], // Accept string[] from database
     timeline: {
       start: supabaseProject.start_date,
       end: supabaseProject.end_date,
