@@ -272,8 +272,8 @@ export default function ContactPage() {
               <ul className="space-y-2">
                 <li><Link to="/about" className="text-muted-foreground hover:text-foreground">About Us</Link></li>
                 <li><Link to="/contact" className="text-muted-foreground hover:text-foreground">Contact</Link></li>
-                <li><a href="#" className="text-muted-foreground hover:text-foreground">Privacy Policy</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-foreground">Terms of Service</a></li>
+                <li><Link to="/terms" className="text-muted-foreground hover:text-foreground">Terms of Service</Link></li>
+                <li><Link to="/privacy" className="text-muted-foreground hover:text-foreground">Privacy Policy</Link></li>
               </ul>
             </div>
             
