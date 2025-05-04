@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Building2, Calendar, CheckCircle2, Clock, FileText, MapPin, User2 } from "lucide-react";
+import { Building2, Calendar, CheckCircle2, Clock, FileText, MapPin, User2, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { useAuth } from "@/hooks/use-auth";
 
 interface ProjectOverviewProps {
   project: Project;
@@ -14,6 +15,7 @@ interface ProjectOverviewProps {
   navigateToOrganization: () => void;
   navigateToOrganizerProfile: () => void;
   handleCompleteProject: () => void;
+  handleDeleteProject: () => void;
 }
 
 export function ProjectOverview({ 
@@ -21,9 +23,11 @@ export function ProjectOverview({
   isOwner, 
   navigateToOrganization,
   navigateToOrganizerProfile,
-  handleCompleteProject 
+  handleCompleteProject,
+  handleDeleteProject
 }: ProjectOverviewProps) {
   const isCompleted = project.status === 'completed';
+  const { user } = useAuth();
   
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Not specified';
@@ -55,7 +59,7 @@ export function ProjectOverview({
                 <CardTitle className="text-2xl">Project Overview</CardTitle>
                 <CardDescription>Details about this project</CardDescription>
               </div>
-              <div className="flex items-center">
+              <div className="flex items-center space-x-2">
                 {getStatusBadge(project.status)}
                 
                 {isOwner && !isCompleted && (
@@ -67,8 +71,30 @@ export function ProjectOverview({
                     Mark as Complete
                   </Button>
                 )}
+                
+                {isOwner && (
+                  <Button 
+                    variant="destructive"
+                    onClick={handleDeleteProject}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Project
+                  </Button>
+                )}
               </div>
             </div>
+            
+            {project.image && (
+              <div className="mt-4">
+                <div className="relative w-full h-48 md:h-64 overflow-hidden rounded-lg">
+                  <img 
+                    src={project.image} 
+                    alt={project.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            )}
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="prose max-w-none">

@@ -1,5 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, storageBuckets } from "@/integrations/supabase/client";
 
 /**
  * Uploads an image to a specified Supabase storage bucket
@@ -43,11 +43,50 @@ export async function uploadImage(
 }
 
 /**
+ * Uploads a document file (PDF, DOC, etc.) to the proposals bucket
+ */
+export async function uploadProposal(
+  file: File,
+  userId: string
+): Promise<string | null> {
+  try {
+    const fileExt = file.name.split('.').pop();
+    const uniqueId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+    const fileName = `${userId}-${uniqueId}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    console.log(`Uploading proposal to proposals bucket: ${filePath}`);
+
+    // Upload the file
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from(storageBuckets.proposals)
+      .upload(filePath, file);
+
+    if (uploadError) {
+      console.error(`Error uploading proposal:`, uploadError);
+      throw uploadError;
+    }
+
+    // Get the public URL
+    const { data } = supabase.storage.from(storageBuckets.proposals).getPublicUrl(filePath);
+    
+    if (data) {
+      console.log(`Successfully uploaded proposal, public URL: ${data.publicUrl}`);
+      return data.publicUrl;
+    }
+    return null;
+  } catch (error) {
+    console.error(`Error uploading proposal:`, error);
+    return null;
+  }
+}
+
+/**
  * Removes an image from a specified Supabase storage bucket
  */
 export async function removeImage(
   url: string,
-  bucket: 'profiles' | 'projects' | 'organizations'
+  bucket: 'profiles' | 'projects' | 'organizations' | 'proposals'
 ): Promise<boolean> {
   try {
     if (!url) {

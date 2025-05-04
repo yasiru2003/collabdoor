@@ -21,6 +21,7 @@ import { ProgressDialog } from "@/components/project/ProgressDialog";
 import { CompletionDialog } from "@/components/project/CompletionDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { EditProjectDialog } from "@/components/project/EditProjectDialog";
+import { DeleteProjectDialog } from "@/components/project/DeleteProjectDialog";
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -98,8 +99,11 @@ export default function ProjectDetailPage() {
   // State for project completion dialog
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
   
-  // Add new state for edit dialog
+  // State for project edit dialog
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  
+  // State for project delete dialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   
   const handleContact = () => {
     if (!user) {
@@ -348,6 +352,10 @@ export default function ProjectDetailPage() {
         };
       });
   };
+  
+  const handleDeleteProject = () => {
+    setDeleteDialogOpen(true);
+  };
 
   if (isLoading) {
     return (
@@ -419,6 +427,7 @@ export default function ProjectDetailPage() {
               navigateToOrganization={navigateToOrganization}
               navigateToOrganizerProfile={navigateToOrganizerProfile}
               handleCompleteProject={handleCompleteProject}
+              handleDeleteProject={handleDeleteProject}
             />
           </TabsContent>
           
@@ -470,6 +479,15 @@ export default function ProjectDetailPage() {
         projectTitle={project.title}
         partners={getProjectPartners()}
         onComplete={onProjectCompleted}
+      />
+      
+      <DeleteProjectDialog 
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        projectId={id as string}
+        projectTitle={project.title}
+        projectImage={project.image}
+        proposalFilePath={project.proposalFilePath}
       />
     </Layout>
   );
