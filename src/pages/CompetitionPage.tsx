@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,9 +5,10 @@ import { CalendarCheck, Trophy, Award, Link as LinkIcon, Clock, Building, Users,
 import { Card, CardContent } from "@/components/ui/card";
 import { Header } from "@/components/header";
 import { useAuth } from "@/hooks/use-auth";
-
 export default function CompetitionPage() {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const [timeLeft, setTimeLeft] = useState<{
     days: number;
     hours: number;
@@ -18,36 +18,34 @@ export default function CompetitionPage() {
     days: 0,
     hours: 0,
     minutes: 0,
-    seconds: 0,
+    seconds: 0
   });
 
   // Set deadline to 10 days from today
   const deadline = new Date();
   deadline.setDate(deadline.getDate() + 10);
-
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date();
       const difference = deadline.getTime() - now.getTime();
-      
       if (difference <= 0) {
         clearInterval(timer);
         return;
       }
-      
       const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-      
-      setTimeLeft({ days, hours, minutes, seconds });
+      const hours = Math.floor(difference % (1000 * 60 * 60 * 24) / (1000 * 60 * 60));
+      const minutes = Math.floor(difference % (1000 * 60 * 60) / (1000 * 60));
+      const seconds = Math.floor(difference % (1000 * 60) / 1000);
+      setTimeLeft({
+        days,
+        hours,
+        minutes,
+        seconds
+      });
     }, 1000);
-    
     return () => clearInterval(timer);
   }, []);
-
-  return (
-    <div className="min-h-screen flex flex-col">
+  return <div className="min-h-screen flex flex-col">
       <Header />
       
       {/* Hero Section */}
@@ -62,20 +60,16 @@ export default function CompetitionPage() {
             </p>
             
             <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">
-              {user ? (
-                <Button size="lg" asChild>
+              {user ? <Button size="lg" asChild>
                   <Link to="/projects/new">Apply Now</Link>
-                </Button>
-              ) : (
-                <>
+                </Button> : <>
                   <Button size="lg" asChild>
                     <Link to="/login">Login to Apply</Link>
                   </Button>
                   <Button size="lg" variant="outline" asChild>
                     <Link to="/signup">Create Account</Link>
                   </Button>
-                </>
-              )}
+                </>}
             </div>
             
             {/* Countdown Timer */}
@@ -193,11 +187,7 @@ export default function CompetitionPage() {
           
           <div className="mt-12 text-center">
             <Button size="lg" asChild>
-              {user ? (
-                <Link to="/projects/new">Submit Your Project</Link>
-              ) : (
-                <Link to="/signup">Register Now</Link>
-              )}
+              {user ? <Link to="/projects/new">Submit Your Project</Link> : <Link to="/signup">Register Now</Link>}
             </Button>
           </div>
         </div>
@@ -317,45 +307,7 @@ export default function CompetitionPage() {
       </section>
       
       {/* Testimonials Section */}
-      <section className="py-16 px-4 bg-white">
-        <div className="container mx-auto max-w-4xl">
-          <h2 className="text-3xl font-bold mb-10 text-center">Success Stories</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-muted/10 p-6 rounded-lg border">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                  <School className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-bold">University of Colombo Tech Club</h3>
-                  <p className="text-sm text-muted-foreground">Innovation Summit 2024</p>
-                </div>
-              </div>
-              <p className="italic mb-4">
-                "With CollabDoor's sponsorship, we were able to host a much larger innovation summit than we initially planned. The platform also helped us connect with industry mentors who provided valuable guidance to our student participants."
-              </p>
-              <div className="text-sm text-muted-foreground">March 2025 Winner</div>
-            </div>
-            
-            <div className="bg-muted/10 p-6 rounded-lg border">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Users className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-bold">Green Earth NGO</h3>
-                  <p className="text-sm text-muted-foreground">Coastal Cleanup Initiative</p>
-                </div>
-              </div>
-              <p className="italic mb-4">
-                "The sponsorship from CollabDoor not only helped us fund our coastal cleanup project but also connected us with recycling partners through their platform. We've now established a sustainable monthly cleanup program."
-              </p>
-              <div className="text-sm text-muted-foreground">April 2025 Winner</div>
-            </div>
-          </div>
-        </div>
-      </section>
+      
       
       {/* Call to Action */}
       <section className="py-16 px-4 bg-primary text-primary-foreground">
@@ -366,11 +318,7 @@ export default function CompetitionPage() {
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Button size="lg" variant="secondary" asChild>
-              {user ? (
-                <Link to="/projects/new">Submit Your Project</Link>
-              ) : (
-                <Link to="/signup">Register Now</Link>
-              )}
+              {user ? <Link to="/projects/new">Submit Your Project</Link> : <Link to="/signup">Register Now</Link>}
             </Button>
             <Button size="lg" variant="outline" className="bg-transparent border-white hover:bg-white/10" asChild>
               <Link to="/organizations">Browse Partners</Link>
@@ -429,6 +377,5 @@ export default function CompetitionPage() {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 }
