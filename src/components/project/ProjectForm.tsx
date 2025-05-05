@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
@@ -6,7 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Upload, Image as ImageIcon } from "lucide-react";
+import { Loader2, Upload, Image as ImageIcon, Building } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -36,6 +37,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { PartnershipType, Organization } from "@/types";
 import { uploadImage } from "@/utils/upload-utils";
 import { mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_FILE_TYPES = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
@@ -50,6 +52,7 @@ const formSchema = z.object({
   endDate: z.date(),
   partnershipTypes: z.array(z.string()).min(1, { message: "Select at least one partnership type" }),
   requiredSkills: z.array(z.string()).optional(),
+  projectType: z.enum(["individual", "organization"]),
   organizationId: z.string().optional(),
   proposalFile: z
     .instanceof(File)
@@ -99,9 +102,13 @@ export function ProjectForm() {
       endDate: new Date(new Date().setMonth(new Date().getMonth() + 3)),
       partnershipTypes: [],
       requiredSkills: [],
+      projectType: "individual",
       organizationId: "",
     },
   });
+  
+  // Watch the projectType value to conditionally render organization selection
+  const projectType = form.watch("projectType");
   
   // Fetch user's organizations
   useEffect(() => {
@@ -224,10 +231,13 @@ export function ProjectForm() {
         }
       }
       
-      // Get organization name if available
+      // Determine organization details based on project type
+      let organization_id = null;
       let organization_name = null;
-      if (values.organizationId && values.organizationId !== "none") {
+      
+      if (values.projectType === "organization" && values.organizationId) {
         const selectedOrg = userOrganizations.find(org => org.id === values.organizationId);
+        organization_id = values.organizationId;
         organization_name = selectedOrg?.name || null;
       }
       
@@ -241,7 +251,7 @@ export function ProjectForm() {
         partnership_types: values.partnershipTypes as PartnershipType[],
         required_skills: values.requiredSkills,
         organizer_id: user.id,
-        organization_id: values.organizationId === "none" ? null : values.organizationId || null,
+        organization_id: organization_id,
         organization_name: organization_name,
         status: "published" as "draft" | "published" | "in-progress" | "completed",
         proposal_file_path: proposal_file_path,
@@ -412,6 +422,107 @@ export function ProjectForm() {
               />
             </div>
             
+            {/* Project Type Selection */}
+            <FormField
+              control={form.control}
+              name="projectType"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Project Type</FormLabel>
+                  <FormDescription>
+                    Choose whether this is a personal project or from one of your organizations
+                  </FormDescription>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex flex-col space-y-1"
+                    >
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="individual" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Individual Project
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="organization" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Organization Project
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* Organization selection - only shown when organization project type is selected */}
+            {projectType === "organization" && userOrganizations.length > 0 && (
+              <FormField
+                control={form.control}
+                name="organizationId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Select Organization</FormLabel>
+                    <FormDescription>
+                      Choose which organization this project belongs to
+                    </FormDescription>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value || ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select an organization" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {userOrganizations.map((org) => (
+                          <SelectItem key={org.id} value={org.id}>
+                            {org.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            
+            {projectType === "organization" && userOrganizations.length === 0 && (
+              <div className="rounded-md bg-muted p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <Building className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-foreground">No organizations found</h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-muted-foreground">
+                        You don't have any organizations yet. Create one before publishing an organization project.
+                      </p>
+                      <div className="mt-3">
+                        <Button 
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate("/organizations/create")}
+                        >
+                          Create Organization
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {/* Project Proposal File Upload */}
             <FormField
               control={form.control}
@@ -456,41 +567,6 @@ export function ProjectForm() {
                 </FormItem>
               )}
             />
-            
-            {/* Organization selection */}
-            {userOrganizations.length > 0 && (
-              <FormField
-                control={form.control}
-                name="organizationId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Publish as Organization</FormLabel>
-                    <FormDescription>
-                      Select an organization to publish this project under
-                    </FormDescription>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      value={field.value || "none"}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an organization (optional)" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">Personal Project</SelectItem>
-                        {userOrganizations.map((org) => (
-                          <SelectItem key={org.id} value={org.id}>
-                            {org.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
