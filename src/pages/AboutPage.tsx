@@ -1,10 +1,8 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/header";
-
 export default function AboutPage() {
-  return (
-    <div className="min-h-screen flex flex-col">
+  return <div className="min-h-screen flex flex-col">
       <Header />
 
       {/* Hero Section */}
@@ -41,11 +39,7 @@ export default function AboutPage() {
               </p>
             </div>
             <div>
-              <img
-                src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80"
-                alt="About Us"
-                className="rounded-lg shadow-lg"
-              />
+              <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80" alt="About Us" className="rounded-lg shadow-lg" />
             </div>
           </div>
         </div>
@@ -102,31 +96,19 @@ export default function AboutPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center p-6">
-              <img
-                src="https://images.unsplash.com/photo-1535713875002-ce1ef28d04e7?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80"
-                alt="Team Member"
-                className="rounded-full w-32 h-32 mx-auto mb-4"
-              />
-              <h3 className="text-xl font-bold mb-2">John Doe</h3>
+              <img alt="Team Member" className="rounded-full w-32 h-32 mx-auto mb-4" src="https://media.licdn.com/dms/image/v2/D5603AQH0jKVrITLGYA/profile-displayphoto-shrink_800_800/B56ZRGKFaZGQAo-/0/1736343837927?e=1752105600&v=beta&t=4sXFQmAqAYyBiR7z8cNhB6eehMyldkqoHRtFtTZVnyY" />
+              <h3 className="text-xl font-bold mb-2">Yasiru</h3>
               <p className="text-muted-foreground">CEO</p>
             </div>
 
             <div className="text-center p-6">
-              <img
-                src="https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1061&q=80"
-                alt="Team Member"
-                className="rounded-full w-32 h-32 mx-auto mb-4"
-              />
-              <h3 className="text-xl font-bold mb-2">Jane Smith</h3>
-              <p className="text-muted-foreground">CTO</p>
+              <img alt="Team Member" className="rounded-full w-32 h-32 mx-auto mb-4" src="https://media.licdn.com/dms/image/v2/D5603AQH0jKVrITLGYA/profile-displayphoto-shrink_800_800/B56ZRGKFaZGQAo-/0/1736343837927?e=1752105600&v=beta&t=4sXFQmAqAYyBiR7z8cNhB6eehMyldkqoHRtFtTZVnyY" />
+              <h3 className="text-xl font-bold mb-2">Senal</h3>
+              <p className="text-muted-foreground">COO</p>
             </div>
 
             <div className="text-center p-6">
-              <img
-                src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80"
-                alt="Team Member"
-                className="rounded-full w-32 h-32 mx-auto mb-4"
-              />
+              <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80" alt="Team Member" className="rounded-full w-32 h-32 mx-auto mb-4" />
               <h3 className="text-xl font-bold mb-2">Emily Johnson</h3>
               <p className="text-muted-foreground">CMO</p>
             </div>
@@ -135,61 +117,7 @@ export default function AboutPage() {
       </section>
       
       {/* Timeline Section */}
-      <section className="py-16 px-4 md:py-24 bg-muted/30">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Our Journey</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              A brief timeline of our key milestones and achievements
-            </p>
-          </div>
-
-          <div className="relative">
-            <div className="absolute left-1/2 top-0 h-full w-0.5 bg-muted"></div>
-            <div className="space-y-8">
-              <div className="flex items-center">
-                <div className="w-1/2 text-right pr-4">
-                  <h3 className="text-xl font-bold mb-1">2020: Founding</h3>
-                  <p className="text-muted-foreground">CollabDoor was founded with a vision to connect project organizers with potential partners.</p>
-                </div>
-                <div className="w-1/2 pl-4">
-                  <div className="w-3 h-3 bg-primary rounded-full relative"></div>
-                </div>
-              </div>
-
-              <div className="flex items-center">
-                <div className="w-1/2 text-right pr-4">
-                  <h3 className="text-xl font-bold mb-1">2021: Platform Launch</h3>
-                  <p className="text-muted-foreground">We launched our platform, providing a space for individuals and organizations to find and manage partnerships.</p>
-                </div>
-                <div className="w-1/2 pl-4">
-                  <div className="w-3 h-3 bg-primary rounded-full relative"></div>
-                </div>
-              </div>
-
-              <div className="flex items-center">
-                <div className="w-1/2 text-right pr-4">
-                  <h3 className="text-xl font-bold mb-1">2022: 10,000+ Users</h3>
-                  <p className="text-muted-foreground">Our platform reached 10,000+ users, connecting project organizers with potential partners.</p>
-                </div>
-                <div className="w-1/2 pl-4">
-                  <div className="w-3 h-3 bg-primary rounded-full relative"></div>
-                </div>
-              </div>
-
-              <div className="flex items-center">
-                <div className="w-1/2 text-right pr-4">
-                  <h3 className="text-xl font-bold mb-1">2023: Global Expansion</h3>
-                  <p className="text-muted-foreground">We expanded our platform globally, connecting project organizers with potential partners from around the world.</p>
-                </div>
-                <div className="w-1/2 pl-4">
-                  <div className="w-3 h-3 bg-primary rounded-full relative"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      
       
       {/* CTA Section */}
       <section className="py-16 px-4 md:py-24 bg-primary text-primary-foreground">
@@ -255,6 +183,5 @@ export default function AboutPage() {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 }
