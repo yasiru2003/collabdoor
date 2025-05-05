@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CalendarCheck, Trophy, Award, Link as LinkIcon, Clock } from "lucide-react";
+import { CalendarCheck, Trophy, Award, Link as LinkIcon, Clock, Building, Users, School, Flag } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Header } from "@/components/header";
 import { useAuth } from "@/hooks/use-auth";
@@ -55,10 +55,10 @@ export default function CompetitionPage() {
         <div className="container mx-auto max-w-6xl">
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">
-              Best Project <span className="text-primary">Competition 2025</span>
+              Project Partnership <span className="text-primary">Competition 2025</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              Showcase your innovation and win up to LKR 50,000/- in prizes
+              Showcase your organization's project and win up to LKR 50,000/- in sponsorship
             </p>
             
             <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">
@@ -120,12 +120,12 @@ export default function CompetitionPage() {
                     <Trophy className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold mb-2">Prizes</h3>
+                    <h3 className="text-lg font-bold mb-2">Sponsorship Prize</h3>
                     <ul className="space-y-2 text-muted-foreground">
-                      <li>🥇 1st Place: LKR 50,000/-</li>
-                      <li>🥈 2nd Place: LKR 30,000/-</li>
-                      <li>🥉 3rd Place: LKR 15,000/-</li>
-                      <li>🏅 Honorable mentions: LKR 5,000/-</li>
+                      <li>🥇 Monthly Winner: Up to LKR 50,000/- in sponsorship</li>
+                      <li>🏅 Recognition on the CollabDoor platform</li>
+                      <li>🌐 Promotional support for your project</li>
+                      <li>🤝 Networking opportunities with potential partners</li>
                     </ul>
                   </div>
                 </div>
@@ -142,9 +142,9 @@ export default function CompetitionPage() {
                     <h3 className="text-lg font-bold mb-2">Key Dates</h3>
                     <ul className="space-y-2 text-muted-foreground">
                       <li><strong>Application Deadline:</strong> {deadline.toLocaleDateString()}</li>
-                      <li><strong>Shortlist Announcement:</strong> 30th May, 2025</li>
-                      <li><strong>Final Presentations:</strong> 15th June, 2025</li>
-                      <li><strong>Winners Announcement:</strong> 20th June, 2025</li>
+                      <li><strong>Shortlist Announcement:</strong> Every 25th of the month</li>
+                      <li><strong>Winner Announcement:</strong> Last day of each month</li>
+                      <li><strong>Sponsorship Distribution:</strong> Within 10 days of announcement</li>
                     </ul>
                   </div>
                 </div>
@@ -155,16 +155,16 @@ export default function CompetitionPage() {
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
                   <div className="bg-primary/10 p-3 rounded-full">
-                    <Award className="h-6 w-6 text-primary" />
+                    <Building className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold mb-2">Eligibility</h3>
+                    <h3 className="text-lg font-bold mb-2">Who Can Apply</h3>
                     <ul className="space-y-2 text-muted-foreground">
-                      <li>Open to individual developers and teams up to 5 members</li>
-                      <li>Participants must be based in Sri Lanka</li>
-                      <li>Projects must be original work</li>
-                      <li>Both completed and in-progress projects are eligible</li>
-                      <li>All participants must create an account on CollabDoor</li>
+                      <li><strong>University Clubs & Societies</strong></li>
+                      <li><strong>NGOs & Non-profits</strong></li>
+                      <li><strong>Volunteer Organizations</strong></li>
+                      <li><strong>School Clubs & Societies</strong></li>
+                      <li><strong>Community Service Organizations</strong></li>
                     </ul>
                   </div>
                 </div>
@@ -175,15 +175,15 @@ export default function CompetitionPage() {
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
                   <div className="bg-primary/10 p-3 rounded-full">
-                    <LinkIcon className="h-6 w-6 text-primary" />
+                    <Flag className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold mb-2">Resources</h3>
+                    <h3 className="text-lg font-bold mb-2">Winner Requirements</h3>
                     <ul className="space-y-2 text-muted-foreground">
-                      <li>All participants will receive mentorship opportunities</li>
-                      <li>Access to exclusive workshops during the competition period</li>
-                      <li>Networking opportunities with industry professionals</li>
-                      <li>Technical support for project implementation</li>
+                      <li>Display CollabDoor logo in promotional materials</li>
+                      <li>Provide verification of organization status</li>
+                      <li>Submit a post-event report with photos</li>
+                      <li>Allow CollabDoor to showcase your success story</li>
                     </ul>
                   </div>
                 </div>
@@ -203,8 +203,47 @@ export default function CompetitionPage() {
         </div>
       </section>
       
-      {/* Rules & Guidelines */}
+      {/* How It Works */}
       <section className="py-16 px-4 bg-muted/30">
+        <div className="container mx-auto max-w-4xl">
+          <h2 className="text-3xl font-bold mb-10 text-center">How It Works</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-4 mx-auto">
+                <span className="font-bold text-primary text-xl">1</span>
+              </div>
+              <h3 className="text-lg font-bold mb-2 text-center">Register & Submit</h3>
+              <p className="text-center text-muted-foreground">
+                Create an organization profile and submit your project on CollabDoor
+              </p>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-4 mx-auto">
+                <span className="font-bold text-primary text-xl">2</span>
+              </div>
+              <h3 className="text-lg font-bold mb-2 text-center">Find Partners</h3>
+              <p className="text-center text-muted-foreground">
+                Connect with partners through our platform to strengthen your project
+              </p>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-4 mx-auto">
+                <span className="font-bold text-primary text-xl">3</span>
+              </div>
+              <h3 className="text-lg font-bold mb-2 text-center">Get Sponsorship</h3>
+              <p className="text-center text-muted-foreground">
+                Win the monthly competition and receive up to LKR 50,000/- in sponsorship
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Rules & Guidelines */}
+      <section className="py-16 px-4 bg-white">
         <div className="container mx-auto max-w-4xl">
           <h2 className="text-3xl font-bold mb-8 text-center">Rules & Guidelines</h2>
           
@@ -212,61 +251,130 @@ export default function CompetitionPage() {
             <h3>Project Requirements</h3>
             <p>Projects submitted to the competition must meet the following criteria:</p>
             <ul>
-              <li>Projects must address a real-world problem or need</li>
-              <li>Solutions must be innovative and demonstrate originality</li>
-              <li>Technical implementation must be of high quality</li>
-              <li>Projects should have clear potential for impact</li>
+              <li>The project must be organized by a university club, society, NGO, volunteer group, or school organization</li>
+              <li>The organization must be verifiable with proper documentation</li>
+              <li>Projects should demonstrate community impact and innovation</li>
+              <li>Projects must be seeking partnerships through the CollabDoor platform</li>
+              <li>Projects can be upcoming or currently in progress, but not completed</li>
             </ul>
             
             <h3>Submission Process</h3>
             <p>To submit your project, follow these steps:</p>
             <ol>
-              <li>Create an account on CollabDoor (if you don't have one already)</li>
+              <li>Create an organization profile on CollabDoor</li>
               <li>Navigate to the "New Project" section</li>
-              <li>Fill out all required project details</li>
-              <li>Upload any supporting materials</li>
+              <li>Fill out all required project details, including partnership needs</li>
+              <li>Upload supporting materials (organization verification, project plan)</li>
               <li>Check the "Submit for Competition" option</li>
               <li>Submit your application before the deadline</li>
             </ol>
             
             <h3>Judging Criteria</h3>
-            <p>Projects will be evaluated based on:</p>
+            <p>Projects will be evaluated by our panel based on:</p>
             <ul>
-              <li><strong>Innovation (30%):</strong> Originality and creativity of the solution</li>
-              <li><strong>Technical Implementation (25%):</strong> Quality of code and execution</li>
-              <li><strong>Impact Potential (25%):</strong> Ability to solve real problems</li>
-              <li><strong>Presentation (10%):</strong> Clear explanation of the project</li>
-              <li><strong>User Experience (10%):</strong> Usability and interface design</li>
+              <li><strong>Community Impact (30%):</strong> Potential to create positive change</li>
+              <li><strong>Partnership Strategy (25%):</strong> How effectively the project utilizes partnerships</li>
+              <li><strong>Innovation (20%):</strong> Originality and creativity of the project</li>
+              <li><strong>Feasibility (15%):</strong> Realistic goals and implementation plan</li>
+              <li><strong>Organization Credibility (10%):</strong> Track record and verification</li>
             </ul>
           </div>
         </div>
       </section>
       
       {/* FAQ Section */}
-      <section className="py-16 px-4 bg-white">
+      <section className="py-16 px-4 bg-muted/30">
         <div className="container mx-auto max-w-4xl">
           <h2 className="text-3xl font-bold mb-8 text-center">Frequently Asked Questions</h2>
           
           <div className="space-y-6">
-            <div className="bg-muted/30 rounded-lg p-6">
-              <h3 className="font-bold mb-2">Can I submit more than one project?</h3>
-              <p className="text-muted-foreground">Yes, participants are allowed to submit up to 3 different projects to increase their chances of winning.</p>
+            <div className="bg-white rounded-lg p-6 shadow-sm">
+              <h3 className="font-bold mb-2">Can we submit more than one project?</h3>
+              <p className="text-muted-foreground">Yes, organizations are allowed to submit multiple projects, but only one project per organization can win in a given month.</p>
             </div>
             
-            <div className="bg-muted/30 rounded-lg p-6">
-              <h3 className="font-bold mb-2">Is there an entry fee?</h3>
-              <p className="text-muted-foreground">No, participation in the competition is completely free.</p>
+            <div className="bg-white rounded-lg p-6 shadow-sm">
+              <h3 className="font-bold mb-2">How do we verify our organization?</h3>
+              <p className="text-muted-foreground">You'll need to upload documentation proving your organization's status, such as registration certificates, university affiliation letters, or official letterheads.</p>
             </div>
             
-            <div className="bg-muted/30 rounded-lg p-6">
-              <h3 className="font-bold mb-2">Can international participants join?</h3>
-              <p className="text-muted-foreground">The competition is primarily for participants based in Sri Lanka. International participants can join with a Sri Lankan team lead.</p>
+            <div className="bg-white rounded-lg p-6 shadow-sm">
+              <h3 className="font-bold mb-2">How is the sponsorship money distributed?</h3>
+              <p className="text-muted-foreground">Sponsorship funds are transferred directly to the winning organization's bank account within 10 days of the announcement, after verification of details.</p>
             </div>
             
-            <div className="bg-muted/30 rounded-lg p-6">
-              <h3 className="font-bold mb-2">What type of projects are eligible?</h3>
-              <p className="text-muted-foreground">We accept software projects, hardware prototypes, mobile applications, web applications, AI solutions, and innovative tech solutions across any industry.</p>
+            <div className="bg-white rounded-lg p-6 shadow-sm">
+              <h3 className="font-bold mb-2">What kind of projects are eligible?</h3>
+              <p className="text-muted-foreground">We welcome a wide range of projects including educational initiatives, community development, environmental conservation, cultural events, sports competitions, and technological innovation.</p>
             </div>
+
+            <div className="bg-white rounded-lg p-6 shadow-sm">
+              <h3 className="font-bold mb-2">What does "displaying the CollabDoor logo" entail?</h3>
+              <p className="text-muted-foreground">Winners must include the CollabDoor logo in event banners, digital promotions, printed materials, and mention CollabDoor as a sponsor in public communications about the project.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Testimonials Section */}
+      <section className="py-16 px-4 bg-white">
+        <div className="container mx-auto max-w-4xl">
+          <h2 className="text-3xl font-bold mb-10 text-center">Success Stories</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-muted/10 p-6 rounded-lg border">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                  <School className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-bold">University of Colombo Tech Club</h3>
+                  <p className="text-sm text-muted-foreground">Innovation Summit 2024</p>
+                </div>
+              </div>
+              <p className="italic mb-4">
+                "With CollabDoor's sponsorship, we were able to host a much larger innovation summit than we initially planned. The platform also helped us connect with industry mentors who provided valuable guidance to our student participants."
+              </p>
+              <div className="text-sm text-muted-foreground">March 2025 Winner</div>
+            </div>
+            
+            <div className="bg-muted/10 p-6 rounded-lg border">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-bold">Green Earth NGO</h3>
+                  <p className="text-sm text-muted-foreground">Coastal Cleanup Initiative</p>
+                </div>
+              </div>
+              <p className="italic mb-4">
+                "The sponsorship from CollabDoor not only helped us fund our coastal cleanup project but also connected us with recycling partners through their platform. We've now established a sustainable monthly cleanup program."
+              </p>
+              <div className="text-sm text-muted-foreground">April 2025 Winner</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Call to Action */}
+      <section className="py-16 px-4 bg-primary text-primary-foreground">
+        <div className="container mx-auto max-w-4xl text-center">
+          <h2 className="text-3xl font-bold mb-6">Ready to Win Sponsorship for Your Project?</h2>
+          <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+            Don't miss this opportunity to showcase your organization's project and win up to LKR 50,000/- in sponsorship!
+          </p>
+          <div className="flex flex-wrap gap-4 justify-center">
+            <Button size="lg" variant="secondary" asChild>
+              {user ? (
+                <Link to="/projects/new">Submit Your Project</Link>
+              ) : (
+                <Link to="/signup">Register Now</Link>
+              )}
+            </Button>
+            <Button size="lg" variant="outline" className="bg-transparent border-white hover:bg-white/10" asChild>
+              <Link to="/organizations">Browse Partners</Link>
+            </Button>
           </div>
         </div>
       </section>
