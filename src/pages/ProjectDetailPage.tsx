@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { ApplicationStatus, useProjectApplications } from "@/hooks/use-project-applications";
 import { useProjectPhases } from "@/hooks/use-phases-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Import our new components
 import { ProjectHeader } from "@/components/project/ProjectHeader";
@@ -28,6 +29,7 @@ export default function ProjectDetailPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   // Redirect to create project page if the ID is "create"
   useEffect(() => {
@@ -389,7 +391,7 @@ export default function ProjectDetailPage() {
 
   return (
     <Layout>
-      <div className="max-w-full overflow-x-hidden">
+      <div className="max-w-full overflow-x-hidden px-2 md:px-0">
         <ProjectHeader 
           project={project}
           isOwner={isOwner}
@@ -414,11 +416,13 @@ export default function ProjectDetailPage() {
         />
 
         <Tabs defaultValue={defaultTab} onValueChange={(value) => setSearchParams({ tab: value })}>
-          <TabsList className="mb-6 w-full max-w-md overflow-x-auto flex-nowrap">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="progress">Progress Tracker</TabsTrigger>
-            {isOwner && <TabsTrigger value="applications">Applications</TabsTrigger>}
-          </TabsList>
+          <div className="w-full overflow-x-auto">
+            <TabsList className="mb-6 w-full max-w-md overflow-x-auto flex-nowrap">
+              <TabsTrigger value="overview" className={isMobile ? "text-sm py-1.5" : ""}>Overview</TabsTrigger>
+              <TabsTrigger value="progress" className={isMobile ? "text-sm py-1.5" : ""}>Progress Tracker</TabsTrigger>
+              {isOwner && <TabsTrigger value="applications" className={isMobile ? "text-sm py-1.5" : ""}>Applications</TabsTrigger>}
+            </TabsList>
+          </div>
           
           <TabsContent value="overview">
             <ProjectOverview 

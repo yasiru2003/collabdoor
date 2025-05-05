@@ -67,8 +67,8 @@ export function UserProfile({ profile }: UserProfileProps) {
   };
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="mb-8">
+    <div className="container mx-auto py-4 md:py-6 px-2 md:px-4">
+      <div className="mb-6 md:mb-8">
         <ProfileHeader
           title={profile.name || "User"}
           description={profile.bio || "No bio provided"}
@@ -77,7 +77,7 @@ export function UserProfile({ profile }: UserProfileProps) {
         {/* Contact Button */}
         {!isSelf && (
           <Button
-            size="sm"
+            size={isMobile ? "sm" : "sm"}
             variant="outline"
             className="gap-2 mt-2"
             onClick={handleContact}
@@ -90,11 +90,13 @@ export function UserProfile({ profile }: UserProfileProps) {
       </div>
 
       <Tabs defaultValue="about" className="space-y-6">
-        <TabsList className="w-full flex overflow-x-auto">
-          <TabsTrigger value="about" className="flex-1 whitespace-nowrap">About</TabsTrigger>
-          <TabsTrigger value="projects" className="flex-1 whitespace-nowrap">Projects</TabsTrigger>
-          <TabsTrigger value="reviews" className="flex-1 whitespace-nowrap">Reviews</TabsTrigger>
-        </TabsList>
+        <div className="w-full overflow-x-auto">
+          <TabsList className="w-full flex overflow-x-auto">
+            <TabsTrigger value="about" className="flex-1 whitespace-nowrap">About</TabsTrigger>
+            <TabsTrigger value="projects" className="flex-1 whitespace-nowrap">Projects</TabsTrigger>
+            <TabsTrigger value="reviews" className="flex-1 whitespace-nowrap">Reviews</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="about">
           <Card>
@@ -143,7 +145,7 @@ export function UserProfile({ profile }: UserProfileProps) {
         </TabsContent>
 
         <TabsContent value="projects">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {userProjects.map((project) => (
               <ProjectCard key={project.id} project={project} />
             ))}

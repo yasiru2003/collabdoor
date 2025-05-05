@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Building2, Calendar, CheckCircle2, Clock, FileText, MapPin, User2, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ProjectOverviewProps {
   project: Project;
@@ -28,6 +29,7 @@ export function ProjectOverview({
 }: ProjectOverviewProps) {
   const isCompleted = project.status === 'completed';
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Not specified';
@@ -51,34 +53,35 @@ export function ProjectOverview({
   
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="col-span-2">
+      <div className="grid gap-6">
+        <Card>
           <CardHeader>
-            <div className="flex justify-between items-center">
+            <div className={`${isMobile ? 'flex flex-col space-y-4' : 'flex justify-between items-center'}`}>
               <div>
-                <CardTitle className="text-2xl">Project Overview</CardTitle>
+                <CardTitle className="text-xl md:text-2xl">Project Overview</CardTitle>
                 <CardDescription>Details about this project</CardDescription>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className={`flex items-center ${isMobile ? 'justify-between' : 'space-x-2'}`}>
                 {getStatusBadge(project.status)}
                 
                 {isOwner && !isCompleted && (
                   <Button 
-                    className="ml-4"
+                    className={`${isMobile ? 'ml-2 px-2 py-1 h-auto text-sm' : 'ml-4'}`}
                     onClick={handleCompleteProject}
                   >
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Mark as Complete
+                    <CheckCircle2 className={`${isMobile ? 'mr-1 h-3.5 w-3.5' : 'mr-2 h-4 w-4'}`} />
+                    {isMobile ? 'Complete' : 'Mark as Complete'}
                   </Button>
                 )}
                 
                 {isOwner && (
                   <Button 
                     variant="destructive"
+                    className={`${isMobile ? 'px-2 py-1 h-auto text-sm' : ''}`}
                     onClick={handleDeleteProject}
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete Project
+                    <Trash2 className={`${isMobile ? 'mr-1 h-3.5 w-3.5' : 'mr-2 h-4 w-4'}`} />
+                    Delete
                   </Button>
                 )}
               </div>
