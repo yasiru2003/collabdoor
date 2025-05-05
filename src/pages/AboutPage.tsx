@@ -85,36 +85,7 @@ export default function AboutPage() {
       </section>
       
       {/* Team Section */}
-      <section className="py-16 px-4 md:py-24 bg-white">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Meet Our Team</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              We are a team of passionate individuals dedicated to making a difference in the world.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center p-6">
-              <img alt="Team Member" className="rounded-full w-32 h-32 mx-auto mb-4" src="https://media.licdn.com/dms/image/v2/D5603AQH0jKVrITLGYA/profile-displayphoto-shrink_800_800/B56ZRGKFaZGQAo-/0/1736343837927?e=1752105600&v=beta&t=4sXFQmAqAYyBiR7z8cNhB6eehMyldkqoHRtFtTZVnyY" />
-              <h3 className="text-xl font-bold mb-2">Yasiru</h3>
-              <p className="text-muted-foreground">CEO</p>
-            </div>
-
-            <div className="text-center p-6">
-              <img alt="Team Member" className="rounded-full w-32 h-32 mx-auto mb-4" src="https://media.licdn.com/dms/image/v2/D5603AQH0jKVrITLGYA/profile-displayphoto-shrink_800_800/B56ZRGKFaZGQAo-/0/1736343837927?e=1752105600&v=beta&t=4sXFQmAqAYyBiR7z8cNhB6eehMyldkqoHRtFtTZVnyY" />
-              <h3 className="text-xl font-bold mb-2">Senal</h3>
-              <p className="text-muted-foreground">COO</p>
-            </div>
-
-            <div className="text-center p-6">
-              <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80" alt="Team Member" className="rounded-full w-32 h-32 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Emily Johnson</h3>
-              <p className="text-muted-foreground">CMO</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      
       
       {/* Timeline Section */}
       
