@@ -92,8 +92,13 @@ export function ProjectHeader({
         <div className="flex flex-wrap items-center gap-2 mt-2">
           {isOwner ? (
             <Badge variant="secondary">You are the project organizer</Badge>
-          ) : applicationStatus === null ? (
-            <Button size="sm" onClick={handleApply} disabled={applicationLoading}>
+          ) : applicationStatus === null && project.status !== 'completed' ? (
+            <Button 
+              size="sm" 
+              onClick={handleApply} 
+              disabled={applicationLoading}
+              className="cursor-pointer"
+            >
               Apply to Project
             </Button>
           ) : null}

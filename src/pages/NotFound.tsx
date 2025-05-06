@@ -7,10 +7,10 @@ const NotFound = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Only log if this is actually a missing route (not a direct file access)
-    if (!location.pathname.includes('.pdf') && 
-        !location.pathname.includes('.doc') && 
-        !location.pathname.includes('.docx')) {
+    // Skip logging for files to avoid filling the error logs
+    const isFileAccess = location.pathname.match(/\.(pdf|doc|docx|jpg|png|gif)$/i);
+    
+    if (!isFileAccess) {
       console.error(
         "404 Error: User attempted to access non-existent route:",
         location.pathname
