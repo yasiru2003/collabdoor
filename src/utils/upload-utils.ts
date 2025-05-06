@@ -72,7 +72,7 @@ export async function uploadProposal(
     
     if (data) {
       console.log(`Successfully uploaded proposal, public URL: ${data.publicUrl}`);
-      return data.publicUrl;
+      return data.publicUrl; // This returns the full URL directly to the file
     }
     return null;
   } catch (error) {

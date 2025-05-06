@@ -176,7 +176,7 @@ export function ProjectOverview({
                           rel="noopener noreferrer"
                           className="font-medium hover:text-primary hover:underline"
                           onClick={(e) => {
-                            // Log when proposal is accessed
+                            // Log when proposal is accessed and prevent default navigation
                             console.log("Opening proposal document:", project.proposalFilePath);
                           }}
                         >
