@@ -95,7 +95,7 @@ export function ProjectHeader({
           ) : applicationStatus === null && project.status !== 'completed' ? (
             <Button 
               size="sm" 
-              onClick={handleApply} 
+              onClick={() => handleApply()} 
               disabled={applicationLoading}
               className="cursor-pointer"
             >

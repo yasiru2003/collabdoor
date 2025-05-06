@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Clock, Folder, LayoutDashboard, Mail, Users, Users2, Filter, Handshake, Building2, Plus } from "lucide-react";
+import { CalendarDays, Clock, Folder, LayoutDashboard, Mail, Users, Users2, Filter, Handshake, Building2, Plus, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -405,6 +405,10 @@ const DashboardPage = () => {
                 <Handshake className="h-4 w-4 mr-2" />
                 <span className="whitespace-nowrap">Partnership Interest</span>
               </TabsTrigger>
+              <TabsTrigger value="explain" className="flex-1 md:flex-none">
+                <Info className="h-4 w-4 mr-2" />
+                <span className="whitespace-nowrap">Explain</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -754,6 +758,62 @@ const DashboardPage = () => {
                 )}
               </DialogContent>
             </Dialog>
+          </TabsContent>
+
+          <TabsContent value="explain" className="space-y-4">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Dashboard Explanation</h2>
+              </div>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>What is this dashboard?</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <h3 className="font-medium flex items-center">
+                      <Mail className="h-4 w-4 mr-2" /> My Applications
+                    </h3>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      This tab shows all the projects you've applied to. You can view the status of your applications (pending, approved, or rejected) and all related details.
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <h3 className="font-medium flex items-center">
+                      <Folder className="h-4 w-4 mr-2" /> My Projects
+                    </h3>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Here you'll find all the projects you've created. You can view their status, details, and manage them directly from this section.
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <h3 className="font-medium flex items-center">
+                      <Users2 className="h-4 w-4 mr-2" /> Received Applications
+                    </h3>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      This tab displays all applications received for projects you've created. You can review, approve, or reject applications from interested partners.
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <h3 className="font-medium flex items-center">
+                      <Handshake className="h-4 w-4 mr-2" /> Partnership Interest
+                    </h3>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Manage your organization's partnership interests and applications in this tab. You can review incoming partnership requests and set up partnership interests.
+                    </p>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <p className="text-sm text-muted-foreground">
+                    Need help? Contact our support team for assistance with any dashboard features.
+                  </p>
+                </CardFooter>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="organization-interests">

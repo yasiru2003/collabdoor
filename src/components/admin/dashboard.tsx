@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { LineChart, BarChart, ResponsiveContainer, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Building2, FileText, MessagesSquare } from "lucide-react";
+import { Users, Building2, FileText, MessagesSquare, Info } from "lucide-react";
 
 export function AdminDashboard() {
   // Query to get counts of various entities
@@ -127,6 +127,10 @@ export function AdminDashboard() {
               <TabsList className="mb-4">
                 <TabsTrigger value="line">Line</TabsTrigger>
                 <TabsTrigger value="bar">Bar</TabsTrigger>
+                <TabsTrigger value="explain">
+                  <Info className="h-4 w-4 mr-2" />
+                  Explain
+                </TabsTrigger>
               </TabsList>
               <TabsContent value="line" className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -151,6 +155,20 @@ export function AdminDashboard() {
                     <Bar dataKey="users" fill="#8884d8" />
                   </BarChart>
                 </ResponsiveContainer>
+              </TabsContent>
+              <TabsContent value="explain" className="h-64">
+                <div className="p-4 border rounded-lg bg-muted/30 h-full overflow-y-auto">
+                  <h4 className="font-medium mb-2">Understanding User Growth Data</h4>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    This chart visualizes new user registration trends over time. The data shows:
+                  </p>
+                  <ul className="space-y-2 text-sm">
+                    <li>• <strong>Monthly Growth:</strong> The chart displays user growth on a month-by-month basis</li>
+                    <li>• <strong>Trend Analysis:</strong> Use this to identify seasonal patterns or marketing impact</li>
+                    <li>• <strong>Data Sources:</strong> Numbers represent new registrations from the users table</li>
+                    <li>• <strong>Visualization Options:</strong> Toggle between line (trends) and bar (comparisons) views</li>
+                  </ul>
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>
