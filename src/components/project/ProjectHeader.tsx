@@ -1,107 +1,155 @@
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ProjectHeader } from "@/components/ProjectHeader";
+import { useAuth } from "@/hooks/useAuth";
+import { fetchProject, applyToProject } from "@/services/projectService";
+import { Project } from "@/types";
 
-import { Button } from "@/components/ui/button";
-import { Project, Organization } from "@/types";
-import { Link } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, AlertCircle } from "lucide-react";
-
-interface ProjectHeaderProps {
-  project: Project;
-  isOwner: boolean;
-  canUpdateProgress: boolean;
-  applicationStatus: string | null;
-  saved: boolean;
-  setSaved: (saved: boolean) => void;
-  handleApply: () => void;
-  handleContact: () => void;
-  applicationLoading: boolean;
-  partnershipType: string;
-  setPartnershipType: (type: string) => void;
-  message: string;
-  setMessage: (message: string) => void;
-  applicationOpen: boolean;
-  setApplicationOpen: (open: boolean) => void;
-  userOrganizations: Organization[];
-  selectedOrganizationId: string | null;
-  setSelectedOrganizationId: (id: string | null) => void;
-  onApplySubmit: () => void;
-  onEdit: () => void;
-}
-
-export function ProjectHeader({
-  project,
-  isOwner,
-  canUpdateProgress,
-  applicationStatus,
-  saved,
-  setSaved,
-  handleApply,
-  handleContact,
-  applicationLoading,
-  partnershipType,
-  setPartnershipType,
-  message,
-  setMessage,
-  applicationOpen,
-  setApplicationOpen,
-  userOrganizations,
-  selectedOrganizationId,
-  setSelectedOrganizationId,
-  onApplySubmit,
-  onEdit
-}: ProjectHeaderProps) {
+export function ProjectPage() {
+  const { projectId } = useParams();
+  const navigate = useNavigate();
+  const { user, userOrganizations } = useAuth();
+  
+  const [project, setProject] = useState<Project | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
+  const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [applicationLoading, setApplicationLoading] = useState(false);
+  
+  // Apply modal state
+  const [applicationOpen, setApplicationOpen] = useState(false);
+  const [partnershipType, setPartnershipType] = useState("");
+  const [message, setMessage] = useState("");
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const loadProject = async () => {
+      if (!projectId) return;
+      
+      try {
+        const projectData = await fetchProject(projectId);
+        setProject(projectData);
+        
+        // Check if current user is the owner
+        if (user && projectData.ownerId === user.id) {
+          setIsOwner(true);
+        }
+        
+        // Check if user has already applied
+        if (user && projectData.applications) {
+          const userApplication = projectData.applications.find(
+            app => app.userId === user.id
+          );
+          if (userApplication) {
+            setApplicationStatus(userApplication.status);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading project:", error);
+      }
+    };
+    
+    loadProject();
+  }, [projectId, user]);
+  
+  const handleContact = () => {
+    // Implementation for contact functionality
+    console.log("Contact clicked");
+  };
+  
+  const handleApply = () => {
+    // Open the apply modal
+    setApplicationOpen(true);
+  };
+  
+  // Handle apply button click from the modal
+  const onApplySubmit = async () => {
+    if (!user || !project?.id) return;
+    
+    setApplicationLoading(true);
+    
+    try {
+      // Only allow applying to projects with valid UUIDs
+      const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(project.id);
+      
+      if (!isValidUUID) {
+        console.error("Cannot apply to project with invalid ID format:", project.id);
+        setApplicationLoading(false);
+        return;
+      }
+      
+      const result = await applyToProject(
+        project.id, 
+        user.id, 
+        partnershipType, 
+        message, 
+        selectedOrganizationId
+      );
+      
+      if (result) {
+        setApplicationStatus("pending");
+        setApplicationOpen(false);
+        setMessage("");
+        setSelectedOrganizationId(null);
+      }
+    } catch (error) {
+      console.error("Error applying to project:", error);
+    } finally {
+      setApplicationLoading(false);
+    }
+  };
+  
+  const handleEdit = () => {
+    if (project?.id) {
+      navigate(`/projects/${project.id}/edit`);
+    }
+  };
+  
+  if (!project) {
+    return <div className="container py-8">Loading project...</div>;
+  }
+  
   return (
-    <div className="bg-card border rounded-lg p-6 mb-6 relative">
-      <div className="flex flex-col gap-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold mb-2">{project.title}</h1>
-            {project.status === "completed" && (
-              <Badge variant="outline" className="gap-1.5 mt-1 w-fit">
-                <CheckCircle2 className="h-4 w-4" />
-                Completed
-              </Badge>
-            )}
-            {project.status === "pending_publish" && (
-              <Badge variant="destructive" className="gap-1.5 mt-1 w-fit">
-                <AlertCircle className="h-4 w-4" />
-                Pending Approval
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {isOwner && (
-              <Button onClick={onEdit} variant="outline" size="sm">
-                Edit Project
-              </Button>
-            )}
-            {applicationStatus === "pending" ? (
-              <Badge variant="secondary">Application Pending</Badge>
-            ) : applicationStatus === "approved" ? (
-              <Badge variant="success">Application Approved</Badge>
-            ) : null}
-            
-            <Button variant="default" size="sm" onClick={handleContact}>
-              Contact
-            </Button>
+    <div className="container py-8">
+      <ProjectHeader
+        project={project}
+        isOwner={isOwner}
+        canUpdateProgress={isOwner}
+        applicationStatus={applicationStatus}
+        saved={saved}
+        setSaved={setSaved}
+        handleApply={handleApply}
+        handleContact={handleContact}
+        applicationLoading={applicationLoading}
+        partnershipType={partnershipType}
+        setPartnershipType={setPartnershipType}
+        message={message}
+        setMessage={setMessage}
+        applicationOpen={applicationOpen}
+        setApplicationOpen={setApplicationOpen}
+        userOrganizations={userOrganizations || []}
+        selectedOrganizationId={selectedOrganizationId}
+        setSelectedOrganizationId={setSelectedOrganizationId}
+        onApplySubmit={onApplySubmit}
+        onEdit={handleEdit}
+      />
+      
+      {/* Rest of the project page content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          {/* Project details section */}
+          <div className="bg-card border rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">Project Details</h2>
+            {/* Project content here */}
           </div>
         </div>
-
-        <p className="text-muted-foreground">{project.description}</p>
-
-        <div className="flex flex-wrap items-center gap-2 mt-2">
-          {isOwner ? (
-            <Badge variant="secondary">You are the project organizer</Badge>
-          ) : applicationStatus === null && project.status !== 'completed' ? (
-            <Button 
-              size="sm" 
-              onClick={() => handleApply()} 
-              disabled={applicationLoading}
-              className="cursor-pointer"
-            >
-              Apply to Project
-            </Button>
-          ) : null}
+        
+        <div className="space-y-6">
+          {/* Sidebar content */}
+          <div className="bg-card border rounded-lg p-6">
+            <h3 className="text-lg font-semibold mb-3">Project Info</h3>
+            {/* Project information */}
+          </div>
         </div>
       </div>
     </div>
