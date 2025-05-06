@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
@@ -35,7 +34,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PartnershipType, Organization } from "@/types";
-import { uploadImage } from "@/utils/upload-utils";
+import { uploadImage, uploadProposal } from "@/utils/upload-utils";
 import { mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
@@ -206,17 +205,18 @@ export function ProjectForm() {
       
       // Upload proposal file if selected
       if (values.proposalFile) {
-        const fileExt = values.proposalFile.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `${user.id}/${fileName}`;
+        console.log("Uploading proposal file:", values.proposalFile.name);
+        proposal_file_path = await uploadProposal(values.proposalFile, user.id);
         
-        const { error: uploadError } = await supabase.storage
-          .from('project_proposals')
-          .upload(filePath, values.proposalFile);
-        
-        if (uploadError) throw uploadError;
-        
-        proposal_file_path = filePath;
+        if (!proposal_file_path) {
+          toast({
+            title: "Proposal upload failed",
+            description: "Failed to upload project proposal, but proceeding with project creation",
+            variant: "destructive",
+          });
+        } else {
+          console.log("Proposal successfully uploaded:", proposal_file_path);
+        }
       }
       
       // Upload project image if selected

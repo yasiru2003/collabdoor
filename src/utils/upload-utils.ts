@@ -57,9 +57,9 @@ export async function uploadProposal(
 
     console.log(`Uploading proposal to proposals bucket: ${filePath}`);
 
-    // Upload the file
+    // Upload the file to the proposals bucket
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from(storageBuckets.proposals)
+      .from('proposals')
       .upload(filePath, file);
 
     if (uploadError) {
@@ -68,7 +68,7 @@ export async function uploadProposal(
     }
 
     // Get the public URL
-    const { data } = supabase.storage.from(storageBuckets.proposals).getPublicUrl(filePath);
+    const { data } = supabase.storage.from('proposals').getPublicUrl(filePath);
     
     if (data) {
       console.log(`Successfully uploaded proposal, public URL: ${data.publicUrl}`);
