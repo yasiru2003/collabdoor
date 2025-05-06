@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Project } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -170,14 +171,13 @@ export function ProjectOverview({
                       <div>
                         <div className="text-sm text-muted-foreground">Project Proposal</div>
                         <a 
-                          href={project.proposalFilePath} 
+                          href={project.proposalFilePath}
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="font-medium hover:text-primary hover:underline"
                           onClick={(e) => {
                             // Log when proposal is accessed
                             console.log("Opening proposal document:", project.proposalFilePath);
-                            // Continue with default behavior
                           }}
                         >
                           View Document
