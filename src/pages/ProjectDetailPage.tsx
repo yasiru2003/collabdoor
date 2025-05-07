@@ -431,6 +431,9 @@ export default function ProjectDetailPage() {
               navigateToOrganizerProfile={navigateToOrganizerProfile}
               handleCompleteProject={handleCompleteProject}
               handleDeleteProject={handleDeleteProject}
+              applicationStatus={applicationStatus}
+              handleApply={openApplicationDialog}
+              applicationLoading={applicationLoading}
             />
           </TabsContent>
           

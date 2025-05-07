@@ -95,22 +95,6 @@ export function ProjectHeader({
           )}
         </div>
       </div>
-      
-      {/* Apply button moved out of the flex container for better visibility */}
-      {!isOwner && applicationStatus === null && project.status !== 'completed' && (
-        <div className="mt-4 flex justify-end">
-          <Button 
-            variant="default"
-            size="sm" 
-            onClick={handleApply}
-            disabled={applicationLoading}
-            className="w-full md:w-auto"
-          >
-            {applicationLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
-            Apply to Project
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Building2, Calendar, CheckCircle2, Clock, FileText, MapPin, User2, Trash2 } from "lucide-react";
+import { Building2, Calendar, CheckCircle2, Clock, FileText, MapPin, User2, Trash2, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -17,6 +17,9 @@ interface ProjectOverviewProps {
   navigateToOrganizerProfile: () => void;
   handleCompleteProject: () => void;
   handleDeleteProject: () => void;
+  applicationStatus: string | null;
+  handleApply: () => void;
+  applicationLoading: boolean;
 }
 
 export function ProjectOverview({ 
@@ -25,7 +28,10 @@ export function ProjectOverview({
   navigateToOrganization,
   navigateToOrganizerProfile,
   handleCompleteProject,
-  handleDeleteProject
+  handleDeleteProject,
+  applicationStatus,
+  handleApply,
+  applicationLoading
 }: ProjectOverviewProps) {
   const isCompleted = project.status === 'completed';
   const { user } = useAuth();
@@ -53,6 +59,29 @@ export function ProjectOverview({
   
   return (
     <div className="space-y-6">
+      {/* Apply button - Placed at the top of overview for visibility */}
+      {!isOwner && applicationStatus === null && project.status !== 'completed' && (
+        <Card className="border-primary">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Interested in this project?</h3>
+                <p className="text-muted-foreground">Submit your application to collaborate on this project</p>
+              </div>
+              <Button 
+                size="lg" 
+                onClick={handleApply}
+                disabled={applicationLoading}
+                className="w-full md:w-auto"
+              >
+                {applicationLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                Apply to Project
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       <div className="grid gap-6">
         <Card>
           <CardHeader>
