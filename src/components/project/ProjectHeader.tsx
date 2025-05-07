@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Project, Organization } from "@/types";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, AlertCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 
 interface ProjectHeaderProps {
   project: Project;
@@ -50,6 +50,12 @@ export function ProjectHeader({
   onApplySubmit,
   onEdit
 }: ProjectHeaderProps) {
+  // Function to open application dialog
+  const openApplicationDialog = (e: React.MouseEvent) => {
+    e.preventDefault();
+    handleApply();
+  };
+
   return (
     <div className="bg-card border rounded-lg p-6 mb-6 relative">
       <div className="flex flex-col gap-4">
@@ -95,11 +101,11 @@ export function ProjectHeader({
           ) : applicationStatus === null && project.status !== 'completed' ? (
             <Button 
               size="sm" 
-              onClick={handleApply} 
+              onClick={openApplicationDialog}
               disabled={applicationLoading}
-              className="cursor-pointer"
             >
-              Apply to Project
+              {applicationLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+              Apply
             </Button>
           ) : null}
         </div>
