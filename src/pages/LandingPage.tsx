@@ -1,4 +1,3 @@
-
 import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ProjectCard } from "@/components/project-card";
@@ -11,7 +10,6 @@ import { Project, Organization } from "@/types";
 import { useState, useEffect } from "react";
 import { mapSupabaseProjectToProject, mapSupabaseOrgToOrganization } from "@/utils/data-mappers";
 import { Skeleton } from "@/components/ui/skeleton";
-
 export default function LandingPage() {
   const {
     user
@@ -27,31 +25,31 @@ export default function LandingPage() {
     days: 0,
     hours: 0,
     minutes: 0,
-    seconds: 0,
+    seconds: 0
   });
 
   // Set deadline to 10 days from today for the competition
   const deadline = new Date();
   deadline.setDate(deadline.getDate() + 10);
-
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date();
       const difference = deadline.getTime() - now.getTime();
-      
       if (difference <= 0) {
         clearInterval(timer);
         return;
       }
-      
       const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-      
-      setTimeLeft({ days, hours, minutes, seconds });
+      const hours = Math.floor(difference % (1000 * 60 * 60 * 24) / (1000 * 60 * 60));
+      const minutes = Math.floor(difference % (1000 * 60 * 60) / (1000 * 60));
+      const seconds = Math.floor(difference % (1000 * 60) / 1000);
+      setTimeLeft({
+        days,
+        hours,
+        minutes,
+        seconds
+      });
     }, 1000);
-    
     return () => clearInterval(timer);
   }, []);
 
@@ -227,26 +225,7 @@ export default function LandingPage() {
               <p className="text-lg mb-6 text-muted-foreground">
                 Our platform helps connect organizations, startups, and individuals with complementary skills and resources to create meaningful impact through collaboration.
               </p>
-              <div className="flex flex-wrap gap-6 mb-6">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-primary/10 rounded-full">
-                    <Handshake className="w-5 h-5 text-primary" />
-                  </div>
-                  <span className="font-medium">150+ Partnerships</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-primary/10 rounded-full">
-                    <Rocket className="w-5 h-5 text-primary" />
-                  </div>
-                  <span className="font-medium">200+ Projects</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-primary/10 rounded-full">
-                    <Users className="w-5 h-5 text-primary" />
-                  </div>
-                  <span className="font-medium">500+ Users</span>
-                </div>
-              </div>
+              
               <Button asChild>
                 <Link to="/about">Learn More About Us</Link>
               </Button>
@@ -314,8 +293,7 @@ export default function LandingPage() {
       </section>
       
       {/* Featured Projects Section */}
-      {featuredProjects.length > 0 && (
-        <section className="py-16 px-4 md:py-24 bg-white">
+      {featuredProjects.length > 0 && <section className="py-16 px-4 md:py-24 bg-white">
           <div className="container mx-auto max-w-6xl">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
               <div>
@@ -328,12 +306,9 @@ export default function LandingPage() {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {featuredProjects.map((project) => (
-                <ProjectCard key={project.id} project={project} />
-              ))}
+              {featuredProjects.map(project => <ProjectCard key={project.id} project={project} />)}
               
-              {isLoading && (
-                <>
+              {isLoading && <>
                   <div className="border rounded-lg p-6 space-y-4">
                     <Skeleton className="h-4 w-3/4" />
                     <Skeleton className="h-4 w-full" />
@@ -352,16 +327,13 @@ export default function LandingPage() {
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-10 w-1/2 mt-6" />
                   </div>
-                </>
-              )}
+                </>}
             </div>
           </div>
-        </section>
-      )}
+        </section>}
 
       {/* Featured Organizations Section */}
-      {featuredOrgs.length > 0 && (
-        <section className="py-16 px-4 md:py-24 bg-muted/20">
+      {featuredOrgs.length > 0 && <section className="py-16 px-4 md:py-24 bg-muted/20">
           <div className="container mx-auto max-w-6xl">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
               <div>
@@ -374,16 +346,11 @@ export default function LandingPage() {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {featuredOrgs.map((org) => (
-                <div key={org.id} className="border bg-card rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+              {featuredOrgs.map(org => <div key={org.id} className="border bg-card rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                   <div className="h-32 bg-gradient-to-r from-primary/30 to-accent/20 flex items-center justify-center">
-                    {org.logo ? (
-                      <img src={org.logo} alt={org.name} className="h-16 w-auto object-contain" />
-                    ) : (
-                      <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center">
+                    {org.logo ? <img src={org.logo} alt={org.name} className="h-16 w-auto object-contain" /> : <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center">
                         <span className="text-xl font-bold text-primary">{org.name.charAt(0)}</span>
-                      </div>
-                    )}
+                      </div>}
                   </div>
                   <div className="p-6">
                     <h3 className="font-bold text-lg mb-2">{org.name}</h3>
@@ -394,11 +361,9 @@ export default function LandingPage() {
                       </Button>
                     </div>
                   </div>
-                </div>
-              ))}
+                </div>)}
               
-              {isLoadingOrgs && (
-                <>
+              {isLoadingOrgs && <>
                   <div className="border rounded-lg p-6 space-y-4">
                     <Skeleton className="h-32 w-full mb-4" />
                     <Skeleton className="h-4 w-3/4" />
@@ -417,12 +382,10 @@ export default function LandingPage() {
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-10 w-1/3 mt-6 ml-auto" />
                   </div>
-                </>
-              )}
+                </>}
             </div>
           </div>
-        </section>
-      )}
+        </section>}
       
       {/* CTA Section */}
       <section className="py-16 px-4 md:py-24 bg-primary text-primary-foreground">
