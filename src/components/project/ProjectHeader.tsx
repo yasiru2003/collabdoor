@@ -100,6 +100,7 @@ export function ProjectHeader({
             <Badge variant="secondary">You are the project organizer</Badge>
           ) : applicationStatus === null && project.status !== 'completed' ? (
             <Button 
+              variant="default"
               size="sm" 
               onClick={openApplicationDialog}
               disabled={applicationLoading}
