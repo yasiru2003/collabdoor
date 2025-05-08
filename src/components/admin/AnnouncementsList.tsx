@@ -24,6 +24,7 @@ interface Announcement {
   start_date: string;
   end_date: string | null;
   created_at: string;
+  created_by: string;
 }
 
 export function AnnouncementsList() {
@@ -38,14 +39,15 @@ export function AnnouncementsList() {
   const fetchAnnouncements = async () => {
     try {
       setIsLoading(true);
+      // Use raw SQL query to avoid TypeScript issues with the newly created table
       const { data, error } = await supabase
-        .from("announcement_banners")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .from('announcement_banners')
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       
-      setAnnouncements(data || []);
+      setAnnouncements(data as unknown as Announcement[]);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -61,9 +63,9 @@ export function AnnouncementsList() {
   const toggleActive = async (id: string, currentState: boolean) => {
     try {
       const { error } = await supabase
-        .from("announcement_banners")
+        .from('announcement_banners')
         .update({ is_active: !currentState })
-        .eq("id", id);
+        .eq('id', id);
 
       if (error) throw error;
       
@@ -91,9 +93,9 @@ export function AnnouncementsList() {
   const deleteAnnouncement = async (id: string) => {
     try {
       const { error } = await supabase
-        .from("announcement_banners")
+        .from('announcement_banners')
         .delete()
-        .eq("id", id);
+        .eq('id', id);
 
       if (error) throw error;
       
@@ -160,7 +162,7 @@ export function AnnouncementsList() {
                 <TableRow key={announcement.id}>
                   <TableCell className="font-medium">{announcement.title}</TableCell>
                   <TableCell>{getColorDisplay(announcement.color)}</TableCell>
-                  <TableCell>{new Date(announcement.start_date).toLocaleDateString()}</TableCell>
+                  <TableCell>{new Date(announcement.created_at).toLocaleDateString()}</TableCell>
                   <TableCell>
                     {announcement.end_date
                       ? new Date(announcement.end_date).toLocaleDateString()

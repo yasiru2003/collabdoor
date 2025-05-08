@@ -54,14 +54,18 @@ export function AnnouncementForm() {
     try {
       // Format the end date properly for database
       const formattedData = {
-        ...data,
+        title: data.title,
+        message: data.message,
+        color: data.color,
+        is_active: data.is_active,
         created_by: user.id,
         end_date: data.end_date ? new Date(data.end_date).toISOString() : null
       };
       
+      // Use raw SQL approach to avoid TypeScript issues with the newly created table
       const { error } = await supabase
-        .from("announcement_banners")
-        .insert(formattedData);
+        .from('announcement_banners')
+        .insert(formattedData as any);
         
       if (error) throw error;
       

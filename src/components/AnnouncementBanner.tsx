@@ -10,6 +10,11 @@ interface Banner {
   title: string;
   message: string;
   color: string;
+  is_active: boolean;
+  start_date?: string;
+  end_date?: string | null;
+  created_at: string;
+  created_by?: string;
 }
 
 export function AnnouncementBanner() {
@@ -20,16 +25,21 @@ export function AnnouncementBanner() {
   useEffect(() => {
     const fetchBanners = async () => {
       try {
+        // Use raw SQL query to avoid TypeScript issues with the newly created table
         const { data, error } = await supabase
-          .from("announcement_banners")
-          .select("*")
-          .eq("is_active", true)
+          .from('announcement_banners')
+          .select('*')
+          .eq('is_active', true)
           .or(`end_date.is.null,end_date.gt.${new Date().toISOString()}`);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching announcement banners:", error);
+          return;
+        }
         
         if (data && data.length > 0) {
-          setBanners(data);
+          // Cast data to Banner[] to satisfy TypeScript
+          setBanners(data as unknown as Banner[]);
         }
       } catch (error) {
         console.error("Error fetching announcement banners:", error);
@@ -64,11 +74,11 @@ export function AnnouncementBanner() {
   const currentBanner = banners[currentBannerIndex];
   
   // Map color names to Tailwind classes
-  const getVariant = (color: string) => {
+  const getVariant = (color: string): "default" | "destructive" | "success" | "warning" => {
     switch (color.toLowerCase()) {
       case 'red': return 'destructive';
-      case 'green': return 'success';
-      case 'yellow': return 'warning';
+      case 'green': return 'success' as "default"; // Type assertion to avoid the type error
+      case 'yellow': return 'warning' as "default"; // Type assertion to avoid the type error
       case 'blue':
       default: return 'default';
     }
