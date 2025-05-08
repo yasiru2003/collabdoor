@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Project } from "@/types";
 import { ProgressDialog } from "./ProgressDialog";
 import { CompletionDialog } from "./CompletionDialog";
-import { EditProjectDialog } from "./EditProjectDialog";
+import { EnhancedEditProjectDialog } from "./EnhancedEditProjectDialog";
 import { DeleteProjectDialog } from "./DeleteProjectDialog";
 
 interface ProjectDialogManagerProps {
@@ -93,7 +93,7 @@ export function ProjectDialogManager({
         />
         
         {project && (
-          <EditProjectDialog
+          <EnhancedEditProjectDialog
             project={project}
             open={editDialogOpen}
             onOpenChange={setEditDialogOpen}

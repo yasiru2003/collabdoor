@@ -1,6 +1,11 @@
-import { Link } from "react-router-dom";
-import { Button } from "./ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,141 +13,173 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
-import { Bell, MessageSquare } from "lucide-react";
+} from "@/components/ui/dropdown-menu";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
-import { 
-  Popover, 
-  PopoverContent, 
-  PopoverTrigger 
-} from "./ui/popover";
-import { useToast } from "@/hooks/use-toast";
-import { useNotifications } from "@/hooks/use-notifications";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { NotificationsList } from "./notifications/NotificationsList";
+import { ModeToggle } from "./mode-toggle";
+import { NotificationsPopover } from "./notifications/NotificationsPopover";
+import { HelpCircle } from "lucide-react";
 
 export function Header() {
+  const [mounted, setMounted] = useState(false);
   const { user, signOut } = useAuth();
-  const { toast } = useToast();
-  const { 
-    notifications, 
-    markAsRead, 
-    markAllAsRead, 
-    unreadCount 
-  } = useNotifications();
-  const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  // Check if user is admin - based on email for now
-  const isAdmin = user?.email === "yasirubandaraprivate@gmail.com";
+  if (!mounted) {
+    return null;
+  }
 
   return (
-    <header className="border-b border-border bg-background sticky top-0 z-50">
-      <div className="container flex items-center justify-between h-14 md:h-16 mx-auto px-4">
-        <div className="flex items-center gap-2">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="font-bold text-lg md:text-xl bg-primary text-primary-foreground px-2 py-1 rounded">
-              CD
-            </div>
-            {!isMobile && <span className="font-bold text-xl">CollabDoor</span>}
+    <header className="w-full border-b">
+      <div className="container flex h-16 items-center px-4">
+        <div className="mr-4">
+          <Link to="/" className="font-bold text-xl">
+            CollabDoor
           </Link>
         </div>
-
-        <div className="flex items-center gap-2 md:gap-4">
-          {user ? (
-            <>
-              {/* Message button - visible only on desktop */}
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="relative h-8 w-8 md:h-10 md:w-10 hidden md:flex"
-                asChild
-              >
-                <Link to="/messages">
-                  <MessageSquare className="h-4 w-4 md:h-5 md:w-5" />
-                </Link>
-              </Button>
-              
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative h-8 w-8 md:h-10 md:w-10">
-                    <Bell className="h-4 w-4 md:h-5 md:w-5" />
-                    {unreadCount > 0 && (
-                      <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full"></span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-72 md:w-80 p-0" align="end">
-                  <div className="flex items-center justify-between p-3 md:p-4 border-b">
-                    <h3 className="font-semibold text-sm md:text-base">Notifications</h3>
-                    {unreadCount > 0 && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={markAllAsRead}
-                        className="text-xs h-7 md:h-8"
+        
+        <NavigationMenu className="hidden md:flex">
+          <NavigationMenuList>
+            <NavigationMenuItem>
+              <NavigationMenuTrigger>Explore</NavigationMenuTrigger>
+              <NavigationMenuContent>
+                <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
+                  <li className="row-span-3">
+                    <NavigationMenuLink asChild>
+                      <Link
+                        to="/browse/projects"
+                        className="h-full w-full select-none rounded-md bg-muted p-6 focus:shadow-md"
                       >
-                        Mark all as read
-                      </Button>
-                    )}
-                  </div>
-                  <NotificationsList 
-                    notifications={notifications}
-                    loading={false}
-                    markAsRead={markAsRead}
-                    onClose={() => document.body.click()} // Close popover
-                  />
-                </PopoverContent>
-              </Popover>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Avatar className="cursor-pointer h-8 w-8 md:h-10 md:w-10">
-                    <AvatarImage src={user.user_metadata?.profile_image || ""} alt={user.user_metadata?.name || "User"} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs md:text-sm">
-                      {(user.user_metadata?.name || user.email || "User")?.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
+                        <div className="mb-2 mt-4 font-medium">
+                          Projects
+                        </div>
+                        <p className="text-sm leading-tight text-muted-foreground">
+                          Find innovative projects to collaborate on and contribute
+                          to.
+                        </p>
+                      </Link>
+                    </NavigationMenuLink>
+                  </li>
+                  <li className="pl-6">
+                    <NavigationMenuLink asChild>
+                      <Link
+                        to="/browse/organizations"
+                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                      >
+                        <div className="text-sm font-medium leading-none">
+                          Organizations
+                        </div>
+                        <p className="line-clamp-2 text-sm text-muted-foreground">
+                          Discover organizations that align with your values and
+                          interests.
+                        </p>
+                      </Link>
+                    </NavigationMenuLink>
+                  </li>
+                  <li className="pl-6">
+                    <NavigationMenuLink asChild>
+                      <Link
+                        to="/partners"
+                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                      >
+                        <div className="text-sm font-medium leading-none">
+                          Partners
+                        </div>
+                        <p className="line-clamp-2 text-sm text-muted-foreground">
+                          Connect with potential partners to expand your network and
+                          collaborate on projects.
+                        </p>
+                      </Link>
+                    </NavigationMenuLink>
+                  </li>
+                </ul>
+              </NavigationMenuContent>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <NavigationMenuLink>
+                <Link to="/feed" className="font-bold">
+                  Feed
+                </Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <NavigationMenuLink>
+                <Link to="/competition" className="font-bold">
+                  Competition
+                </Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+          </NavigationMenuList>
+        </NavigationMenu>
+        
+        <div className="ml-auto flex items-center space-x-2 gap-1">
+          {/* Add Help Center Link */}
+          <Button variant="ghost" size="icon" asChild>
+            <Link to="/help" title="Help Center">
+              <HelpCircle className="h-5 w-5" />
+            </Link>
+          </Button>
+          
+          <ModeToggle />
+          <NotificationsPopover />
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user?.user_metadata?.avatar_url} alt={user?.user_metadata?.full_name} />
+                    <AvatarFallback>{user?.user_metadata?.full_name?.charAt(0)}</AvatarFallback>
                   </Avatar>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel className="text-sm md:text-base">{user.user_metadata?.name || user.email}</DropdownMenuLabel>
-                  <DropdownMenuLabel className="text-xs text-muted-foreground">{user.email}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to={`/users/${user.id}`} className="cursor-pointer w-full">Profile</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/dashboard" className="cursor-pointer w-full">Dashboard</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/settings" className="cursor-pointer w-full">Settings</Link>
-                  </DropdownMenuItem>
-                  {isAdmin && (
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin" className="cursor-pointer w-full">Admin Panel</Link>
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {user?.user_metadata?.full_name}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user?.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/dashboard">Dashboard</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/profile">Profile</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings">Settings</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => {
+                    signOut();
+                    navigate("/login");
+                  }}
+                >
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
-            <>
-              <Button variant="ghost" size={isMobile ? "sm" : "default"} asChild>
-                <Link to="/login">Log In</Link>
-              </Button>
-              <Button size={isMobile ? "sm" : "default"} asChild>
-                <Link to="/signup">Sign Up</Link>
-              </Button>
-            </>
+            <Link to="/login">
+              <Button>Login</Button>
+            </Link>
           )}
         </div>
       </div>

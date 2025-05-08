@@ -34,6 +34,11 @@ import TermsPage from "./pages/TermsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import CompetitionPage from "./pages/CompetitionPage";
 
+// Import new help pages
+import HelpCenter from "./pages/help/HelpCenter";
+import FaqPage from "./pages/help/FaqPage";
+import HowToGuides from "./pages/help/HowToGuides";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -55,6 +60,11 @@ const App = () => (
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPolicyPage />} />
             <Route path="/competition" element={<CompetitionPage />} />
+            
+            {/* Help Center routes */}
+            <Route path="/help" element={<HelpCenter />} />
+            <Route path="/help/faq" element={<FaqPage />} />
+            <Route path="/help/guides" element={<HowToGuides />} />
             
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>
