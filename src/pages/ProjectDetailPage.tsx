@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
@@ -73,6 +72,7 @@ export default function ProjectDetailPage() {
   // Check if current user is the project owner
   const isOwner = user && project && user.id === project.organizerId;
   
+  // Fix for the type mismatch in handleUpdateApplicationStatus
   // Use our extracted hooks for better organization
   const {
     applicationOpen,
@@ -87,9 +87,14 @@ export default function ProjectDetailPage() {
     applicationLoading,
     handleApply,
     openApplicationDialog,
-    handleUpdateApplicationStatus,
+    handleUpdateApplicationStatus: originalUpdateApplicationStatus,
     initializeApplicationStatus
   } = useProjectApplication(id || "", user?.id, project);
+
+  // Create a wrapper function that matches the expected void return type
+  const handleUpdateApplicationStatus = async (applicationId: string, status: "approved" | "rejected"): Promise<void> => {
+    await originalUpdateApplicationStatus(applicationId, status);
+  };
 
   const {
     handleContact,

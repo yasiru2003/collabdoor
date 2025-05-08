@@ -18,6 +18,7 @@ interface ProjectDetailsProps {
     proposalFilePath?: string;
     requiredSkills?: string[];
     partnershipTypes?: string[];
+    description?: string; // Added the missing description property
   };
   navigateToOrganization: () => void;
   navigateToOrganizerProfile: () => void;

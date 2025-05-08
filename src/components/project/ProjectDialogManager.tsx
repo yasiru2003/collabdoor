@@ -7,7 +7,7 @@ import { EditProjectDialog } from "./EditProjectDialog";
 import { DeleteProjectDialog } from "./DeleteProjectDialog";
 
 interface ProjectDialogManagerProps {
-  project: Project;
+  project: Project | undefined; // Make project optional
   projectId: string;
   isOwner: boolean;
   handleAddProgressNote: () => void;
@@ -68,6 +68,9 @@ export function ProjectDialogManager({
     setEditDialogOpen(true);
   };
 
+  // Check if project is defined before accessing its properties
+  const projectStatus = project?.status || "draft";
+
   return {
     dialogs: (
       <>
@@ -77,14 +80,14 @@ export function ProjectDialogManager({
           progressNote={progressNote}
           setProgressNote={setProgressNote}
           onSave={handleAddProgressNote}
-          projectStatus={project.status}
+          projectStatus={projectStatus}
         />
         
         <CompletionDialog 
           open={completeDialogOpen}
           onOpenChange={setCompleteDialogOpen}
           projectId={projectId}
-          projectTitle={project.title}
+          projectTitle={project?.title || ""}
           partners={getProjectPartners()}
           onComplete={onProjectCompleted}
         />
@@ -102,9 +105,9 @@ export function ProjectDialogManager({
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
           projectId={projectId}
-          projectTitle={project.title}
-          projectImage={project.image}
-          proposalFilePath={project.proposalFilePath}
+          projectTitle={project?.title || ""}
+          projectImage={project?.image || ""}
+          proposalFilePath={project?.proposalFilePath || ""}
         />
       </>
     ),
