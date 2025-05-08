@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Layout } from "@/components/layout";
@@ -18,6 +19,7 @@ import { PartnershipInterestsTab } from "@/components/organization/PartnershipIn
 import { PartnershipApplicationsTab } from "@/components/organization/PartnershipApplicationsTab";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PartnershipInterestForm } from "@/components/organization/PartnershipInterestForm";
+import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import {
   Select,
   SelectContent,
@@ -369,6 +371,9 @@ const DashboardPage = () => {
   return (
     <Layout>
       <div className="space-y-6">
+        {/* Announcement Banner */}
+        <AnnouncementBanner />
+
         <div className="flex items-center justify-between">
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h1>
         </div>

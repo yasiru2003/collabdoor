@@ -8,8 +8,9 @@ import { AdminUsers } from "@/components/admin/users";
 import { AdminProjects } from "@/components/admin/projects";
 import { AdminOrganizations } from "@/components/admin/organizations";
 import { AdminSettings } from "@/components/admin/settings";
+import { AdminAnnouncements } from "@/components/admin/announcements";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, AlertCircle } from "lucide-react";
+import { Shield, AlertCircle, Megaphone } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function AdminPage() {
@@ -58,6 +59,10 @@ export default function AdminPage() {
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
             <TabsTrigger value="organizations">Organizations</TabsTrigger>
+            <TabsTrigger value="announcements">
+              <Megaphone className="h-4 w-4 mr-2" />
+              Announcements
+            </TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
           
@@ -75,6 +80,10 @@ export default function AdminPage() {
           
           <TabsContent value="organizations">
             <AdminOrganizations />
+          </TabsContent>
+          
+          <TabsContent value="announcements">
+            <AdminAnnouncements />
           </TabsContent>
           
           <TabsContent value="settings">
