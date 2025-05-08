@@ -21,7 +21,7 @@ interface Announcement {
   message: string;
   color: string;
   is_active: boolean;
-  start_date: string;
+  start_date?: string;
   end_date: string | null;
   created_at: string;
   created_by: string;
@@ -39,9 +39,9 @@ export function AnnouncementsList() {
   const fetchAnnouncements = async () => {
     try {
       setIsLoading(true);
-      // Use raw SQL query to avoid TypeScript issues with the newly created table
+      // Use `as any` to bypass TypeScript's type checking for the newly created table
       const { data, error } = await supabase
-        .from('announcement_banners')
+        .from('announcement_banners' as any)
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -62,9 +62,13 @@ export function AnnouncementsList() {
 
   const toggleActive = async (id: string, currentState: boolean) => {
     try {
+      // Update object with the correct property name
+      const updateData = { is_active: !currentState };
+      
+      // Use `as any` to bypass TypeScript's type checking
       const { error } = await supabase
-        .from('announcement_banners')
-        .update({ is_active: !currentState })
+        .from('announcement_banners' as any)
+        .update(updateData)
         .eq('id', id);
 
       if (error) throw error;
@@ -92,8 +96,9 @@ export function AnnouncementsList() {
 
   const deleteAnnouncement = async (id: string) => {
     try {
+      // Use `as any` to bypass TypeScript's type checking
       const { error } = await supabase
-        .from('announcement_banners')
+        .from('announcement_banners' as any)
         .delete()
         .eq('id', id);
 

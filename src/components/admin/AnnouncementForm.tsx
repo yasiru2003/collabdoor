@@ -62,10 +62,10 @@ export function AnnouncementForm() {
         end_date: data.end_date ? new Date(data.end_date).toISOString() : null
       };
       
-      // Use raw SQL approach to avoid TypeScript issues with the newly created table
+      // Use `as any` to bypass TypeScript's type checking for the newly created table
       const { error } = await supabase
-        .from('announcement_banners')
-        .insert(formattedData as any);
+        .from('announcement_banners' as any)
+        .insert(formattedData);
         
       if (error) throw error;
       
