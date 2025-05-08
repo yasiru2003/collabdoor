@@ -1,9 +1,25 @@
 
 import { Button } from "@/components/ui/button";
-import { Project, Organization } from "@/types";
+import { Project, Organization, PartnershipType } from "@/types";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 interface ProjectHeaderProps {
   project: Project;
@@ -75,6 +91,12 @@ export function ProjectHeader({
                 Edit Project
               </Button>
             )}
+            {!isOwner && applicationStatus === null && project.status !== 'completed' && (
+              <Button onClick={handleApply} disabled={applicationLoading}>
+                {applicationLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Apply to Project
+              </Button>
+            )}
             {applicationStatus === "pending" ? (
               <Badge variant="secondary">Application Pending</Badge>
             ) : applicationStatus === "approved" ? (
@@ -95,6 +117,82 @@ export function ProjectHeader({
           )}
         </div>
       </div>
+      
+      {/* Application Dialog */}
+      <Dialog open={applicationOpen} onOpenChange={setApplicationOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Apply to Join Project</DialogTitle>
+            <DialogDescription>
+              Apply to collaborate on "{project.title}". Provide details about how you can contribute.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Choose partnership type:</h4>
+              <Select
+                value={partnershipType}
+                onValueChange={(value) => setPartnershipType(value)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select partnership type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {project.partnershipTypes?.map((type) => (
+                    <SelectItem key={type} value={type} className="capitalize">
+                      {type} partnership
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Apply from organization (optional):</h4>
+              <Select
+                value={selectedOrganizationId || "individual"}
+                onValueChange={setSelectedOrganizationId}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select organization" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="individual">Apply as individual</SelectItem>
+                  {userOrganizations.map((org) => (
+                    <SelectItem key={org.id} value={org.id}>
+                      {org.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Message (optional):</h4>
+              <Textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Describe how you or your organization can contribute to this project..."
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApplicationOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={onApplySubmit}
+              disabled={applicationLoading || !partnershipType}
+            >
+              {applicationLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Submit Application
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

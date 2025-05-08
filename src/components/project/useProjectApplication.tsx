@@ -1,11 +1,11 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useProjectApplications } from "@/hooks/use-project-applications";
-import { PartnershipType } from "@/types";
+import { PartnershipType, Project } from "@/types";
 
-export function useProjectApplication(projectId: string, userId: string | undefined, project: any) {
+export function useProjectApplication(projectId: string, userId: string | undefined, project: Project | undefined) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [applicationOpen, setApplicationOpen] = useState(false);
@@ -18,7 +18,8 @@ export function useProjectApplication(projectId: string, userId: string | undefi
     applyToProject, 
     isLoading: applicationLoading,
     checkApplicationStatus,
-    updateApplicationStatus
+    updateApplicationStatus,
+    userOrganizations
   } = useProjectApplications();
 
   // Fix for type error - Create a handler function that converts string to PartnershipType
@@ -26,11 +27,26 @@ export function useProjectApplication(projectId: string, userId: string | undefi
     setPartnershipType(type as PartnershipType);
   };
 
+  // Initialize default partnership type based on project's available types
+  useEffect(() => {
+    if (project?.partnershipTypes && project.partnershipTypes.length > 0) {
+      setPartnershipType(project.partnershipTypes[0] as PartnershipType);
+    }
+  }, [project]);
+
   const handleApply = async () => {
-    if (!userId || !projectId) return;
+    if (!userId || !projectId) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to apply to projects.",
+        variant: "destructive",
+      });
+      navigate("/login", { state: { returnTo: `/projects/${projectId}` } });
+      return;
+    }
     
     // Check if project is completed
-    if (project.status === 'completed') {
+    if (project?.status === 'completed') {
       toast({
         title: "Project is completed",
         description: "You cannot apply to a completed project.",
@@ -78,7 +94,7 @@ export function useProjectApplication(projectId: string, userId: string | undefi
     }
     
     // Check if project is completed
-    if (project.status === 'completed') {
+    if (project?.status === 'completed') {
       toast({
         title: "Project is completed",
         description: "You cannot apply to a completed project.",
@@ -126,6 +142,11 @@ export function useProjectApplication(projectId: string, userId: string | undefi
       }
     }
   };
+
+  // Check application status on component mount
+  useEffect(() => {
+    initializeApplicationStatus();
+  }, [userId, projectId]);
 
   return {
     applicationOpen,
